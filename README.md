@@ -3,19 +3,33 @@
 ## Repo’yu Ayağa Kaldırma (.NET 10 SDK ve Docker gereklidir)
 
 ```bash
+docker compose up -d db
+```
 
-docker compose up --build
+Rider veya VS Code debug için `Workplan.WebApi` ve `Workplan.Client` projelerinde `http` profilini çalıştırın. VS Code tarafında hazır compound config: `Workplan API + Client (http)`.
+
+| Servis | Adres |
+| --- | --- |
+| PostgreSQL | localhost:5433 |
+| Local İstemci (Blazor WASM) | http://localhost:5276 |
+| Local API + Scalar dokümantasyon | http://localhost:5291/scalar |
+
+Tam Docker stack isterseniz IDE portlarıyla çakışmayan app profili:
+
+```bash
+docker compose --profile app up --build
 ```
 
 | Servis | Adres |
 | --- | --- |
-| İstemci (Blazor WASM) | http://localhost:5276 |
-| API + Scalar dokümantasyon | http://localhost:5291/scalar |
+| Docker İstemci | http://localhost:5277 |
+| Docker API + Scalar dokümantasyon | http://localhost:5292/scalar |
 
 **Mock girişleri:**
 - `admin@workplan.local` / `ChangeMe123!`  -  SystemAdmin
-- `mehmet.ozkan@workplan.local` / `Demo123!` -  Project Manager
-+ diğer mock çalışan kullanıcıları 
+- `pm1@workplan.local` / `Demo123!` - Project Manager
+- `hom1@workplan.local` / `Demo123!` - Head of Master
++ diğer mock çalışan kullanıcıları (`sc1@...`, `to1@...`, `hom2@...` vb.)
 
 İlk açılışta migration’lar uygulanır ve  inşaat senaryosuna uygun örnek kullanıcılar dahil mock veriler oluşturulur. 
 
@@ -215,6 +229,8 @@ Saha (Head of Master) çalışması zayıf bağlantı koşullarında gerçekleş
 | **Transport** | HTTPS redirection; CORS yalnızca bilinen istemci origin’lerine |
 | **Hata sızıntısı** | Global exception handler → tek tip `ApiError`, iç detay sızmaz |
 | **Denetim** | Her durum geçişi `StatusTransition` ile kim/ne zaman/gerekçe olarak kalıcı |
+
+**Kapsam kontrolü (`AccessScopeService`):** `Application` katmanında `IAccessScopeService` üzerinden merkezi scope filtresi uygulanır. Listeleme/detail query'lerinde `ApplyProjectScope`, `ApplyCrewRegionScope`, `ApplyLocationScope`, `ApplyDailyPlanScope` ve `ApplyCrewScope` ile `IQueryable` daraltılır; command handler'larda ise `CanAccess...Async` metodları ile tekil kayıt erişimi kontrol edilir. `SystemAdmin` tüm kapsama erişir; diğer roller yalnızca kendi ilişkili kayıtlarını görür/işler: PM kendi projesini, Site Chief ve Technical Office kendi bölgelerini, Head of Master ise kendine atanmış lokasyon/planları ve kendi oluşturduğu ekipleri.
 
 ---
 

@@ -1,0 +1,78 @@
+@using System.Globalization
+
+<input class="@CssClass"
+       type="text"
+       inputmode="decimal"
+       value="@_text"
+       placeholder="@Placeholder"
+       @oninput="OnInput" />
+
+@code {
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public EventCallback<decimal?> ValueChanged { get; set; }
+    [Parameter] public string CssClass { get; set; } = "input";
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public bool AllowNegative { get; set; } = true;
+
+    private decimal? _lastValue;
+    private string _text = "";
+
+    protected override void OnParametersSet()
+    {
+        if (Value == _lastValue)
+        {
+            return;
+        }
+
+        _lastValue = Value;
+        _text = Value is { } value ? NumberDisplay.Format(value) : "";
+    }
+
+    private async Task OnInput(ChangeEventArgs args)
+    {
+        _text = args.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(_text))
+        {
+            await SetValueAsync(null);
+            return;
+        }
+
+        if (TryParseDecimal(_text, out var value) && (AllowNegative || value >= 0))
+        {
+            await SetValueAsync(value);
+            return;
+        }
+
+        await SetValueAsync(null);
+    }
+
+    private async Task SetValueAsync(decimal? value)
+    {
+        _lastValue = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+    private static bool TryParseDecimal(string text, out decimal value)
+    {
+        text = text.Trim().Replace(" ", "");
+
+        var commaIndex = text.LastIndexOf(',');
+        var dotIndex = text.LastIndexOf('.');
+        var normalized = text;
+
+        if (commaIndex >= 0 && dotIndex >= 0)
+        {
+            var decimalSeparator = commaIndex > dotIndex ? ',' : '.';
+            var thousandsSeparator = decimalSeparator == ',' ? "." : ",";
+            normalized = text.Replace(thousandsSeparator, "")
+                .Replace(decimalSeparator, '.');
+        }
+        else
+        {
+            normalized = text.Replace(',', '.');
+        }
+
+        return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
+    }
+}

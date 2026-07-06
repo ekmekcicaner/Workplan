@@ -5,7 +5,7 @@
 @inject ConfirmService Confirm
 @inject ToastService Toast
 
-<p class="mb-2"><a class="text-sm text-slate-500 hover:underline dark:text-slate-400" href="@($"projects/{ProjectId}/regions")">&larr; Saha bölgeleri</a></p>
+<p class="mb-2"><a class="text-sm text-neutral-500 hover:underline dark:text-neutral-400" href="@($"projects/{ProjectId}/regions")">&larr; Saha bölgeleri</a></p>
 <h1 class="mb-4 text-2xl font-semibold">Lokasyonlar</h1>
 
 <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
@@ -38,7 +38,7 @@
 </AuthorizeView>
 
 <div class="mb-3 flex items-center justify-between">
-    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+    <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
         <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
         Pasif lokasyonları da göster
     </label>

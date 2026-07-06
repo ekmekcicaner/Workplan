@@ -10,11 +10,16 @@ public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanComm
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public CreateDailyPlanCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public CreateDailyPlanCommandHandler(
+        IApplicationDbContext db,
+        ICurrentUserService currentUser,
+        IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<Guid>> Handle(CreateDailyPlanCommand request, CancellationToken cancellationToken)
@@ -28,6 +33,9 @@ public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanComm
                            && l.ProjectId == request.ProjectId, cancellationToken);
         if (!locationValid)
             return Result<Guid>.Fail(Error.NotFound("Lokasyon, belirtilen proje/bölgeye ait değil ya da bulunamadı."));
+
+        if (!await _accessScope.CanAccessCrewRegionAsync(request.CrewRegionId, cancellationToken))
+            return Result<Guid>.Fail(Error.ScopeMismatch("Bu bölge için günlük plan oluşturma yetkiniz yok."));
 
         var workItemType = await _db.WorkItemTypes.AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == request.WorkItemTypeId, cancellationToken);

@@ -1,11 +1,18 @@
-# Case study teslimi için tek komutla ayağa kalkış:
-#   docker compose up --build
+# Local IDE debug için:
+#   docker compose up -d db
+#
+# Tam Docker stack için:
+#   docker compose --profile app up --build
 #
 # Ardından:
-#   Client : http://localhost:5276
-#   API    : http://localhost:5291/scalar
+#   Local Client : http://localhost:5276
+#   Local API    : http://localhost:5291/scalar
+#   Docker Client: http://localhost:5277
+#   Docker API   : http://localhost:5292/scalar
+#   PostgreSQL   : localhost:5433
 #   Giriş  : admin@workplan.local / ChangeMe123! (SystemAdmin)
-#            veya mehmet.ozkan@workplan.local / Demo123! (ProjectManager) vb. seed edilen kullanıcılar
+#            veya pm1@workplan.local / Demo123! (ProjectManager)
+#            veya hom1@workplan.local / Demo123! (HeadOfMaster) vb. seed edilen kullanıcılar
 #
 # Veritabanı ilk açılışta migration'lar ile kurulur ve elektrik santrali inşaatı
 # senaryosuna uygun mock veri (proje, bölgeler, ekipler, günlük planlar) otomatik eklenir.
@@ -20,6 +27,8 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - workplan-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d workplan"]
       interval: 5s
@@ -27,6 +36,7 @@ services:
       retries: 10
 
   api:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: src/Workplan.WebApi/Dockerfile
@@ -36,18 +46,19 @@ services:
       ConnectionStrings__Default: "Host=db;Port=5432;Database=workplan;Username=postgres;Password=postgres"
       SeedDemoData: "true"
     ports:
-      - "5291:8080"
+      - "5292:8080"
     depends_on:
       db:
         condition: service_healthy
 
   client:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: src/Workplan.Client/Dockerfile
     container_name: workplan-client
     ports:
-      - "5276:80"
+      - "5277:80"
     depends_on:
       - api
 

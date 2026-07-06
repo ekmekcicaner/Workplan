@@ -1,0 +1,55 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Workplan API (http)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build: webapi",
+      "program": "${workspaceFolder}/src/Workplan.WebApi/bin/Debug/net10.0/Workplan.WebApi.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Workplan.WebApi",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(http://\\S+)",
+        "uriFormat": "%s/scalar"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5291",
+        "ConnectionStrings__Default": "Host=localhost;Port=5433;Database=workplan;Username=postgres;Password=postgres",
+        "SeedDemoData": "true"
+      }
+    },
+    {
+      "name": "Workplan Client (http)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build: client",
+      "program": "${workspaceFolder}/src/Workplan.Client/bin/Debug/net10.0/Workplan.Client.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Workplan.Client",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(http://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5276"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Workplan API + Client (http)",
+      "configurations": [
+        "Workplan API (http)",
+        "Workplan Client (http)"
+      ]
+    }
+  ]
+}

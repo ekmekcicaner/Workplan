@@ -18,6 +18,9 @@ fi
 echo "==> Restoring solution"
 dotnet restore "$SOLUTION"
 
+echo "==> Ensuring PostgreSQL is running"
+docker compose up -d db
+
 echo "==> Preparing client assets"
 if [[ ! -d "$CLIENT_DIR/node_modules" ]]; then
   npm install --prefix "$CLIENT_DIR"

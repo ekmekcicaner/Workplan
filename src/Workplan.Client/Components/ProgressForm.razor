@@ -4,15 +4,15 @@
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div>
             <label class="field-label">Gerçek Miktar</label>
-            <input class="input" type="number" step="0.01" @bind="Model.FactQuantity" />
+            <DecimalInput @bind-Value="Model.FactQuantity" Placeholder="Örn. 5,5" />
         </div>
         <div>
             <label class="field-label">Gerçek Adam-Gün</label>
-            <input class="input" type="number" step="0.01" @bind="Model.FactManDay" />
+            <DecimalInput @bind-Value="Model.FactManDay" Placeholder="Örn. 2,5" />
         </div>
         <div>
             <label class="field-label">Fazla Mesai</label>
-            <input class="input" type="number" step="0.01" @bind="Model.Overtime" />
+            <DecimalInput @bind-Value="Model.Overtime" Placeholder="Örn. 1,5" />
         </div>
         <div>
             <label class="field-label">Yorum</label>

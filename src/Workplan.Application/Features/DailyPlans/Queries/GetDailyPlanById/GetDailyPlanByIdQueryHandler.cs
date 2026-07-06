@@ -8,22 +8,29 @@ namespace Workplan.Application.Features.DailyPlans.Queries.GetDailyPlanById;
 public class GetDailyPlanByIdQueryHandler : IRequestHandler<GetDailyPlanByIdQuery, Result<DailyPlanDto>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetDailyPlanByIdQueryHandler(IApplicationDbContext db)
+    public GetDailyPlanByIdQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     {
         _db = db;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<DailyPlanDto>> Handle(
         GetDailyPlanByIdQuery request, CancellationToken cancellationToken)
     {
-        var plan = await _db.DailyPlans
+        var exists = await _db.DailyPlans
             .AsNoTracking()
+            .AnyAsync(p => p.Id == request.Id, cancellationToken);
+        if (!exists)
+            return Result<DailyPlanDto>.Fail(Error.NotFound("Günlük plan bulunamadı."));
+
+        var plan = await _accessScope.ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
             .Include(p => p.History)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (plan is null)
-            return Result<DailyPlanDto>.Fail(Error.NotFound("Günlük plan bulunamadı."));
+            return Result<DailyPlanDto>.Fail(Error.ScopeMismatch("Bu günlük planı görüntüleme yetkiniz yok."));
 
         var history = plan.History
             .OrderBy(h => h.TransitionedAt)

@@ -2,19 +2,18 @@ using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Workplan.Application.Interfaces;
 using Workplan.SharedKernel.Common;
-using Roles = Workplan.SharedKernel.Auth.Roles;
 
 namespace Workplan.Application.Features.Projects.Queries.GetProjects;
 
 public class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, Result<List<ProjectDto>>>
 {
     private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetProjectsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public GetProjectsQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     {
         _db = db;
-        _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<List<ProjectDto>>> Handle(GetProjectsQuery request, CancellationToken cancellationToken)
@@ -24,9 +23,7 @@ public class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, Result<
         if (!request.IncludeInactive)
             query = query.Where(p => p.IsActive);
 
-        // PM'ler yalnızca kendilerine atanan projeleri görebilir; diğer roller tüm projeleri görür.
-        if (_currentUser.Roles.Contains(Roles.ProjectManager) && _currentUser.Roles.Count == 1)
-            query = query.Where(p => p.PmUserId == _currentUser.UserId);
+        query = _accessScope.ApplyProjectScope(query);
 
         var projects = await query
             .Select(p => new ProjectDto(p.Id, p.Code, p.Name, p.PmUserId, p.IsActive))

@@ -35,9 +35,20 @@ public class JwtAuthenticationStateProvider(LocalStorageService localStorage) : 
         NotifyAuthenticationStateChanged(Task.FromResult(Anonymous));
     }
 
-    // The JWT embeds the long-form ClaimTypes.NameIdentifier/ClaimTypes.Role URIs (that's what
-    // JwtTokenService puts in on the server); MapInboundClaims=false there only affects the
-    // server's own inbound processing, not what's literally inside the issued token.
+    private static readonly HashSet<string> RoleClaimTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ClaimTypes.Role,
+        "role",
+        "roles"
+    };
+
+    private static readonly HashSet<string> NameIdentifierClaimTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ClaimTypes.NameIdentifier,
+        "nameid",
+        "sub"
+    };
+
     private static ClaimsIdentity? TryParseClaimsIdentity(string jwt)
     {
         var parts = jwt.Split('.');
@@ -56,17 +67,38 @@ public class JwtAuthenticationStateProvider(LocalStorageService localStorage) : 
         var claims = new List<Claim>();
         foreach (var (key, value) in payload)
         {
-            if (value.ValueKind == JsonValueKind.Array)
+            foreach (var claimValue in ReadClaimValues(value))
             {
-                claims.AddRange(value.EnumerateArray().Select(item => new Claim(key, item.ToString())));
-            }
-            else
-            {
-                claims.Add(new Claim(key, value.ToString()));
+                claims.Add(new Claim(key, claimValue));
+
+                if (RoleClaimTypes.Contains(key) && key != ClaimTypes.Role)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, claimValue));
+                }
+
+                if (NameIdentifierClaimTypes.Contains(key) && key != ClaimTypes.NameIdentifier)
+                {
+                    claims.Add(new Claim(ClaimTypes.NameIdentifier, claimValue));
+                }
             }
         }
 
         return new ClaimsIdentity(claims, "jwt", ClaimTypes.NameIdentifier, ClaimTypes.Role);
+    }
+
+    private static IEnumerable<string> ReadClaimValues(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in value.EnumerateArray())
+            {
+                yield return item.ToString();
+            }
+        }
+        else
+        {
+            yield return value.ToString();
+        }
     }
 
     private static byte[] Base64UrlDecode(string input)

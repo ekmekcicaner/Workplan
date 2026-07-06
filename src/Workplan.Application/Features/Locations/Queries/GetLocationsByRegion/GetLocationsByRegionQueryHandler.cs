@@ -8,10 +8,12 @@ namespace Workplan.Application.Features.Locations.Queries.GetLocationsByRegion;
 public class GetLocationsByRegionQueryHandler : IRequestHandler<GetLocationsByRegionQuery, Result<List<LocationDto>>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetLocationsByRegionQueryHandler(IApplicationDbContext db)
+    public GetLocationsByRegionQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     {
         _db = db;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<List<LocationDto>>> Handle(
@@ -23,6 +25,8 @@ public class GetLocationsByRegionQueryHandler : IRequestHandler<GetLocationsByRe
 
         if (!request.IncludeInactive)
             query = query.Where(l => l.IsActive);
+
+        query = _accessScope.ApplyLocationScope(query);
 
         var locations = await query
             .Select(l => new LocationDto(

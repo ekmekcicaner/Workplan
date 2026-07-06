@@ -2,11 +2,28 @@
     <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
-                <NotAuthorized>
-                    <Workplan.Client.Auth.RedirectToLogin />
+                <NotAuthorized Context="authState">
+                    @if (authState.User.Identity?.IsAuthenticated == true)
+                    {
+                        <LayoutView Layout="@typeof(MainLayout)">
+                            <div class="mx-auto mt-16 max-w-md px-4 text-center">
+                                <div class="card">
+                                    <h1 class="mb-2 text-xl font-semibold">Yetkiniz Yok</h1>
+                                    <p class="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+                                        Bu sayfayı görüntülemek için gerekli role sahip değilsiniz.
+                                    </p>
+                                    <a class="btn-primary" href="/">Ana Sayfaya Dön</a>
+                                </div>
+                            </div>
+                        </LayoutView>
+                    }
+                    else
+                    {
+                        <Workplan.Client.Auth.RedirectToLogin />
+                    }
                 </NotAuthorized>
                 <Authorizing>
-                    <div class="fixed inset-0 flex items-center justify-center bg-slate-50 text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                    <div class="fixed inset-0 flex items-center justify-center bg-neutral-50 text-sm text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
                         Yükleniyor...
                     </div>
                 </Authorizing>

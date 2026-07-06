@@ -54,7 +54,7 @@ public static class DemoDataSeeder
             return user.Id;
         }
 
-        var pmId = await EnsureUserAsync("mehmet.ozkan@workplan.local", "Mehmet Özkan", Roles.ProjectManager);
+        var pmId = await EnsureUserAsync("pm1@workplan.local", "Mehmet Özkan", Roles.ProjectManager);
 
         var project = Project.Create(
             "SLP-CCGT-01", "Silopi Kombine Çevrim Doğalgaz Santrali İnşaatı", pmId).Value;
@@ -180,9 +180,9 @@ public static class DemoDataSeeder
 
         await SeedRegionAsync(
             "A", "Türbin Binası ve Jeneratör Sahası",
-            "hakan.yildiz@workplan.local", "Hakan Yıldız",
-            "elif.sahin@workplan.local", "Elif Şahin",
-            [("ali.kaya@workplan.local", "Ali Kaya"), ("veli.dogan@workplan.local", "Veli Doğan")],
+            "sc1@workplan.local", "Hakan Yıldız",
+            "to1@workplan.local", "Elif Şahin",
+            [("hom1@workplan.local", "Ali Kaya"), ("hom2@workplan.local", "Veli Doğan")],
             "Türbin Binası",
             [
                 ("Türbin Binası - Zemin Kat", sstowTemelKalip, sstowTurbinMontaj,
@@ -193,9 +193,9 @@ public static class DemoDataSeeder
 
         await SeedRegionAsync(
             "B", "Kazan Dairesi ve Baca Gazı Sistemleri",
-            "serkan.aydin@workplan.local", "Serkan Aydın",
-            "burak.celik@workplan.local", "Burak Çelik",
-            [("mustafa.arslan@workplan.local", "Mustafa Arslan"), ("ibrahim.koc@workplan.local", "İbrahim Koç")],
+            "sc2@workplan.local", "Serkan Aydın",
+            "to2@workplan.local", "Burak Çelik",
+            [("hom3@workplan.local", "Mustafa Arslan"), ("hom4@workplan.local", "İbrahim Koç")],
             "Kazan Dairesi",
             [
                 ("Kazan Dairesi - Temel Seviyesi", sstowTemelDemir, sstowAnaTasiyici,
@@ -206,9 +206,9 @@ public static class DemoDataSeeder
 
         await SeedRegionAsync(
             "C", "Şalt Sahası ve Trafo Merkezi",
-            "cengiz.demir@workplan.local", "Cengiz Demir",
-            "zeynep.arik@workplan.local", "Zeynep Arık",
-            [("osman.yildirim@workplan.local", "Osman Yıldırım"), ("huseyin.celik@workplan.local", "Hüseyin Çelik")],
+            "sc3@workplan.local", "Cengiz Demir",
+            "to3@workplan.local", "Zeynep Arık",
+            [("hom5@workplan.local", "Osman Yıldırım"), ("hom6@workplan.local", "Hüseyin Çelik")],
             "Şalt Sahası",
             [
                 ("Trafo Alanı", sstowTrafoMontaj, sstowKuvvetKablo,
@@ -219,9 +219,9 @@ public static class DemoDataSeeder
 
         await SeedRegionAsync(
             "D", "Soğutma Kulesi ve Su Alma Yapıları",
-            "tolga.kara@workplan.local", "Tolga Kara",
-            "selin.gunes@workplan.local", "Selin Güneş",
-            [("ramazan.aydin@workplan.local", "Ramazan Aydın"), ("kemal.sahin@workplan.local", "Kemal Şahin")],
+            "sc4@workplan.local", "Tolga Kara",
+            "to4@workplan.local", "Selin Güneş",
+            [("hom7@workplan.local", "Ramazan Aydın"), ("hom8@workplan.local", "Kemal Şahin")],
             "Soğutma Kulesi",
             [
                 ("Kule Temeli", sstowTemelKalip, sstowTemelDemir,

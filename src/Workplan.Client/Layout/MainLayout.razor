@@ -5,29 +5,22 @@
 @inject AuthApiService AuthApi
 @inject ThemeService Theme
 
-<div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
+<div class="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <header class="sticky top-0 z-20 bg-neutral-950 text-white">
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2.5">
+            <a href="/" class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-md bg-brand-500 text-sm font-bold text-neutral-950">W</span>
+                <span class="text-lg font-semibold">Workplan</span>
+            </a>
             <div class="flex items-center gap-2">
-                <AuthorizeView>
-                    <Authorized>
-                        <button class="btn-secondary md:hidden" @onclick="() => _drawerOpen = true" aria-label="Menüyü aç">
-                            ☰
-                        </button>
-                    </Authorized>
-                </AuthorizeView>
-                <a href="/" class="text-lg font-semibold">Workplan</a>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3">
-                <button class="btn-secondary" @onclick="ToggleThemeAsync" title="Tema değiştir" aria-label="Tema değiştir">
-                    @(Theme.IsDark ? "Açık️" : "Koyu")
+                <button class="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-300 hover:bg-white/10 hover:text-white" @onclick="ToggleThemeAsync" title="Tema değiştir" aria-label="Tema değiştir">
+                    <Icon Name="@(Theme.IsDark ? "sun" : "moon")" />
                 </button>
                 <AuthorizeView>
                     <Authorized>
-                        <div class="flex items-center gap-2 sm:gap-3 text-sm">
-                            <span class="hidden text-slate-500 dark:text-slate-400 sm:inline">@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
-                            <button class="btn-secondary" @onclick="LogoutAsync">Çıkış yap</button>
-                        </div>
+                        <button class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white hover:bg-white/20" @onclick="() => _showAccountMenu = true" aria-label="Hesap menüsü">
+                            @Initials(context.User.FindFirst(ClaimTypes.Email)?.Value)
+                        </button>
                     </Authorized>
                     <NotAuthorized>
                         <a class="btn-primary" href="/login">Giriş yap</a>
@@ -40,30 +33,39 @@
     <div class="mx-auto flex max-w-6xl gap-6 px-4 py-6">
         <AuthorizeView>
             <Authorized>
-                @if (_drawerOpen)
-                {
-                    <div class="fixed inset-0 z-30 bg-slate-900/50 md:hidden" @onclick="() => _drawerOpen = false"></div>
-                }
-                <aside class="@DrawerClasses">
-                    <NavMenu OnNavigate="() => _drawerOpen = false" />
+                <aside class="hidden md:block md:w-56 md:shrink-0">
+                    <NavMenu />
                 </aside>
             </Authorized>
         </AuthorizeView>
-        <main class="min-w-0 flex-1">
+        <main class="min-w-0 flex-1 pb-20 md:pb-6">
             @Body
         </main>
     </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <BottomNav />
+        </Authorized>
+    </AuthorizeView>
 </div>
+
+<AuthorizeView>
+    <Authorized>
+        <Modal Show="_showAccountMenu" Title="Hesap" OnClose="() => _showAccountMenu = false">
+            <p class="mb-4 text-sm text-neutral-600 dark:text-neutral-300">@context.User.FindFirst(ClaimTypes.Email)?.Value</p>
+            <button class="btn-secondary w-full" @onclick="LogoutAsync">
+                <Icon Name="log-out" CssClass="h-5 w-5" />Çıkış yap
+            </button>
+        </Modal>
+    </Authorized>
+</AuthorizeView>
 
 <ToastHost />
 <ConfirmModal />
 
 @code {
-    private bool _drawerOpen;
-
-    private string DrawerClasses => _drawerOpen
-        ? "fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto bg-white p-3 shadow-xl dark:bg-slate-800 md:static md:z-auto md:w-56 md:shrink-0 md:bg-transparent md:p-0 md:shadow-none md:dark:bg-transparent"
-        : "hidden md:block md:w-56 md:shrink-0";
+    private bool _showAccountMenu;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -77,8 +79,17 @@
 
     private async Task ToggleThemeAsync() => await Theme.ToggleAsync();
 
+    private static string Initials(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return "?";
+        var name = email.Split('@')[0];
+        return name.Length >= 2 ? name[..2].ToUpperInvariant() : name.ToUpperInvariant();
+    }
+
     private async Task LogoutAsync()
     {
+        _showAccountMenu = false;
+
         var refreshToken = await LocalStorage.GetAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey);
         if (!string.IsNullOrEmpty(refreshToken))
         {

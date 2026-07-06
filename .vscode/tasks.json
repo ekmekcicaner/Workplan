@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker: db up",
+      "type": "shell",
+      "command": "docker compose up -d db",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "build: webapi",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/Workplan.WebApi/Workplan.WebApi.csproj"
+      ],
+      "dependsOn": "docker: db up",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build: client",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/Workplan.Client/Workplan.Client.csproj"
+      ],
+      "dependsOn": "docker: db up",
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

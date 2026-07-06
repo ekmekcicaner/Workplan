@@ -3,23 +3,23 @@
 @inject WorkItemTypesApiService WorkItemTypesApi
 
 <h1 class="mb-1 text-2xl font-semibold">İş Kalemi Tipleri</h1>
-<p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+<p class="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
     Hiyerarşi: Tip &rarr; Alt Tip &rarr; Alt-Alt Tip (en fazla 3 seviye). Bir sonraki seviyeyi görmek için soldaki listeden bir kayıt seçin.
 </p>
 
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+    <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
         <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
         Pasif tipleri de göster
     </label>
 
     @if (SelectedTip is not null)
     {
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-            <span class="font-medium text-slate-700 dark:text-slate-200">@SelectedTip.Name</span>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">
+            <span class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedTip.Name</span>
             @if (SelectedAltTip is not null)
             {
-                <text> &rarr; <span class="font-medium text-slate-700 dark:text-slate-200">@SelectedAltTip.Name</span></text>
+                <text> &rarr; <span class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedAltTip.Name</span></text>
             }
         </p>
     }

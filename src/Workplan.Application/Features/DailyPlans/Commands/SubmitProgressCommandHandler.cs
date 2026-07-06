@@ -8,11 +8,16 @@ public class SubmitProgressCommandHandler : IRequestHandler<SubmitProgressComman
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public SubmitProgressCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public SubmitProgressCommandHandler(
+        IApplicationDbContext db,
+        ICurrentUserService currentUser,
+        IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result> Handle(SubmitProgressCommand request, CancellationToken cancellationToken)
@@ -22,6 +27,9 @@ public class SubmitProgressCommandHandler : IRequestHandler<SubmitProgressComman
 
         var plan = await _db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
         if (plan is null) return Result.Fail(Error.NotFound("Günlük plan bulunamadı."));
+
+        if (!await _accessScope.CanAccessDailyPlanAsync(request.DailyPlanId, cancellationToken))
+            return Result.Fail(Error.ScopeMismatch("Bu günlük plan için gerçekleşme girme yetkiniz yok."));
 
         var result = plan.SubmitProgress(
             request.FactQuantity, request.FactManDay, request.Overtime, request.Comment,

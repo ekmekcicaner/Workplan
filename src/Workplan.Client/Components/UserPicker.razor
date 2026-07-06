@@ -8,12 +8,12 @@
 
     @if (_showList && _filtered.Count > 0)
     {
-        <ul class="absolute left-0 right-0 z-30 mt-1 max-h-60 w-full min-w-0 overflow-y-auto rounded-md border border-slate-200 bg-white text-sm text-slate-900 shadow-lg dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+        <ul class="absolute left-0 right-0 z-30 mt-1 max-h-60 w-full min-w-0 overflow-y-auto rounded-md border border-neutral-200 bg-white text-sm text-neutral-900 shadow-lg dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
             @foreach (var user in _filtered)
             {
-                <li class="cursor-pointer px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700" @onmousedown="() => Select(user)" @onmousedown:preventDefault="true">
+                <li class="cursor-pointer px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700" @onmousedown="() => Select(user)" @onmousedown:preventDefault="true">
                     <span class="block truncate font-medium">@user.FullName</span>
-                    <span class="block truncate text-xs text-slate-500 dark:text-slate-400">@user.Email</span>
+                    <span class="block truncate text-xs text-neutral-500 dark:text-neutral-400">@user.Email</span>
                 </li>
             }
         </ul>

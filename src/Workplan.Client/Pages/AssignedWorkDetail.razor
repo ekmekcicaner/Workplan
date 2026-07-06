@@ -11,7 +11,7 @@
 @inject ConfirmService Confirm
 @inject ToastService Toast
 
-<p class="mb-2"><a class="text-sm text-slate-500 hover:underline dark:text-slate-400" href="">&larr; Ana Sayfa</a></p>
+<p class="mb-2"><a class="text-sm text-neutral-500 hover:underline dark:text-neutral-400" href="">&larr; Ana Sayfa</a></p>
 <h1 class="mb-4 text-2xl font-semibold">İş Detayı</h1>
 
 <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
@@ -37,7 +37,7 @@
         </div>
         <div>
             <p class="field-label">Tarih</p>
-            <p>@_plan.WorkDate.ToString("yyyy-MM-dd")</p>
+            <p>@_plan.WorkDate.ToString("dd.MM.yyyy")</p>
         </div>
         <div>
             <p class="field-label">Durum</p>
@@ -45,14 +45,14 @@
         </div>
         <div>
             <p class="field-label">Planlanan</p>
-            <p>@_plan.PlannedQuantity @UnitLabel(_plan.Unit) &middot; @_plan.PlannedManDay adam-gün</p>
+            <p>@NumberDisplay.Format(_plan.PlannedQuantity) @UnitLabel(_plan.Unit) &middot; @NumberDisplay.Format(_plan.PlannedManDay) adam-gün</p>
         </div>
         <div>
             <p class="field-label">Gerçekleşen</p>
             <p>
-                @(_plan.FactQuantity?.ToString() ?? "-") @UnitLabel(_plan.Unit) &middot;
-                @(_plan.FactManDay?.ToString() ?? "-") adam-gün
-                @(_plan.Overtime is { } ot ? $" · {ot} fazla mesai" : "")
+                @NumberDisplay.Format(_plan.FactQuantity) @UnitLabel(_plan.Unit) &middot;
+                @NumberDisplay.Format(_plan.FactManDay) adam-gün
+                @(_plan.Overtime is { } ot ? $" · {NumberDisplay.Format(ot)} fazla mesai" : "")
             </p>
         </div>
         @if (!string.IsNullOrWhiteSpace(_plan.Comment))
@@ -63,6 +63,41 @@
             </div>
         }
     </div>
+
+    @if (_crew is not null)
+    {
+        <div class="card mb-6">
+            <div class="mb-2 flex items-center justify-between">
+                <h2 class="font-semibold">@_crew.Name</h2>
+                <span class="badge">@_crew.Members.Count üye</span>
+            </div>
+            @if (_crew.Members.Count > 0)
+            {
+                <table class="table-base mb-3">
+                    <thead>
+                        <tr>
+                            <th>Rol</th>
+                            <th>Personel Ref.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var member in _crew.Members)
+                        {
+                            <tr>
+                                <td>@member.WorkerType</td>
+                                <td>@member.PersonnelRef</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="mb-3 text-sm text-neutral-500 dark:text-neutral-400">Ekipte kayıtlı üye yok.</p>
+            }
+            <a class="btn-secondary" href="@($"locations/{_plan.LocationId}/crews")">Ekip detayına git</a>
+        </div>
+    }
 
     <AuthorizeView Roles="HeadOfMaster" Context="assignContext">
         <Authorized>
@@ -107,23 +142,23 @@
         <h2 class="mb-3 font-semibold">Durum Geçmişi</h2>
         @if (_plan.History is null || _plan.History.Count == 0)
         {
-            <p class="text-sm text-slate-500 dark:text-slate-400">Geçmiş kaydı yok.</p>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">Geçmiş kaydı yok.</p>
         }
         else
         {
             <ul class="flex flex-col gap-2 text-sm">
                 @foreach (var entry in _plan.History)
                 {
-                    <li class="border-b border-slate-100 pb-2 last:border-0 dark:border-slate-700/60">
+                    <li class="border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-700/60">
                         <div class="flex items-center gap-2">
                             <StatusBadge Status="entry.FromStatus" />
                             <span>&rarr;</span>
                             <StatusBadge Status="entry.ToStatus" />
-                            <span class="text-slate-400">@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
+                            <span class="text-neutral-400">@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
                         </div>
                         @if (!string.IsNullOrWhiteSpace(entry.Note))
                         {
-                            <p class="mt-1 text-slate-600 dark:text-slate-300">@entry.Note</p>
+                            <p class="mt-1 text-neutral-600 dark:text-neutral-300">@entry.Note</p>
                         }
                     </li>
                 }
@@ -145,6 +180,7 @@
 
     private Guid? _currentUserId;
     private List<CrewDto> _crews = [];
+    private CrewDto? _crew;
     private string _selectedCrewId = "";
 
     private readonly ProgressForm.ProgressModel _submitProgress = new();
@@ -188,6 +224,11 @@
         {
             var crewsResult = await CrewsApi.GetByLocationAsync(_plan.LocationId);
             _crews = (crewsResult.Data ?? []).Where(c => c.CreatedByHoMId == _currentUserId).ToList();
+        }
+        else if (_plan.CrewId is { } crewId)
+        {
+            var crewsResult = await CrewsApi.GetByLocationAsync(_plan.LocationId);
+            _crew = (crewsResult.Data ?? []).FirstOrDefault(c => c.Id == crewId);
         }
 
         _loading = false;

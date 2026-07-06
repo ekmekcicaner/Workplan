@@ -10,13 +10,13 @@
 
     @if (Locked)
     {
-        <p class="text-sm text-slate-500 dark:text-slate-400">@LockedMessage</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">@LockedMessage</p>
     }
     else
     {
         @if (Items.Count == 0)
         {
-            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Henüz kayıt yok.</p>
+            <p class="mb-3 text-sm text-neutral-500 dark:text-neutral-400">Henüz kayıt yok.</p>
         }
         else
         {
@@ -43,7 +43,7 @@
                         }
                         else
                         {
-                            <div class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 @(Selectable && item.Id == SelectedId ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900" : "hover:bg-slate-100 dark:hover:bg-slate-700/60")">
+                            <div class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 @(Selectable && item.Id == SelectedId ? "bg-brand-500/10 text-brand-700 ring-1 ring-brand-500/40 dark:bg-brand-500/15 dark:text-brand-400" : "hover:bg-neutral-100 dark:hover:bg-neutral-700/60")">
                                 <button type="button"
                                         class="flex min-w-0 flex-1 items-center gap-2 text-left text-sm disabled:cursor-default"
                                         disabled="@(!Selectable)"
@@ -86,7 +86,7 @@
 
         <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createAuth">
             <Authorized>
-                <div class="mt-auto flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                <div class="mt-auto flex flex-wrap gap-2 border-t border-neutral-200 pt-3 dark:border-neutral-700">
                     <input class="input flex-1" placeholder="Yeni ad" @bind="_newName" @bind:event="oninput" @onkeyup="OnNewNameKeyUp" />
                     @if (RequireUnit)
                     {

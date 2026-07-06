@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "http": {
@@ -8,7 +8,9 @@
       "launchUrl": "scalar",
       "applicationUrl": "http://localhost:5291",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__Default": "Host=localhost;Port=5433;Database=workplan;Username=postgres;Password=postgres",
+        "SeedDemoData": "true"
       }
     },
     "https": {
@@ -18,7 +20,9 @@
       "launchUrl": "scalar",
       "applicationUrl": "https://localhost:7272",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__Default": "Host=localhost;Port=5433;Database=workplan;Username=postgres;Password=postgres",
+        "SeedDemoData": "true"
       }
     }
   }

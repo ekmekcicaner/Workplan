@@ -8,18 +8,20 @@ namespace Workplan.Application.Features.Crews.Queries.GetCrewsByLocation;
 public class GetCrewsByLocationQueryHandler : IRequestHandler<GetCrewsByLocationQuery, Result<List<CrewDto>>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetCrewsByLocationQueryHandler(IApplicationDbContext db)
+    public GetCrewsByLocationQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     {
         _db = db;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<List<CrewDto>>> Handle(
         GetCrewsByLocationQuery request, CancellationToken cancellationToken)
     {
-        var crews = await _db.Crews
+        var crews = await _accessScope.ApplyCrewScope(_db.Crews
             .AsNoTracking()
-            .Where(c => c.LocationId == request.LocationId)
+            .Where(c => c.LocationId == request.LocationId))
             .Select(c => new CrewDto(
                 c.Id,
                 c.LocationId,

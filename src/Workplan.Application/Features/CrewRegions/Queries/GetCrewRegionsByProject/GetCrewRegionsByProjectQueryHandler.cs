@@ -9,10 +9,12 @@ public class GetCrewRegionsByProjectQueryHandler
     : IRequestHandler<GetCrewRegionsByProjectQuery, Result<List<CrewRegionDto>>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetCrewRegionsByProjectQueryHandler(IApplicationDbContext db)
+    public GetCrewRegionsByProjectQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     {
         _db = db;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<List<CrewRegionDto>>> Handle(
@@ -24,6 +26,8 @@ public class GetCrewRegionsByProjectQueryHandler
 
         if (!request.IncludeInactive)
             query = query.Where(r => r.IsActive);
+
+        query = _accessScope.ApplyCrewRegionScope(query);
 
         var regions = await query
             .Select(r => new CrewRegionDto(

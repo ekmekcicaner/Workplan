@@ -8,11 +8,11 @@
         <th></th>
     </HeaderRow>
     <RowTemplate Context="plan">
-        <td data-label="Tarih">@plan.WorkDate.ToString("yyyy-MM-dd")</td>
+        <td data-label="Tarih">@plan.WorkDate.ToString("dd.MM.yyyy")</td>
         <td data-label="Durum"><StatusBadge Status="plan.Status" /></td>
-        <td data-label="Planlanan Miktar">@plan.PlannedQuantity @UnitLabel(plan.Unit)</td>
-        <td data-label="Planlanan Adam-Gün">@plan.PlannedManDay</td>
-        <td data-label="Gerçekleşen Miktar">@(plan.FactQuantity?.ToString() ?? "-")</td>
+        <td data-label="Planlanan Miktar">@NumberDisplay.Format(plan.PlannedQuantity) @UnitLabel(plan.Unit)</td>
+        <td data-label="Planlanan Adam-Gün">@NumberDisplay.Format(plan.PlannedManDay)</td>
+        <td data-label="Gerçekleşen Miktar">@NumberDisplay.Format(plan.FactQuantity)</td>
         <td data-label="">
             <a class="btn-secondary" href="@($"daily-plans/{plan.Id}")">Detay</a>
         </td>

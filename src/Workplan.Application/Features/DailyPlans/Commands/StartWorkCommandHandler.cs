@@ -9,11 +9,16 @@ public class StartWorkCommandHandler : IRequestHandler<StartWorkCommand, Result>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public StartWorkCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public StartWorkCommandHandler(
+        IApplicationDbContext db,
+        ICurrentUserService currentUser,
+        IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result> Handle(StartWorkCommand request, CancellationToken cancellationToken)
@@ -23,6 +28,9 @@ public class StartWorkCommandHandler : IRequestHandler<StartWorkCommand, Result>
 
         var plan = await _db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
         if (plan is null) return Result.Fail(Error.NotFound("Günlük plan bulunamadı."));
+
+        if (!await _accessScope.CanAccessDailyPlanAsync(request.DailyPlanId, cancellationToken))
+            return Result.Fail(Error.ScopeMismatch("Bu günlük planı başlatma yetkiniz yok."));
 
         var crewValid = await _db.Crews.AsNoTracking()
             .AnyAsync(c => c.Id == request.CrewId

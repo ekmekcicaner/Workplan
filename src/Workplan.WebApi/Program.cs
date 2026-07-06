@@ -24,7 +24,7 @@ const string ClientCorsPolicy = "WorkplanClient";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(ClientCorsPolicy, policy =>
-        policy.WithOrigins("https://localhost:7193", "http://localhost:5276")
+        policy.WithOrigins("https://localhost:7193", "http://localhost:5276", "http://localhost:5277")
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -62,7 +62,10 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors(ClientCorsPolicy);
 
@@ -91,3 +94,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public partial class Program;

@@ -9,7 +9,10 @@ obj/
 
 # Visual Studio
 .vs/
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
 *.user
 *.userprefs
 *.suo
@@ -52,7 +55,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
-.vscode/
 .idea/
 
 # Environment
@@ -66,3 +68,6 @@ wwwroot/css/app.css.scoped.css
 # Node (if using npm for frontend dependencies)
 node_modules/
 dist/
+
+# Graphify 
+graphify-out/

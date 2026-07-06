@@ -7,8 +7,12 @@
 @inject ToastService Toast
 
 <div class="mx-auto mt-16 max-w-sm px-4">
+    <div class="mb-6 flex flex-col items-center gap-2">
+        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500 text-lg font-bold text-neutral-950">W</span>
+        <span class="text-lg font-semibold text-white">Workplan</span>
+    </div>
     <div class="card">
-        <h1 class="mb-4 text-xl font-semibold">Workplan'a giriş yap</h1>
+        <h1 class="mb-4 text-xl font-semibold">Giriş yap</h1>
 
         <EditForm Model="_model" OnValidSubmit="LoginAsync" class="flex flex-col gap-3">
             <DataAnnotationsValidator />

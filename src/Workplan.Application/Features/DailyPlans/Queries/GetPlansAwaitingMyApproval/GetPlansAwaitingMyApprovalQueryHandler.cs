@@ -11,11 +11,16 @@ public class GetPlansAwaitingMyApprovalQueryHandler
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public GetPlansAwaitingMyApprovalQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public GetPlansAwaitingMyApprovalQueryHandler(
+        IApplicationDbContext db,
+        ICurrentUserService currentUser,
+        IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result<List<DailyPlanDto>>> Handle(
@@ -30,6 +35,8 @@ public class GetPlansAwaitingMyApprovalQueryHandler
         var query = _db.DailyPlans
             .AsNoTracking()
             .AsQueryable();
+
+        query = _accessScope.ApplyDailyPlanScope(query);
 
         query = roleResult.Value switch
         {
