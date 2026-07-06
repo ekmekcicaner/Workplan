@@ -1,7 +1,6 @@
----
+
 
 ## Repo’yu Ayağa Kaldırma (.NET 10 SDK ve Docker gereklidir)
-
 
 ```bash
 
