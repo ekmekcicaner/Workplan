@@ -1,0 +1,6 @@
+@Workplan.WebApi_HostAddress = http://localhost:5291
+
+GET {{Workplan.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

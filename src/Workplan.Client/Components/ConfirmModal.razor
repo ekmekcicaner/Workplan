@@ -1,0 +1,27 @@
+@implements IDisposable
+@inject ConfirmService Confirm
+
+<Modal Show="Confirm.Current is not null" Title="@Confirm.Current?.Title" OnClose="() => Confirm.Resolve(false)">
+    @if (Confirm.Current is { } request)
+    {
+        <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">@request.Message</p>
+        <div class="flex justify-end gap-2">
+            <button class="btn-secondary" @onclick="() => Confirm.Resolve(false)">@request.CancelText</button>
+            <button class="@(request.Danger ? "btn-danger" : "btn-primary")" @onclick="() => Confirm.Resolve(true)">
+                @request.ConfirmText
+            </button>
+        </div>
+    }
+</Modal>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Confirm.Changed += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Confirm.Changed -= StateHasChanged;
+    }
+}

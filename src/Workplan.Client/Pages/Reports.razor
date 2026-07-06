@@ -1,0 +1,70 @@
+@page "/reports"
+@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,SiteChief,ProjectManager")]
+@inject DailyPlansApiService DailyPlansApi
+
+<h1 class="mb-4 text-2xl font-semibold">Raporlar</h1>
+
+<div class="card mb-6">
+    <h2 class="mb-3 font-semibold">Onaylanmış İşler</h2>
+    <DailyPlanTable Items="_approved" Loading="_approvedLoading" LoadError="@_approvedLoadError" />
+</div>
+
+<div class="card">
+    <h2 class="mb-3 font-semibold">Yönetici İzleme</h2>
+    <div class="mb-4 w-full sm:w-72">
+        <label class="field-label">Ustabaşı</label>
+        <UserPicker Role="HeadOfMaster" @bind-Value="_selectedHoMId" @bind-Value:after="LoadHoMPlansAsync" Placeholder="Ustabaşı ara..." />
+    </div>
+    <DailyPlanTable Items="_hom" Loading="_homLoading" LoadError="@_homLoadError" />
+</div>
+
+@code {
+    private List<DailyPlanDto> _approved = [];
+    private bool _approvedLoading = true;
+    private string? _approvedLoadError;
+
+    private Guid? _selectedHoMId;
+    private List<DailyPlanDto> _hom = [];
+    private bool _homLoading;
+    private string? _homLoadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await DailyPlansApi.GetApprovedAsync();
+        if (result.Success)
+        {
+            _approved = result.Data ?? [];
+        }
+        else
+        {
+            _approvedLoadError = result.ErrorMessage;
+        }
+
+        _approvedLoading = false;
+    }
+
+    private async Task LoadHoMPlansAsync()
+    {
+        if (_selectedHoMId is not { } homId)
+        {
+            _hom = [];
+            _homLoadError = null;
+            return;
+        }
+
+        _homLoading = true;
+        _homLoadError = null;
+
+        var result = await DailyPlansApi.GetByHeadOfMasterAsync(homId);
+        if (result.Success)
+        {
+            _hom = result.Data ?? [];
+        }
+        else
+        {
+            _homLoadError = result.ErrorMessage;
+        }
+
+        _homLoading = false;
+    }
+}

@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@source "../**/*.razor";
+@source "../**/*.html";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+}
+
+
+.loading-progress {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  margin-top: -4rem;
+  margin-left: -4rem;
+  width: 8rem;
+  height: 8rem;
+  animation: loading-progress-spin 1.2s linear infinite;
+}
+
+.loading-progress circle {
+  fill: none;
+  stroke: theme(colors.slate.200);
+  stroke-width: 0.6rem;
+  stroke-linecap: round;
+}
+
+.dark .loading-progress circle {
+  stroke: theme(colors.slate.700);
+}
+
+.loading-progress circle:last-child {
+  stroke: theme(colors.slate.900);
+  stroke-dasharray: 62.8 251.2;
+}
+
+.dark .loading-progress circle:last-child {
+  stroke: theme(colors.slate.100);
+}
+
+.loading-progress-text {
+  position: fixed;
+  top: calc(50% + 5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  color: theme(colors.slate.500);
+}
+
+.loading-progress-text::after {
+  content: "Yükleniyor...";
+}
+
+@keyframes loading-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#blazor-error-ui {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: theme(colors.red.600);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 -2px 8px rgb(0 0 0 / 0.15);
+}
+
+#blazor-error-ui .reload {
+  color: white;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-left: 0.5rem;
+}
+
+#blazor-error-ui .dismiss {
+  float: right;
+  cursor: pointer;
+  margin-left: 1rem;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none bg-red-600 text-white hover:bg-red-500 dark:bg-red-500 dark:hover:bg-red-400;
+  }
+  .input {
+    @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-400;
+  }
+  .card {
+    @apply rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800;
+  }
+  .table-base {
+    @apply w-full text-left text-sm;
+  }
+  .table-base th {
+    @apply border-b border-slate-200 px-3 py-2 font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-400;
+  }
+  .table-base td {
+    @apply border-b border-slate-100 px-3 py-2 dark:border-slate-700/60;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200;
+  }
+  .field-label {
+    @apply mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400;
+  }
+  .access-note {
+    @apply mb-2 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400;
+  }
+  .modal-backdrop {
+    @apply fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 sm:items-center;
+  }
+  .modal-panel {
+    @apply w-full max-w-md rounded-t-xl bg-white p-4 shadow-xl dark:bg-slate-800 sm:rounded-xl;
+  }
+  .toast-host {
+    @apply fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:items-end;
+  }
+  .toast {
+    @apply w-full max-w-sm rounded-md px-4 py-3 text-sm text-white shadow-lg;
+  }
+  .nav-link {
+    @apply block rounded-md px-3 py-2 font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700;
+  }
+  .nav-link.active {
+    @apply bg-slate-900 text-white hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-100;
+  }
+}
+
+/* Mobil kartlaşan tablo: her <td> için data-label zorunlu. */
+@media (max-width: 640px) {
+  .table-responsive thead {
+    display: none;
+  }
+  .table-responsive,
+  .table-responsive tbody,
+  .table-responsive tr,
+  .table-responsive td {
+    display: block;
+    width: 100%;
+  }
+  .table-responsive tr {
+    margin-bottom: 0.75rem;
+    border: 1px solid theme(colors.slate.200);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .dark .table-responsive tr {
+    border-color: theme(colors.slate.700);
+  }
+  .table-responsive td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: none !important;
+    padding: 0.35rem 0;
+    text-align: right;
+  }
+  .table-responsive td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: theme(colors.slate.500);
+    text-align: left;
+  }
+  .dark .table-responsive td[data-label]::before {
+    color: theme(colors.slate.400);
+  }
+}

@@ -1,0 +1,68 @@
+# Build results
+bin/
+obj/
+*.dll
+*.exe
+*.o
+*.so
+*.dylib
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.userprefs
+*.suo
+*.sln.iml
+
+# Rider
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.resharper
+*.resharper.user
+
+# NuGet
+packages/
+*.nupkg
+*.nuspec
+.nuget/
+
+# Logs
+logs/
+*.log
+npm-debug.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+appsettings.Development.json
+
+# Blazor
+wwwroot/css/app.css.scoped.css
+
+# Node (if using npm for frontend dependencies)
+node_modules/
+dist/

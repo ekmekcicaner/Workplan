@@ -1,0 +1,83 @@
+@inject WorkItemTypesApiService WorkItemTypesApi
+
+<div>
+    <label class="field-label">İş kalemi tipi (Tip)</label>
+    <select class="input" @bind="_toWId" @bind:after="OnToWChangedAsync">
+        <option value="">Seçiniz</option>
+        @foreach (var type in _workItemTypes.Where(t => t.Level == 0))
+        {
+            <option value="@type.Id">@type.Name</option>
+        }
+    </select>
+</div>
+<div>
+    <label class="field-label">Alt Tip</label>
+    <select class="input" @bind="_sToWId" @bind:after="OnSToWChangedAsync" disabled="@(_subTypes.Count == 0)">
+        <option value="">Seçiniz</option>
+        @foreach (var type in _subTypes)
+        {
+            <option value="@type.Id">@type.Name</option>
+        }
+    </select>
+</div>
+<div>
+    <label class="field-label">Alt-Alt Tip (en alt seviye)</label>
+    <select class="input" @bind="_leafId" @bind:after="OnLeafChangedAsync" disabled="@(_leafTypes.Count == 0)">
+        <option value="">Seçiniz</option>
+        @foreach (var type in _leafTypes)
+        {
+            <option value="@type.Id">@type.Name</option>
+        }
+    </select>
+</div>
+
+@code {
+    [Parameter] public Guid? Value { get; set; }
+    [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+    [Parameter] public EventCallback<WorkItemTypeDto?> SelectedLeafChanged { get; set; }
+
+    private List<WorkItemTypeDto> _workItemTypes = [];
+    private List<WorkItemTypeDto> _subTypes = [];
+    private List<WorkItemTypeDto> _leafTypes = [];
+    private string _toWId = "";
+    private string _sToWId = "";
+    private string _leafId = "";
+
+    public WorkItemTypeDto? SelectedLeaf =>
+        Guid.TryParse(_leafId, out var id) ? _leafTypes.FirstOrDefault(t => t.Id == id) : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await WorkItemTypesApi.GetTreeAsync();
+        _workItemTypes = result.Data ?? [];
+    }
+
+    private Task OnToWChangedAsync()
+    {
+        _sToWId = "";
+        _leafId = "";
+        _subTypes = Guid.TryParse(_toWId, out var toWId)
+            ? _workItemTypes.FirstOrDefault(t => t.Id == toWId)?.Children.ToList() ?? []
+            : [];
+        _leafTypes = [];
+        return NotifyLeafChangedAsync();
+    }
+
+    private Task OnSToWChangedAsync()
+    {
+        _leafId = "";
+        _leafTypes = Guid.TryParse(_sToWId, out var sToWId)
+            ? _subTypes.FirstOrDefault(t => t.Id == sToWId)?.Children.ToList() ?? []
+            : [];
+        return NotifyLeafChangedAsync();
+    }
+
+    private Task OnLeafChangedAsync() => NotifyLeafChangedAsync();
+
+    private async Task NotifyLeafChangedAsync()
+    {
+        var leafId = Guid.TryParse(_leafId, out var id) ? (Guid?)id : null;
+        await ValueChanged.InvokeAsync(leafId);
+        await SelectedLeafChanged.InvokeAsync(SelectedLeaf);
+    }
+}

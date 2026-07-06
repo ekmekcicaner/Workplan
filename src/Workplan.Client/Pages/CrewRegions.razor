@@ -1,0 +1,252 @@
+@page "/projects/{ProjectId:guid}/regions"
+@attribute [Authorize]
+@inject CrewRegionsApiService CrewRegionsApi
+@inject ProjectsApiService ProjectsApi
+@inject UsersApiService UsersApi
+@inject ConfirmService Confirm
+@inject ToastService Toast
+
+<p class="mb-2"><a class="text-sm text-slate-500 hover:underline dark:text-slate-400" href="projects">&larr; Projeler</a></p>
+<h1 class="mb-4 text-2xl font-semibold">Saha Bölgeleri @(_project is not null ? $"— {_project.Name}" : "")</h1>
+
+<AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+    <Authorized>
+        <div class="card mb-6">
+            <h2 class="mb-1 font-semibold">Yeni saha bölgesi oluştur</h2>
+            <AccessNote Roles="SystemAdmin,TechnicalOfficeEngineer" />
+            <EditForm Model="_newRegion" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <DataAnnotationsValidator />
+                <div>
+                    <label class="field-label">Kod</label>
+                    <input class="input" @bind="_newRegion.Code" @bind:event="oninput" />
+                </div>
+                <div>
+                    <label class="field-label">İsim</label>
+                    <input class="input" @bind="_newRegion.Name" @bind:event="oninput" />
+                </div>
+                <div class="flex items-end">
+                    <button class="btn-primary" type="submit" disabled="@(!CanCreateRegion)">Oluştur</button>
+                </div>
+            </EditForm>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+<div class="mb-3 flex items-center justify-between">
+    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
+        Pasif bölgeleri de göster
+    </label>
+</div>
+
+<DataTable TItem="CrewRegionDto" Items="_regions" Loading="_loading" LoadError="@_loadError" EmptyText="Henüz saha bölgesi yok.">
+    <HeaderRow>
+        <th>Kod</th>
+        <th>İsim</th>
+        <th>Saha Şefi</th>
+        <th>Durum</th>
+        <th></th>
+    </HeaderRow>
+    <RowTemplate Context="region">
+        @if (_editingId == region.Id)
+        {
+            <td data-label="Kod" colspan="5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <input class="input w-28" @bind="_editModel.Code" @bind:event="oninput" />
+                    <input class="input w-48" @bind="_editModel.Name" @bind:event="oninput" />
+                    <div class="w-full min-w-0 sm:w-56">
+                        <UserPicker Role="SiteChief" @bind-Value="_editModel.SiteChiefUserId" Placeholder="Saha şefi ara..." />
+                    </div>
+                    <button class="btn-primary" disabled="@(!CanUpdateRegion)" @onclick="() => ConfirmUpdateAsync(region.Id)">Kaydet</button>
+                    <button class="btn-secondary" @onclick="() => _editingId = null">Vazgeç</button>
+                </div>
+            </td>
+        }
+        else
+        {
+            <td data-label="Kod">@region.Code</td>
+            <td data-label="İsim">@region.Name</td>
+            <td data-label="Saha Şefi">@SiteChiefName(region.SiteChiefUserId)</td>
+            <td data-label="Durum">
+                <span class="badge @(region.IsActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
+                    @(region.IsActive ? "Aktif" : "Pasif")
+                </span>
+            </td>
+            <td data-label="">
+                <div class="flex flex-wrap items-center gap-2">
+                    <a class="btn-secondary" href="@($"projects/{ProjectId}/regions/{region.Id}/locations")">Lokasyonlar</a>
+                    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="rowAuth">
+                        <Authorized>
+                            <button class="btn-secondary" @onclick="() => StartEdit(region)">Düzenle</button>
+                            @if (region.IsActive)
+                            {
+                                <button class="btn-danger" @onclick="() => ConfirmSetActiveAsync(region, false)">Pasif Yap</button>
+                            }
+                            else
+                            {
+                                <button class="btn-secondary" @onclick="() => ConfirmSetActiveAsync(region, true)">Aktif Yap</button>
+                            }
+                        </Authorized>
+                    </AuthorizeView>
+                </div>
+            </td>
+        }
+    </RowTemplate>
+</DataTable>
+
+@code {
+    [Parameter] public Guid ProjectId { get; set; }
+
+    private ProjectDto? _project;
+    private List<CrewRegionDto> _regions = [];
+    private List<UserDto> _siteChiefs = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private bool _creating;
+    private bool _includeInactive;
+    private readonly NewRegionModel _newRegion = new();
+
+    private Guid? _editingId;
+    private readonly EditRegionModel _editModel = new();
+
+    private bool CanCreateRegion =>
+        !_creating &&
+        !string.IsNullOrWhiteSpace(_newRegion.Code) &&
+        !string.IsNullOrWhiteSpace(_newRegion.Name);
+
+    private bool CanUpdateRegion =>
+        !string.IsNullOrWhiteSpace(_editModel.Code) &&
+        !string.IsNullOrWhiteSpace(_editModel.Name);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var siteChiefResult = await UsersApi.GetUsersAsync("SiteChief");
+        _siteChiefs = siteChiefResult.Data ?? [];
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+
+        var projectResult = await ProjectsApi.GetByIdAsync(ProjectId);
+        if (projectResult.Success)
+        {
+            _project = projectResult.Data;
+        }
+
+        var result = await CrewRegionsApi.GetByProjectAsync(ProjectId, _includeInactive);
+        if (result.Success)
+        {
+            _regions = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
+        }
+
+        _loading = false;
+    }
+
+    private string SiteChiefName(Guid? userId)
+    {
+        if (userId is null) return "-";
+        var user = _siteChiefs.FirstOrDefault(u => u.Id == userId);
+        return user?.FullName ?? "-";
+    }
+
+    private async Task CreateAsync()
+    {
+        var confirmed = await Confirm.ConfirmAsync(
+            "Saha bölgesi oluştur", $"\"{_newRegion.Name}\" saha bölgesini oluşturmak istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        _creating = true;
+
+        var result = await CrewRegionsApi.CreateAsync(new CreateCrewRegionRequest(ProjectId, _newRegion.Code, _newRegion.Name));
+        if (result.Success)
+        {
+            Toast.Success("Saha bölgesi oluşturuldu.");
+            _newRegion.Code = "";
+            _newRegion.Name = "";
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Saha bölgesi oluşturulamadı.");
+        }
+
+        _creating = false;
+    }
+
+    private void StartEdit(CrewRegionDto region)
+    {
+        _editingId = region.Id;
+        _editModel.Code = region.Code;
+        _editModel.Name = region.Name;
+        _editModel.SiteChiefUserId = region.SiteChiefUserId;
+    }
+
+    private async Task ConfirmUpdateAsync(Guid id)
+    {
+        var confirmed = await Confirm.ConfirmAsync("Saha bölgesini güncelle", "Değişiklikleri kaydetmek istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        var result = await CrewRegionsApi.UpdateAsync(id, new UpdateCrewRegionRequest(_editModel.Code, _editModel.Name));
+        if (result.Success && _editModel.SiteChiefUserId is { } siteChiefUserId)
+        {
+            result = await CrewRegionsApi.AssignSiteChiefAsync(id, siteChiefUserId);
+        }
+
+        if (result.Success)
+        {
+            Toast.Success("Saha bölgesi güncellendi.");
+            _editingId = null;
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Saha bölgesi güncellenemedi.");
+        }
+    }
+
+    private async Task ConfirmSetActiveAsync(CrewRegionDto region, bool isActive)
+    {
+        var action = isActive ? "aktif" : "pasif";
+        var confirmed = await Confirm.ConfirmAsync(
+            $"Saha bölgesini {action} yap", $"\"{region.Name}\" bölgesini {action} yapmak istediğinize emin misiniz?", danger: !isActive);
+        if (!confirmed) return;
+
+        var result = await CrewRegionsApi.SetActiveAsync(region.Id, isActive);
+        if (result.Success)
+        {
+            Toast.Success($"Saha bölgesi {action} yapıldı.");
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu.");
+        }
+    }
+
+    private class NewRegionModel
+    {
+        [Required, MaxLength(50)]
+        public string Code { get; set; } = "";
+
+        [Required, MaxLength(200)]
+        public string Name { get; set; } = "";
+    }
+
+    private class EditRegionModel
+    {
+        [Required, MaxLength(50)]
+        public string Code { get; set; } = "";
+
+        [Required, MaxLength(200)]
+        public string Name { get; set; } = "";
+
+        public Guid? SiteChiefUserId { get; set; }
+    }
+}

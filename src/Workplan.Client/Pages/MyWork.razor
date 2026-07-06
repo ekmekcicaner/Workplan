@@ -1,0 +1,39 @@
+@page "/my-work"
+@attribute [Authorize(Roles = "HeadOfMaster")]
+@inject DailyPlansApiService DailyPlansApi
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h1 class="mb-4 text-2xl font-semibold">Bana Atanan İşler</h1>
+
+<DailyPlanTable Items="_plans" Loading="_loading" LoadError="@_loadError" />
+
+@code {
+    private List<DailyPlanDto> _plans = [];
+    private bool _loading = true;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : (Guid?)null;
+
+        if (userId is null)
+        {
+            _loadError = "Kullanıcı kimliği bulunamadı.";
+            _loading = false;
+            return;
+        }
+
+        var result = await DailyPlansApi.GetByHeadOfMasterAsync(userId.Value);
+        if (result.Success)
+        {
+            _plans = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
+        }
+
+        _loading = false;
+    }
+}

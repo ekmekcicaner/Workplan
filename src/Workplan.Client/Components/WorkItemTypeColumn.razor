@@ -1,0 +1,225 @@
+@inject WorkItemTypesApiService WorkItemTypesApi
+@inject ConfirmService Confirm
+@inject ToastService Toast
+
+<div class="card flex h-full flex-col">
+    <div class="mb-3 flex items-center justify-between">
+        <h3 class="font-semibold">@Title</h3>
+        <span class="badge">@Items.Count</span>
+    </div>
+
+    @if (Locked)
+    {
+        <p class="text-sm text-slate-500 dark:text-slate-400">@LockedMessage</p>
+    }
+    else
+    {
+        @if (Items.Count == 0)
+        {
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Henüz kayıt yok.</p>
+        }
+        else
+        {
+            <ul class="mb-3 flex flex-col gap-1">
+                @foreach (var item in Items)
+                {
+                    <li>
+                        @if (_editingId == item.Id)
+                        {
+                            <div class="flex flex-wrap items-center gap-2 rounded-md p-1.5">
+                                <input class="input flex-1" @bind="_editName" @bind:event="oninput" />
+                                @if (RequireUnit)
+                                {
+                                    <select class="input w-24" @bind="_editUnit">
+                                        <option value="@WorkUnit.None" disabled>Birim</option>
+                                        <option value="@WorkUnit.Ton">Ton</option>
+                                        <option value="@WorkUnit.M3">m³</option>
+                                        <option value="@WorkUnit.M2">m²</option>
+                                    </select>
+                                }
+                                <button class="btn-primary shrink-0" disabled="@(!CanUpdateItem)" @onclick="() => ConfirmRenameAsync(item)">Kaydet</button>
+                                <button class="btn-secondary shrink-0" @onclick="() => _editingId = null">Vazgeç</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 @(Selectable && item.Id == SelectedId ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900" : "hover:bg-slate-100 dark:hover:bg-slate-700/60")">
+                                <button type="button"
+                                        class="flex min-w-0 flex-1 items-center gap-2 text-left text-sm disabled:cursor-default"
+                                        disabled="@(!Selectable)"
+                                        @onclick="() => Select(item.Id)">
+                                    <span class="truncate @(item.IsActive ? "" : "opacity-60")">@item.Name</span>
+                                    @if (RequireUnit)
+                                    {
+                                        <span class="badge shrink-0">@UnitLabel(item.Unit)</span>
+                                    }
+                                    @if (!item.IsActive)
+                                    {
+                                        <span class="badge !bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300 shrink-0">Pasif</span>
+                                    }
+                                </button>
+                                <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="rowAuth">
+                                    <Authorized>
+                                        <div class="flex shrink-0 items-center gap-1">
+                                            <button class="btn-secondary !px-2 !py-1 text-xs" @onclick="() => StartEdit(item)">Düzenle</button>
+                                            @if (item.IsActive)
+                                            {
+                                                <button class="btn-danger !px-2 !py-1 text-xs" @onclick="() => ConfirmSetActiveAsync(item, false)">Pasif Yap</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn-secondary !px-2 !py-1 text-xs" @onclick="() => ConfirmSetActiveAsync(item, true)">Aktif Yap</button>
+                                            }
+                                        </div>
+                                    </Authorized>
+                                </AuthorizeView>
+                                @if (Selectable && item.Id == SelectedId)
+                                {
+                                    <span class="shrink-0 text-xs">&rarr;</span>
+                                }
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createAuth">
+            <Authorized>
+                <div class="mt-auto flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                    <input class="input flex-1" placeholder="Yeni ad" @bind="_newName" @bind:event="oninput" @onkeyup="OnNewNameKeyUp" />
+                    @if (RequireUnit)
+                    {
+                        <select class="input w-24" @bind="_newUnit">
+                            <option value="@WorkUnit.None" disabled>Birim</option>
+                            <option value="@WorkUnit.Ton">Ton</option>
+                            <option value="@WorkUnit.M3">m³</option>
+                            <option value="@WorkUnit.M2">m²</option>
+                        </select>
+                    }
+                    <button class="btn-primary shrink-0" disabled="@(!CanCreateItem)" @onclick="CreateAsync">Ekle</button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public List<WorkItemTypeDto> Items { get; set; } = [];
+    [Parameter] public Guid? SelectedId { get; set; }
+    [Parameter] public EventCallback<Guid> OnSelect { get; set; }
+    [Parameter] public bool Selectable { get; set; } = true;
+    [Parameter] public bool Locked { get; set; }
+    [Parameter] public string? LockedMessage { get; set; }
+    [Parameter] public Guid? ParentId { get; set; }
+    [Parameter] public bool RequireUnit { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private string _newName = "";
+    private WorkUnit _newUnit = WorkUnit.None;
+    private bool _creating;
+    private Guid? _editingId;
+    private string _editName = "";
+    private WorkUnit _editUnit = WorkUnit.None;
+
+    private bool CanCreateItem =>
+        !_creating &&
+        !string.IsNullOrWhiteSpace(_newName) &&
+        (!RequireUnit || _newUnit != WorkUnit.None);
+
+    private bool CanUpdateItem =>
+        !string.IsNullOrWhiteSpace(_editName) &&
+        (!RequireUnit || _editUnit != WorkUnit.None);
+
+    private static string UnitLabel(WorkUnit unit) => unit switch
+    {
+        WorkUnit.Ton => "Ton",
+        WorkUnit.M3 => "m³",
+        WorkUnit.M2 => "m²",
+        _ => "-",
+    };
+
+    private async Task Select(Guid id)
+    {
+        if (!Selectable) return;
+        await OnSelect.InvokeAsync(id);
+    }
+
+    private async Task OnNewNameKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && CanCreateItem)
+        {
+            await CreateAsync();
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        var name = _newName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var confirmed = await Confirm.ConfirmAsync($"{Title} Ekle", $"\"{name}\" değerini eklemek istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        _creating = true;
+        var result = await WorkItemTypesApi.CreateAsync(new CreateWorkItemTypeRequest(name, ParentId, _newUnit));
+        if (result.Success)
+        {
+            Toast.Success($"{Title} eklendi.");
+            _newName = "";
+            _newUnit = WorkUnit.None;
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? $"{Title} eklenemedi.");
+        }
+        _creating = false;
+    }
+
+    private void StartEdit(WorkItemTypeDto item)
+    {
+        _editingId = item.Id;
+        _editName = item.Name;
+        _editUnit = item.Unit;
+    }
+
+    private async Task ConfirmRenameAsync(WorkItemTypeDto item)
+    {
+        var confirmed = await Confirm.ConfirmAsync(
+            $"{Title} Güncelle", $"\"{item.Name}\" adını \"{_editName}\" olarak değiştirmek istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        var result = await WorkItemTypesApi.UpdateAsync(item.Id, new UpdateWorkItemTypeRequest(_editName, _editUnit));
+        if (result.Success)
+        {
+            Toast.Success($"{Title} güncellendi.");
+            _editingId = null;
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? $"{Title} güncellenemedi.");
+        }
+    }
+
+    private async Task ConfirmSetActiveAsync(WorkItemTypeDto item, bool isActive)
+    {
+        var action = isActive ? "aktif" : "pasif";
+        var confirmed = await Confirm.ConfirmAsync(
+            $"{Title} Durumunu Güncelle", $"\"{item.Name}\" öğesini {action} yapmak istediğinize emin misiniz?", danger: !isActive);
+        if (!confirmed) return;
+
+        var result = await WorkItemTypesApi.SetActiveAsync(item.Id, isActive);
+        if (result.Success)
+        {
+            Toast.Success($"{Title} {action} yapıldı.");
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu.");
+        }
+    }
+}

@@ -1,0 +1,19 @@
+# Build results
+**/bin/
+**/obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Node
+**/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Misc
+.DS_Store
+*.md

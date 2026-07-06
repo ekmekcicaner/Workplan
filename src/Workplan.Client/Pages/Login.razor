@@ -1,0 +1,78 @@
+@page "/login"
+@layout EmptyLayout
+@inject AuthApiService AuthApi
+@inject Workplan.Client.Auth.LocalStorageService LocalStorage
+@inject Workplan.Client.Auth.JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ToastService Toast
+
+<div class="mx-auto mt-16 max-w-sm px-4">
+    <div class="card">
+        <h1 class="mb-4 text-xl font-semibold">Workplan'a giriş yap</h1>
+
+        <EditForm Model="_model" OnValidSubmit="LoginAsync" class="flex flex-col gap-3">
+            <DataAnnotationsValidator />
+            <div>
+                <label class="field-label">E-posta</label>
+                <input class="input" @bind="_model.Email" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="field-label">Şifre</label>
+                <input class="input" type="password" @bind="_model.Password" @bind:event="oninput" />
+            </div>
+
+            @if (_error is not null)
+            {
+                <p class="text-sm text-red-600 dark:text-red-400">@_error</p>
+            }
+
+            <button class="btn-primary mt-2" type="submit" disabled="@(!CanLogin)">
+                @(_busy ? "Giriş yapılıyor..." : "Giriş yap")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly LoginFormModel _model = new();
+    private string? _error;
+    private bool _busy;
+
+    private static readonly EmailAddressAttribute EmailValidator = new();
+
+    private bool CanLogin =>
+        !_busy &&
+        EmailValidator.IsValid(_model.Email) &&
+        !string.IsNullOrWhiteSpace(_model.Password);
+
+    private async Task LoginAsync()
+    {
+        _busy = true;
+        _error = null;
+
+        var result = await AuthApi.LoginAsync(new LoginRequest(_model.Email, _model.Password));
+        if (result.Success && result.Data is not null)
+        {
+            await LocalStorage.SetAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.AccessTokenKey, result.Data.AccessToken);
+            await LocalStorage.SetAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey, result.Data.RefreshToken);
+            AuthStateProvider.NotifyUserAuthentication(result.Data.AccessToken);
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            _error = result.ErrorMessage ?? "Giriş yapılamadı.";
+            Toast.Error(_error);
+        }
+
+        _busy = false;
+    }
+
+    private class LoginFormModel
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        public string Password { get; set; } = "";
+    }
+}

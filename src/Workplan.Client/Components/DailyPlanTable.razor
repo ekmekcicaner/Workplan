@@ -1,0 +1,34 @@
+<DataTable TItem="DailyPlanDto" Items="Items" Loading="Loading" LoadError="@LoadError" EmptyText="Kayıt bulunamadı.">
+    <HeaderRow>
+        <th>Tarih</th>
+        <th>Durum</th>
+        <th>Planlanan Miktar</th>
+        <th>Planlanan Adam-Gün</th>
+        <th>Gerçekleşen Miktar</th>
+        <th></th>
+    </HeaderRow>
+    <RowTemplate Context="plan">
+        <td data-label="Tarih">@plan.WorkDate.ToString("yyyy-MM-dd")</td>
+        <td data-label="Durum"><StatusBadge Status="plan.Status" /></td>
+        <td data-label="Planlanan Miktar">@plan.PlannedQuantity @UnitLabel(plan.Unit)</td>
+        <td data-label="Planlanan Adam-Gün">@plan.PlannedManDay</td>
+        <td data-label="Gerçekleşen Miktar">@(plan.FactQuantity?.ToString() ?? "-")</td>
+        <td data-label="">
+            <a class="btn-secondary" href="@($"daily-plans/{plan.Id}")">Detay</a>
+        </td>
+    </RowTemplate>
+</DataTable>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DailyPlanDto> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? LoadError { get; set; }
+
+    private static string UnitLabel(Unit unit) => unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => ""
+    };
+}

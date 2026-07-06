@@ -1,0 +1,39 @@
+<div class="card mb-6">
+    <h2 class="mb-1 font-semibold">Onay</h2>
+    <AccessNote Roles="SiteChief,ProjectManager" />
+    <div class="flex flex-wrap items-center gap-2">
+        <button class="btn-primary" @onclick="OnApprove">Onayla</button>
+        @if (_rejecting)
+        {
+            <input class="input w-64" placeholder="Red nedeni" @bind="_rejectReason" @bind:event="oninput" />
+            <button class="btn-danger" disabled="@(!CanReject)" @onclick="RejectAsync">Reddi Onayla</button>
+            <button class="btn-secondary" @onclick="() => _rejecting = false">Vazgeç</button>
+        }
+        else
+        {
+            <button class="btn-danger" @onclick="() => _rejecting = true">Reddet</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback OnApprove { get; set; }
+    [Parameter, EditorRequired] public Func<string, Task<bool>>? OnReject { get; set; }
+
+    private bool _rejecting;
+    private string _rejectReason = "";
+
+    private bool CanReject => !string.IsNullOrWhiteSpace(_rejectReason);
+
+    private async Task RejectAsync()
+    {
+        if (OnReject is null) return;
+
+        var success = await OnReject(_rejectReason);
+        if (success)
+        {
+            _rejecting = false;
+            _rejectReason = "";
+        }
+    }
+}

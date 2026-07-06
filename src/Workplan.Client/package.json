@@ -1,0 +1,12 @@
+{
+  "name": "workplan-client",
+  "private": true,
+  "scripts": {
+    "tailwind:build": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css",
+    "tailwind:watch": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.3.2",
+    "@tailwindcss/cli": "^4.3.2"
+  }
+}

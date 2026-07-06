@@ -1,0 +1,108 @@
+@using System.Linq.Expressions
+@inject UsersApiService UsersApi
+
+<div class="relative min-w-0">
+    <input class="input min-w-0 truncate" placeholder="@Placeholder" value="@_query" autocomplete="off"
+           @oninput="OnInput" @onfocus="() => _showList = true"
+           @onblur="OnBlur" />
+
+    @if (_showList && _filtered.Count > 0)
+    {
+        <ul class="absolute left-0 right-0 z-30 mt-1 max-h-60 w-full min-w-0 overflow-y-auto rounded-md border border-slate-200 bg-white text-sm text-slate-900 shadow-lg dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+            @foreach (var user in _filtered)
+            {
+                <li class="cursor-pointer px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700" @onmousedown="() => Select(user)" @onmousedown:preventDefault="true">
+                    <span class="block truncate font-medium">@user.FullName</span>
+                    <span class="block truncate text-xs text-slate-500 dark:text-slate-400">@user.Email</span>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Role { get; set; }
+    [Parameter] public Guid? Value { get; set; }
+    [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<Guid?>>? ValueExpression { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Kullanıcı ara...";
+    [CascadingParameter] private EditContext? CascadedEditContext { get; set; }
+
+    private List<UserDto> _users = [];
+    private List<UserDto> _filtered = [];
+    private string _query = "";
+    private bool _showList;
+    private Guid? _lastSyncedValue;
+    private FieldIdentifier? _fieldIdentifier;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await UsersApi.GetUsersAsync(Role);
+        _users = result.Data ?? [];
+        _filtered = _users;
+        SyncQueryFromValue(force: true);
+    }
+
+    protected override void OnParametersSet()
+    {
+        _fieldIdentifier = ValueExpression is null ? null : FieldIdentifier.Create(ValueExpression);
+        SyncQueryFromValue();
+    }
+
+    private void SyncQueryFromValue(bool force = false)
+    {
+        if (!force && Value == _lastSyncedValue)
+        {
+            return;
+        }
+
+        _lastSyncedValue = Value;
+        if (Value is { } id)
+        {
+            var match = _users.FirstOrDefault(u => u.Id == id);
+            _query = match is not null ? Display(match) : "";
+        }
+        else
+        {
+            _query = "";
+        }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? "";
+        _showList = true;
+        if (Value is not null)
+        {
+            _lastSyncedValue = null;
+            await ValueChanged.InvokeAsync(null);
+            NotifyFieldChanged();
+        }
+
+        var q = _query.Trim();
+        _filtered = q.Length == 0
+            ? _users
+            : _users.Where(u => u.FullName.Contains(q, StringComparison.OrdinalIgnoreCase) || u.Email.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void OnBlur() => _showList = false;
+
+    private async Task Select(UserDto user)
+    {
+        _query = Display(user);
+        _showList = false;
+        _lastSyncedValue = user.Id;
+        await ValueChanged.InvokeAsync(user.Id);
+        NotifyFieldChanged();
+    }
+
+    private void NotifyFieldChanged()
+    {
+        if (CascadedEditContext is not null && _fieldIdentifier is { } fieldIdentifier)
+        {
+            CascadedEditContext.NotifyFieldChanged(fieldIdentifier);
+        }
+    }
+
+    private static string Display(UserDto user) => $"{user.FullName} ({user.Email})";
+}

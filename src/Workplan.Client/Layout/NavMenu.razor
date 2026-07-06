@@ -1,0 +1,36 @@
+<nav class="flex flex-col gap-1 text-sm">
+    <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="Navigated">Ana Sayfa</NavLink>
+    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+        <Authorized>
+            <NavLink class="nav-link" href="daily-plans/new" @onclick="Navigated">Günlük Plan Oluştur</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="HeadOfMaster">
+        <Authorized>
+            <NavLink class="nav-link" href="my-work" @onclick="Navigated">Bana Atanan İşler</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="HeadOfMaster,SiteChief,ProjectManager">
+        <Authorized>
+            <NavLink class="nav-link" href="approvals" @onclick="Navigated">Beklenen Onaylar</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,SiteChief,ProjectManager">
+        <Authorized>
+            <NavLink class="nav-link" href="reports" @onclick="Navigated">Raporlar</NavLink>
+        </Authorized>
+    </AuthorizeView>
+    <NavLink class="nav-link" href="projects" @onclick="Navigated">Projeler</NavLink>
+    <NavLink class="nav-link" href="work-item-types" @onclick="Navigated">İş Kalemi Tipleri</NavLink>
+    <AuthorizeView Roles="SystemAdmin">
+        <Authorized>
+            <NavLink class="nav-link" href="user-management" @onclick="Navigated">Kullanıcı Yönetimi</NavLink>
+        </Authorized>
+    </AuthorizeView>
+</nav>
+
+@code {
+    [Parameter] public EventCallback OnNavigate { get; set; }
+
+    private Task Navigated() => OnNavigate.InvokeAsync();
+}

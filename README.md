@@ -1,0 +1,252 @@
+---
+
+## Repo’yu Ayağa Kaldırma (.NET 10 SDK ve Docker gereklidir)
+
+
+```bash
+
+docker compose up --build
+```
+
+| Servis | Adres |
+| --- | --- |
+| İstemci (Blazor WASM) | http://localhost:5276 |
+| API + Scalar dokümantasyon | http://localhost:5291/scalar |
+
+**Mock girişleri:**
+- `admin@workplan.local` / `ChangeMe123!`  -  SystemAdmin
+- `mehmet.ozkan@workplan.local` / `Demo123!` -  Project Manager
++ diğer mock çalışan kullanıcıları 
+
+İlk açılışta migration’lar uygulanır ve  inşaat senaryosuna uygun örnek kullanıcılar dahil mock veriler oluşturulur. 
+
+---
+
+## 1. Beklentiler
+
+| Beklenen Çalışma | Durum | Durum |
+| --- | --- | --- |
+| Katmanlı Mimari Seçimi  | ✅ | Klasik N-Layer’ın karmaşıklığı ve bağımlılık durumları göze alınarak; Clean Architecture ve mümkün olduğunca DDD standartlarına uygun geliştirme yapıldı.. |
+| UI Yaklaşımı (Desktop/Mobile) | ✅ | Tek responsive Blazor WASM uygulaması. masaüstü planlama + mobil-uyumlu saha ekranları  |
+| Offline Senaryosu | Tam hazır değil | **Mimari offline’a** **hazır** (idempotent komutlar, client-side WASM); tam senkron kuyruğu bilinçli olarak MVP dışı.  |
+| Güvenlik Yaklaşımı | ✅ | JWT + Refresh token, rol bazlı endpoint koruması, domain seviyesinde kapsam (scope) doğrulaması |
+
+---
+
+## 2. Roller ve Yetki Modeli
+
+| Rol | Sorumluluk | Yetki  |
+| --- | --- | --- |
+| **Technical Office Engineer** (submitted by) | T-1 Daily Plan oluşturur, iş kalemi + miktar/adam-gün girer, Head of Master’a atar | Her **bölgenin** (CrewRegion) bir Tech Office’i vardır → `CrewRegion.TechOfficeUserId` |
+| **Head of Master** | Atanan işleri görür, crew oluşturur, işi başlatır, gün sonu gerçekleşmeyi girer | Her **lokasyona (KKK)** bir HoM atanır → `Location.HeadOfMasterUserId` |
+| **Site Chief** | Gün sonu kayıtlarını onaylar (1. kademe) | Her **bölgenin** bir Site Chief’i vardır → `CrewRegion.SiteChiefUserId` |
+| **Project Manager** | Son onayı verir, iş kapanır (2. kademe) | Tüm **projenin** bir PM’i vardır → `Project.PmUserId` |
+| **SystemAdmin** | Kullanıcı/rol yönetimi, master data (proje, bölge, lokasyon, iş kalemi) yönetimi |  |
+
+## 3.  Varsayımlar
+
+- **KKK = Location.** Senaryodaki “Lokasyon (KKK)” birebir `Location` entity’sine; “bölge (crew region)” `CrewRegion`’a; “ToW/SToW/SSToW” 3 seviyeli `WorkItemType` ağacına eşlendi.
+- **Onay zinciri sadeleştirildi:** HoM submitter olduğu için etkin onay Site Chief → PM (bkz. §3).
+- **Bir DailyPlan = bir yaprak iş kalemi + bir crew** (MVP tekilliği; `CrewId` tek referans).
+- **Senaryo verisi:** Silopi Kombine Çevrim Doğalgaz Santrali inşaatı üzerine anlamlı Türkçe demo veri seed edilir (idempotent).
+- Zaman damgaları **UTC**; iş tarihi `DateOnly` (`WorkDate`).
+
+---
+
+## 4. İş Akışı
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Assigned: CreateFromPlan (Tech Office, T-1)
+    Assigned --> InProgress: StartWork (HoM crew seçer, T0)
+    InProgress --> Submitted: SubmitProgress (HoM, gün sonu)
+    Submitted --> ApprovedBySiteChief: Approve (Site Chief)
+    ApprovedBySiteChief --> ApprovedByPM: Approve (PM) → DailyWorkApprovedFullyEvent
+    Submitted --> InProgress: Reject (gerekçe zorunlu)
+    ApprovedBySiteChief --> InProgress: Reject (gerekçe zorunlu)
+    ApprovedByPM --> Reported: Konsolidasyon
+    Reported --> [*]
+```
+
+**Adım adım:**
+
+1. **T-1 (Draft → Assigned):** Tech Office, aylık üretim planından yola çıkarak Daily Plan oluşturur. Proje + ToW→SToW→SSToW yaprak iş kalemi + Lokasyon seçer, `PlannedQuantity`, `PlannedManDay` ve `Unit` girer, ilgili Head of Master’a atar.
+2. **T0 (Assigned → InProgress):** Head of Master kendisine atanan işi görür (Home ekranı + bildirim), crew oluşturur (worker type + personel), işi başlatır (`StartWork`).
+3. **Gün Sonu (InProgress → Submitted):** Gerçekleşen `FactQuantity`, `FactManDay`, `Overtime` girilir. **İş kuralı:** miktar ve adam-gün ya birlikte girilir ya da hiç ilerleme yoksa **gerekçe (comment) zorunludur**. Kayıt onaya gönderilir.
+4. **Onay (Submitted → ApprovedBySiteChief → ApprovedByPM):** İki kademeli onay. PM onayında `DailyWorkApprovedFullyEvent` domain event’i tetiklenir (raporlama seam’i).
+5. **Reddetme:** Herhangi bir onay kademesinde red → iş **gerekçeyle birlikte** ustabaşının ekranına (InProgress) geri döner.
+
+Her geçiş `StatusTransition` olarak kaydedilir → audit sağlam.
+
+---
+
+## 5. Çözüm Mimarisi
+
+**Clean Architecture + DDD** Bağımlılıklar yalnızca içe doğru akar, Domain izole ve saf tutulur. Bu şekilde genişletilebilir, ölçeklenebilir bir yapı kuruldu. Feature’lara dilimlendi. İstendiğinde tam modüler
+
+| Katman | Sorumluluk | Öne çıkan yaklaşımlar |
+| --- | --- | --- |
+| **Domain** | İş kuralları, aggregate’ler, value object’ler, domain event’ler | Encapsulated state machine, private setter, factory metotlar, `Result<T>` (exception yerine) |
+| **Application** | CQRS akışları (Command/Query + Handler) | `Mediator` (source-generator), `FluentValidation` pipeline behavior, feature-folder organizasyonu |
+| **Infrastructure** | Kalıcılık, kimlik, token, seed | EF Core 10 + Npgsql, ASP.NET Identity, JWT servisi |
+| **WebApi** | HTTP arayüzü | Minimal API endpoint grupları, global exception handler, tutarlı `ApiResponse` zarfı |
+| **Client** | Kullanıcı arayüzü | Blazor WASM, JWT auth state provider, DTO paylaşımı yok kendi model katmanı |
+| **SharedKernel** | Katmanlar arası ortak sözleşmeler | `Result`, `Error`, `ApiResponse`, `Roles` |
+
+---
+
+## 6. Veri Modeli (ER)
+
+```mermaid
+erDiagram
+    Project ||--o{ CrewRegion : "içerir"
+    Project ||--o{ Location : "içerir"
+    CrewRegion ||--o{ Location : "kapsar"
+    Location ||--o{ Crew : "sahiptir"
+    Crew ||--o{ CrewMember : "personel"
+    WorkItemType ||--o{ WorkItemType : "ToW→SToW→SSToW"
+    Project ||--o{ DailyPlan : ""
+    Location ||--o{ DailyPlan : ""
+    WorkItemType ||--o{ DailyPlan : "aşamaı"
+    Crew ||--o{ DailyPlan : "yürütür"
+    DailyPlan ||--o{ StatusTransition : "denetim izi"
+    ApplicationUser ||--o{ Notification : "alır"
+```
+
+| Entity | Kritik Alanlar | Rol / Not |
+| --- | --- | --- |
+| **Project** | `Code`, `Name`, `PmUserId`, `IsActive` | Proje = 1 PM |
+| **CrewRegion** | `ProjectId`, `Code`, `SiteChiefUserId`, `TechOfficeUserId` | Bölge = 1 Site Chief + 1 Tech Office |
+| **Location (KKK)** | `CrewRegionId`, `Name`, `ParentId`, `HeadOfMasterUserId` | Lokasyon = 1 HoM; `ParentId` ile iç içe (Blok→Kat) ağaç |
+| **WorkItemType** | `Name`, `ParentId`, `Level (0/1/2)`, `Unit` | ToW→SToW→SSToW 3 seviyeli ağaç; `Unit` yalnızca yaprakta anlamlı |
+| **DailyPlan** *(aggregate root)* | Planlı: `PlannedQuantity/ManDay/Unit` · Gerçekleşen: `FactQuantity/ManDay/Overtime/Comment` · `Status` | İş akışının kalbi |
+| **StatusTransition** | `From`, `To`, `ActionById`, `Note`, timestamp | Değişmez denetim kaydı |
+| **Crew / CrewMember** | `LocationId` · `WorkerType`, `PersonnelRef` | HoM’un oluşturduğu ekip; `WorkerType` 9 tür (RebarFixer, Welder, Operators…) |
+| **Notification** | `UserId`, `Type`, `Link`, `DailyPlanId`, `ReadAtUtc` | İş atama bildirimi |
+| **ApplicationUser / RefreshToken** | Identity + rotasyonlu refresh token | Kimlik altyapısı |
+
+## Veri Modeli Özet
+
+Bu veri modelinin tam kalbinde **DailyPlan**, yani günlük iş planı var. Sahadaki her şey (planlama, işin yapılması, rakamların girilmesi, onaylar vs.) bu kayıt üzerinden dönüyor.
+
+Sistemdeki hiyerarşi ve roller ise şöle:
+
+- **Project (Proje):** En tepedeki yapı. Her projenin başında bir **Project Manager (PM)** var ve nihai sorumluluk onda. Projeler alt bölgelere ve lokasyonlara ayrılıyor.
+- **CrewRegion (Bölge):** Sahadaki operasyonel bölgeler. Burada **Tech Office** işi planlarken, **Site Chief** de bölgenin kontrol ve onayından sorumlu. Yani planlamacı ile onaycı net şekilde ayrılmış.
+- **Location (Lokasyon):** İşin yapılacağı tam yer (Blok -> Kat -> Alan gibi hiyerarşik olabiliyor). Her lokasyonun başında bir **Head of Master** var, sahayı o çekip çeviriyor.
+- **Crew & CrewMember (Ekip):** Head of Master'ın kurduğu saha ekibi. Ekipte kimlerin olduğu ve ne iş yaptıkları (Demirci, kaynakçı, operatör vb.) burada tutuluyor.
+- **WorkItemType (İş Kalemleri):** İş türlerini (Ana iş, alt iş, detay iş) gösteren 3 aşamalı bir ağaç yapısı. Günlük planlar hep en detaydaki iş kalemi (Ton, m³ vs.) üzerinden yapılıyor.
+
+### İş Nasıl Akıyor?
+
+**DailyPlan** dediğimiz şey aslında tüm sürecin yönetim merkezi. Planlanan/gerçekleşen miktarlar, adam-gün sayıları, mesailer ve işin durumu (Onay bekliyor, reddedildi, tamamlandı vs.) hep burada.
+
+İşin takibi ve güvenliği için de şu yapılar var:
+
+- **StatusTransition:** Kim, ne zaman, hangi durumu değiştirdi, ne not bıraktı... Hepsini logluyor. Yani geriye dönük tam bir denetim izi var.
+- **Notification:** Rolere göre bildirim atıyor. Mesela PM'e onay isteği gidiyor veya ustabaşına yeni iş atandığında haber veriyor.
+- **ApplicationUser & RefreshToken:** Sistem girişleri ve yetkileri yönetiyor. Roller (PM, Site Chief vb.) zaten yukarıda saydığım iş akışına göre dağıtılmış durumda.
+
+---
+
+## 7. REST API Tasarımı
+
+Kaynak-odaklı, `/api/{kaynak}` gruplu, tutarlı `ApiResponse<T>` zarfı ve rol bazlı yetkilendirme. Tam liste OpenAPI/Scalar’da (`/scalar`).
+RESTful.  Hatalar `GlobalExceptionHandler` ile tek tip  Frontend friendly `ApiError` olarak döner.
+
+| Grup | Endpoint (özet) | Yetki |
+| --- | --- | --- |
+| **Auth** | `POST /login`, `/refresh`, `/revoke`, `/register`, `GET /me` | register: SystemAdmin |
+| **Projects** | `POST /`, `GET /`, `GET /{id}`, `PUT /{id}`, `POST /{id}/activation` | yazma: Admin/TechOffice |
+| **CrewRegions** | `POST /`, `GET /by-project/{id}`, `assign-site-chief`, `assign-tech-office` | yazma: Admin/TechOffice |
+| **Locations** | `POST /`, `GET /by-region/{id}`, `assign-head-of-master`, `activation` | yazma: Admin/TechOffice |
+| **WorkItemTypes** | `POST /`, `GET /tree`, `PUT /{id}`, `activation` | ağaç herkese okunur |
+| **Crews** | `POST /`, `POST /{id}/members`, `GET /by-location/{id}` | yazma: Admin/HoM |
+| **DailyPlans** | `POST /` · `POST /{id}/start` · `/submit-progress` · `/approve` · `/reject` · `GET /by-head-of-master/{id}` · `/awaiting-approval` · `/approved` | her aksiyon ilgili role kilitli |
+| **Notifications** | `GET /unread`, `POST /{id}/read`, `POST /daily-plan/{id}/read` | authenticated |
+| **Users** | `GET /?role=`, `POST /`, `PUT /{id}/roles`, `activation`, `reset-password` | yönetim: SystemAdmin |
+
+---
+
+## 8. Ekranlar (UI)
+
+Tek bir **responsive** Blazor WASM uygulaması; masaüstü ağırlıklı planlama ekranları ile mobil-uyumlu saha ekranlarını aynı kod tabanında karşılar.
+
+| Ekran | Kullanıcı | Amaç |  |
+| --- | --- | --- | --- |
+| **Login** | Herkes | JWT ile giriş |  |
+| **Home** | Herkes | Role göre özet + okunmamış bildirimler | Mobil |
+| **DailyPlanCreate** | Tech Office | T-1 plan oluşturma; ToW/SToW/SSToW kolon seçici, miktar/adam-gün, HoM atama | **Desktop** |
+| **MyWork** | Head of Master | Atanan işler listesi | **Mobil** |
+| **AssignedWorkDetail** | Head of Master | İşi başlat, crew seç, gün sonu gerçekleşme gir (`ProgressForm`) | **Mobil** |
+| **Approvals** | Site Chief / PM | Onay bekleyenler + onayla/reddet (`ApprovalPanel`) | Mobil/Desktop |
+| **Reports** | Admin/TechOffice/SiteChief/PM | Onaylanan işler + yönetici izleme (ustabaşı bazlı) | Desktop |
+| **Projects / CrewRegions / Locations / WorkItemTypes / Crews** | Admin/TechOffice | Master data yönetimi | Desktop |
+| **UserManagement** | SystemAdmin | Kullanıcı, rol, aktiflik, parola sıfırlama | Desktop |
+
+---
+
+## 9. Bildirim ve Raporlama
+
+**Bildirim:** İş atandığında (`DailyPlanAssigned`) ilgili HoM için `Notification` üretilir; istemci `GET /notifications/unread` ile okunmamışları çeker ve Home ekranında gösterir. Şu an **REST tabanlı** (sayfa/oturum yenilemede çekilir); gerçek zamanlı push (SignalR/FCM) **bilinçli olarak MVP dışı.**
+
+**Raporlama:** Onaylanan (`ApprovedByPM`) kayıtlar Reports ekranında konsolide edilir. Onaylanmış İşler tablosu + ustabaşı bazlı yönetici izleme. PM son onayında tetiklenen `DailyWorkApprovedFullyEvent`, **Daily Report konsolidasyonu ve Power BI beslemesi için hazır bırakılmış bir seam**’dir. Power BI, verilerin bulunduğu PostgreSQL üzerinden bir okuma modeli/görünüm ile beslenecek şekilde planlandı; canlı Power BI entegrasyonunun kendisi MVP dışı.
+
+**KPI’lar (veri seti hazır):** Plan/Gerçekleşen (`Planned` vs `Fact` Quantity/ManDay), Verimlilik (`FactManDay/PlannedManDay`), Overtime toplamı tümü `DailyPlan` üzerinde mevcut alanlardan türetilebilir.
+
+---
+
+## 10. Offline Senaryosu
+
+Saha (Head of Master) çalışması zayıf bağlantı koşullarında gerçekleşebilir. Bu case için **online-first** bir MVP teslim edildi; ancak mimari offline’a **bilinçli olarak hazırlandı.**
+
+**Tam offline için gelecek adımlar (MVP dışı):** PWA + Service Worker ile uygulama kabuğunun cache’lenmesi, IndexedDB tabanlı **outbox (giden kuyruk)** deseni, komut endpoint’lerinde **idempotency-key** ile çift gönderim koruması ve `WorkDate` + `Status` üzerinden çakışma çözümü. Bu katman, mevcut komut tasarımının üzerine kırılım yaratmadan eklenebilir.
+
+---
+
+## 11. Güvenlik Yaklaşımı
+
+| Katman | Önlem |
+| --- | --- |
+| **Kimlik** | ASP.NET Core Identity; parola hash + politika |
+| **Oturum** | Erişim token'ı sabit ömürlü (varsayılan 60 dk), süresi dolunca yenilenmeden geçersiz kalıyor. Yenileme token'ı ise kayan (sliding) pencere mantığında: her kullanımda eskisi iptal edilip yerine, süresi yine o andan itibaren başlayan yeni bir token veriliyor (rotation). Yani kullanıcı aktif kaldığı sürece oturum süresiz uzayabiliyor; üst sınır olarak yalnızca "X gündür yenilenmedi" durumu oturumu sonlandırıyor. |
+| **Yetkilendirme (yatay)** | Endpoint bazında `RequireRole(...)`  her aksiyon yalnızca ilgili role açık |
+| **Yetkilendirme (dikey/kapsam)** | Domain seviyesinde **scope kontrolü**: `StartWork`/`SubmitProgress`, işin gerçekten o HoM’a atanmış olmasını `AssignedHoMId == actorId` ile doğrular (`ScopeMismatch`) . yani “doğru rol” yetmez, “senin işin mi” de sorulur |
+| **Transport** | HTTPS redirection; CORS yalnızca bilinen istemci origin’lerine |
+| **Hata sızıntısı** | Global exception handler → tek tip `ApiError`, iç detay sızmaz |
+| **Denetim** | Her durum geçişi `StatusTransition` ile kim/ne zaman/gerekçe olarak kalıcı |
+
+---
+
+## 12. Teknoloji Seçimleri ve Gerekçeleri
+
+| Alan | Seçim | Gerekçe | Değerlendirilen Alternatif |
+| --- | --- | --- | --- |
+| **Backend** | .NET 10, Minimal API | Sağlam ekosistem, hızlı geliştirme, kurumsal kanıtlanmış | Minimal API yerine Controller, 
+ya da tamamen farklı bir dil ve framework (Java, Go) |
+| **CQRS/Mediator** | `Mediator` (source-generator) | Mediatr lisansı yerine iyi alternatif.  | Direkt servis yapısı, ya da Mediatr (son sürümleri açık kaynak değil lisanslı) |
+| **Workflow** | Code içi custom | MVP için 3rd party entegrasyona gerek duyulmadı | Elsa Workflow entegrasyonu yazılabilir |
+| **Doğrulama** | FluentValidation + pipeline behavior | Test edilebilir, sağlam | DataAnnotations (zengin senaryolarda yetersiz) |
+| **Veritabanı** | PostgreSQL 16 | Açık kaynak, güçlü ekosistem, community desteği | SQL Server, EF Core ile bazı durumlarda daha uyumlu. Lisans durumu var. |
+| **ORM** | EF Core + Npgsql | .NET tam uyum, çoklu DB desteği  | Dapper. EF Core ile Query kısımlarında beraber kullanılabilir 
+Raporlamalar için daha esnek ve performanslı. |
+| **Kimlik** | ASP.NET Identity + JWT/Refresh | MVP için en iyisi, hazır yapı, Amerika’yı tekrar keşfettirmeyen paket kodlar; JWT sektör standartı, mobil için potansiyel native app yazımı için ideal. | Keycloack, OIDC uyumu, ayrı yönetim vs olabilir. |
+| **Frontend** | Blazor WebAssembly + Tailwind | C# / .NET developer için hızlı geliştirme, PWA desteği, webpush desteği, ortak dil | React + Vite stack. Kuvvetli bir alternatif ancak MVP hızlı çıkış için tercih edilmedi. |
+| **API Dokümantasyonu** | OpenAPI + Scalar | İnteraktif, güncel, geliştirici için uygun | Swagger UI (Scalar daha modern DX) |
+| **Deployment** | Docker Compose | **Tek komutla** db+api+client; değerlendirenin ortamından bağımsız tekrarlanabilirlik | Kubernetes (MVP için fazla)
+Github Actions ya da Azure Devops ile PROD uygun configler oluşturulabilir. |
+
+---
+
+## 13. Bilinçli Olarak MVP Dışı Bırakılanlar
+
+| Kapsam Dışı | Neden ertelendi | Mimari hazırlık |
+| --- | --- | --- |
+| **Native mobil uygulama** | Responsive WASM, MVP doğrulaması için yeterli | Aynı REST API’yi native istemci de tüketebilir |
+| **Tam offline senkronizasyon** | Karmaşıklık/değer oranı MVP için düşük | Idempotent komutlar + WASM zaten temel  |
+| **Gerçek zamanlı push (SignalR/FCM)** | REST unread çekme MVP için yeterli | `Notification` üretimi hazır; taşıma katmanı eklenir |
+| **Canlı Power BI entegrasyonu** | Raporlama verisi ve seam yeterli | `DailyWorkApprovedFullyEvent` + PostgreSQL okuma modeli hazır |
+| **Gerçek İK/personel master verisi** | `CrewMember.PersonnelRef` serbest metin yer tutucu | İleride Employee tablosuna FK olacak şekilde işaretli |
+| **Dosya/foto eki, “ZZZ” zengin detay** | Gün sonu `Comment` alanı MVP ihtiyacını karşılar | Aggregate genişletilebilir |
+| **Çoklu proje/organizasyon, gelişmiş overtime onay kuralları** | Tek proje senaryosu yeterli | Model çoklu-projeye hazır (her şey `ProjectId` altında) |

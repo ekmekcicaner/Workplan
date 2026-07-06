@@ -1,0 +1,56 @@
+@page "/approvals"
+@attribute [Authorize(Roles = "HeadOfMaster,SiteChief,ProjectManager")]
+@inject DailyPlansApiService DailyPlansApi
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h1 class="mb-4 text-2xl font-semibold">Beklenen Onaylar</h1>
+
+<DailyPlanTable Items="_plans" Loading="_loading" LoadError="@_loadError" />
+
+@code {
+    private List<DailyPlanDto> _plans = [];
+    private bool _loading = true;
+    private string? _loadError;
+
+    private static readonly WorkStatus[] HomTrackedStatuses = [WorkStatus.Submitted, WorkStatus.ApprovedBySiteChief];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.IsInRole("SiteChief") || authState.User.IsInRole("ProjectManager"))
+        {
+            var result = await DailyPlansApi.GetAwaitingApprovalAsync();
+            if (result.Success)
+            {
+                _plans = result.Data ?? [];
+            }
+            else
+            {
+                _loadError = result.ErrorMessage;
+            }
+        }
+        else
+        {
+            var userId = Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : (Guid?)null;
+            if (userId is null)
+            {
+                _loadError = "Kullanıcı kimliği bulunamadı.";
+            }
+            else
+            {
+                var result = await DailyPlansApi.GetByHeadOfMasterAsync(userId.Value);
+                if (result.Success)
+                {
+                    _plans = (result.Data ?? []).Where(p => HomTrackedStatuses.Contains(p.Status)).ToList();
+                }
+                else
+                {
+                    _loadError = result.ErrorMessage;
+                }
+            }
+        }
+
+        _loading = false;
+    }
+}

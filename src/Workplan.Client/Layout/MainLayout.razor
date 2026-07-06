@@ -1,0 +1,93 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject Workplan.Client.Auth.LocalStorageService LocalStorage
+@inject Workplan.Client.Auth.JwtAuthenticationStateProvider AuthStateProvider
+@inject AuthApiService AuthApi
+@inject ThemeService Theme
+
+<div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
+            <div class="flex items-center gap-2">
+                <AuthorizeView>
+                    <Authorized>
+                        <button class="btn-secondary md:hidden" @onclick="() => _drawerOpen = true" aria-label="Menüyü aç">
+                            ☰
+                        </button>
+                    </Authorized>
+                </AuthorizeView>
+                <a href="/" class="text-lg font-semibold">Workplan</a>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button class="btn-secondary" @onclick="ToggleThemeAsync" title="Tema değiştir" aria-label="Tema değiştir">
+                    @(Theme.IsDark ? "Açık️" : "Koyu")
+                </button>
+                <AuthorizeView>
+                    <Authorized>
+                        <div class="flex items-center gap-2 sm:gap-3 text-sm">
+                            <span class="hidden text-slate-500 dark:text-slate-400 sm:inline">@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
+                            <button class="btn-secondary" @onclick="LogoutAsync">Çıkış yap</button>
+                        </div>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a class="btn-primary" href="/login">Giriş yap</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </header>
+
+    <div class="mx-auto flex max-w-6xl gap-6 px-4 py-6">
+        <AuthorizeView>
+            <Authorized>
+                @if (_drawerOpen)
+                {
+                    <div class="fixed inset-0 z-30 bg-slate-900/50 md:hidden" @onclick="() => _drawerOpen = false"></div>
+                }
+                <aside class="@DrawerClasses">
+                    <NavMenu OnNavigate="() => _drawerOpen = false" />
+                </aside>
+            </Authorized>
+        </AuthorizeView>
+        <main class="min-w-0 flex-1">
+            @Body
+        </main>
+    </div>
+</div>
+
+<ToastHost />
+<ConfirmModal />
+
+@code {
+    private bool _drawerOpen;
+
+    private string DrawerClasses => _drawerOpen
+        ? "fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto bg-white p-3 shadow-xl dark:bg-slate-800 md:static md:z-auto md:w-56 md:shrink-0 md:bg-transparent md:p-0 md:shadow-none md:dark:bg-transparent"
+        : "hidden md:block md:w-56 md:shrink-0";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Theme.Changed += StateHasChanged;
+            await Theme.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleThemeAsync() => await Theme.ToggleAsync();
+
+    private async Task LogoutAsync()
+    {
+        var refreshToken = await LocalStorage.GetAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey);
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await AuthApi.RevokeAsync(new RevokeRequest(refreshToken));
+        }
+
+        await LocalStorage.RemoveAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.AccessTokenKey);
+        await LocalStorage.RemoveAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey);
+        AuthStateProvider.NotifyUserLogout();
+        Navigation.NavigateTo("/login");
+    }
+}

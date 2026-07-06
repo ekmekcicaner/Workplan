@@ -1,0 +1,184 @@
+@page "/locations/{LocationId:guid}/crews"
+@attribute [Authorize]
+@inject CrewsApiService CrewsApi
+@inject ConfirmService Confirm
+@inject ToastService Toast
+
+<h1 class="mb-4 text-2xl font-semibold">Ekipler</h1>
+
+<AuthorizeView Roles="SystemAdmin,HeadOfMaster" Context="formAuth">
+    <Authorized>
+        <div class="card mb-6">
+            <h2 class="mb-1 font-semibold">Yeni ekip oluştur</h2>
+            <AccessNote Roles="SystemAdmin,HeadOfMaster" />
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                    <label class="field-label">İsim</label>
+                    <input class="input" @bind="_newCrewName" @bind:event="oninput" />
+                </div>
+                <div class="flex items-end">
+                    <button class="btn-primary" type="button" disabled="@(!CanCreateCrew)" @onclick="CreateAsync">Oluştur</button>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+<LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+
+@if (!_loading && _loadError is null)
+{
+    <div class="flex flex-col gap-4">
+        @foreach (var crew in _crews)
+        {
+            <div class="card">
+                <div class="mb-2 flex items-center justify-between">
+                    <h2 class="font-semibold">@crew.Name</h2>
+                </div>
+
+                <table class="table-base mb-3">
+                    <thead>
+                        <tr>
+                            <th>Rol</th>
+                            <th>Personel Ref.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var member in crew.Members)
+                        {
+                            <tr>
+                                <td>@member.WorkerType</td>
+                                <td>@member.PersonnelRef</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <AuthorizeView Roles="SystemAdmin,HeadOfMaster" Context="innerContext">
+                    <Authorized>
+                        @if (_addingMemberToCrewId == crew.Id)
+                        {
+                            <div class="flex flex-wrap items-center gap-2">
+                                <select class="input w-40" @bind="_newMember.WorkerType">
+                                    @foreach (var workerType in Enum.GetValues<WorkerType>())
+                                    {
+                                        <option value="@workerType">@workerType</option>
+                                    }
+                                </select>
+                                <input class="input w-48" placeholder="Personel Ref." @bind="_newMember.PersonnelRef" @bind:event="oninput" />
+                                <button class="btn-primary" disabled="@(!CanAddMember)" @onclick="() => ConfirmAddMemberAsync(crew.Id)">Ekle</button>
+                                <button class="btn-secondary" @onclick="() => _addingMemberToCrewId = null">Vazgeç</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn-secondary" @onclick="() => StartAddMember(crew.Id)">Üye ekle</button>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid LocationId { get; set; }
+
+    private List<CrewDto> _crews = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private bool _creating;
+    private string _newCrewName = "";
+
+    private Guid? _addingMemberToCrewId;
+    private readonly NewMemberModel _newMember = new();
+
+    private bool CanCreateCrew =>
+        !_creating &&
+        !string.IsNullOrWhiteSpace(_newCrewName);
+
+    private bool CanAddMember =>
+        !string.IsNullOrWhiteSpace(_newMember.PersonnelRef);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        var result = await CrewsApi.GetByLocationAsync(LocationId);
+        if (result.Success)
+        {
+            _crews = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
+        }
+        _loading = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCrewName))
+        {
+            Toast.Error("Lütfen ekip adı girin.");
+            return;
+        }
+
+        var confirmed = await Confirm.ConfirmAsync("Ekip oluştur", $"\"{_newCrewName}\" ekibini oluşturmak istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        _creating = true;
+
+        var result = await CrewsApi.CreateAsync(new CreateCrewRequest(LocationId, _newCrewName));
+        if (result.Success)
+        {
+            Toast.Success("Ekip oluşturuldu.");
+            _newCrewName = "";
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Ekip oluşturulamadı.");
+        }
+
+        _creating = false;
+    }
+
+    private void StartAddMember(Guid crewId)
+    {
+        _addingMemberToCrewId = crewId;
+        _newMember.PersonnelRef = "";
+    }
+
+    private async Task ConfirmAddMemberAsync(Guid crewId)
+    {
+        if (string.IsNullOrWhiteSpace(_newMember.PersonnelRef))
+        {
+            Toast.Error("Lütfen personel referansı girin.");
+            return;
+        }
+
+        var confirmed = await Confirm.ConfirmAsync("Üye ekle", "Bu üyeyi ekibe eklemek istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        var result = await CrewsApi.AddMemberAsync(crewId, new AddCrewMemberRequest(_newMember.WorkerType, _newMember.PersonnelRef));
+        if (result.Success)
+        {
+            Toast.Success("Üye eklendi.");
+            _addingMemberToCrewId = null;
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Üye eklenemedi.");
+        }
+    }
+
+    private class NewMemberModel
+    {
+        public WorkerType WorkerType { get; set; } = WorkerType.GeneralLabor;
+        public string PersonnelRef { get; set; } = "";
+    }
+}
