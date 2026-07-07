@@ -18,6 +18,7 @@ builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ConfirmService>();
+builder.Services.AddScoped<ConnectivityService>();
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthenticationStateProvider>());
 builder.Services.AddAuthorizationCore();
@@ -45,11 +46,12 @@ builder.Services.AddScoped<AuthApiService>();
 builder.Services.AddScoped<ProjectsApiService>();
 builder.Services.AddScoped<CrewRegionsApiService>();
 builder.Services.AddScoped<LocationsApiService>();
-builder.Services.AddScoped<CrewsApiService>();
+builder.Services.AddScoped<CrewTypesApiService>();
 builder.Services.AddScoped<WorkItemTypesApiService>();
 builder.Services.AddScoped<DailyPlansApiService>();
 builder.Services.AddScoped<NotificationsApiService>();
 builder.Services.AddScoped<UsersApiService>();
+builder.Services.AddScoped<ReportsApiService>();
 
 await builder.Build().RunAsync();
 

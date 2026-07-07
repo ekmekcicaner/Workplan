@@ -1,0 +1,70 @@
+<div class="card">
+    <h2 class="mb-3 text-base font-semibold">Plan Kapsamı</h2>
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div>
+            <label class="field-label">Proje</label>
+            <select class="input" value="@ProjectId" @onchange="OnProjectChangedInternalAsync">
+                <option value="">Seçiniz</option>
+                @foreach (var project in Projects)
+                {
+                    <option value="@project.Id">@project.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="field-label">Saha bölgesi</label>
+            <select class="input" value="@CrewRegionId" @onchange="OnRegionChangedInternalAsync" disabled="@(Regions.Count == 0)">
+                <option value="">Seçiniz</option>
+                @foreach (var region in Regions)
+                {
+                    <option value="@region.Id">@region.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="field-label">Lokasyon</label>
+            <select class="input" value="@LocationId" @onchange="OnLocationChangedInternalAsync" disabled="@(Locations.Count == 0)">
+                <option value="">Seçiniz</option>
+                @foreach (var location in Locations)
+                {
+                    <option value="@location.Id">@location.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ProjectDto> Projects { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<CrewRegionDto> Regions { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<LocationDto> Locations { get; set; } = [];
+
+    [Parameter] public string ProjectId { get; set; } = "";
+    [Parameter] public EventCallback<string> ProjectIdChanged { get; set; }
+    [Parameter] public string CrewRegionId { get; set; } = "";
+    [Parameter] public EventCallback<string> CrewRegionIdChanged { get; set; }
+    [Parameter] public string LocationId { get; set; } = "";
+    [Parameter] public EventCallback<string> LocationIdChanged { get; set; }
+
+    [Parameter] public EventCallback OnProjectChanged { get; set; }
+    [Parameter] public EventCallback OnRegionChanged { get; set; }
+    [Parameter] public EventCallback OnLocationChanged { get; set; }
+
+    private async Task OnProjectChangedInternalAsync(ChangeEventArgs args)
+    {
+        await ProjectIdChanged.InvokeAsync(args.Value?.ToString() ?? "");
+        await OnProjectChanged.InvokeAsync();
+    }
+
+    private async Task OnRegionChangedInternalAsync(ChangeEventArgs args)
+    {
+        await CrewRegionIdChanged.InvokeAsync(args.Value?.ToString() ?? "");
+        await OnRegionChanged.InvokeAsync();
+    }
+
+    private async Task OnLocationChangedInternalAsync(ChangeEventArgs args)
+    {
+        await LocationIdChanged.InvokeAsync(args.Value?.ToString() ?? "");
+        await OnLocationChanged.InvokeAsync();
+    }
+}

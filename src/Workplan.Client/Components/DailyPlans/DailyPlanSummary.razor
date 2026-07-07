@@ -1,0 +1,100 @@
+<div class="card">
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+            <h2 class="truncate text-lg font-semibold">@Plan.WorkItemTypeName</h2>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">@Plan.ProjectName</p>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">@Plan.CrewRegionName · @Plan.LocationName</p>
+        </div>
+        <StatusBadge Status="Plan.Status" />
+    </div>
+
+    <dl class="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+            <dt class="field-label">İş Tarihi</dt>
+            <dd>@Plan.WorkDate.ToString("dd.MM.yyyy")</dd>
+        </div>
+        <div>
+            <dt class="field-label">Ekip Tipi</dt>
+            <dd>@(string.IsNullOrWhiteSpace(Plan.CrewTypeName) ? "Henüz iş başlatılmadı" : Plan.CrewTypeName)</dd>
+        </div>
+        <div>
+            <dt class="field-label">Birim</dt>
+            <dd>@UnitLabel(Plan.Unit)</dd>
+        </div>
+    </dl>
+
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div class="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
+            <p class="field-label">Miktar</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">Planlanan</p>
+                    <p class="text-lg font-semibold">@NumberDisplay.Format(Plan.PlannedQuantity) @UnitLabel(Plan.Unit)</p>
+                </div>
+                <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">Gerçekleşen</p>
+                    <p class="text-lg font-semibold">@NumberDisplay.Format(Plan.FactQuantity) @UnitLabel(Plan.Unit)</p>
+                </div>
+            </div>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">@QuantityDeltaLabel</p>
+        </div>
+
+        <div class="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
+            <p class="field-label">Adam-gün</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">Planlanan</p>
+                    <p class="text-lg font-semibold">@NumberDisplay.Format(Plan.PlannedManDay)</p>
+                </div>
+                <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">Gerçekleşen</p>
+                    <p class="text-lg font-semibold">@NumberDisplay.Format(Plan.FactManDay)</p>
+                </div>
+            </div>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">@ManDayDeltaLabel</p>
+        </div>
+
+        <div class="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
+            <p class="field-label">Fazla mesai</p>
+            <p class="text-lg font-semibold">@NumberDisplay.Format(Plan.Overtime)</p>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Adam-günden ayrı beyan edilir.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DailyPlanDetailDto Plan { get; set; } = default!;
+
+    private string QuantityDeltaLabel => DeltaLabel(
+        Plan.FactQuantity,
+        Plan.PlannedQuantity,
+        UnitLabel(Plan.Unit),
+        "Planla aynı miktar");
+
+    private string ManDayDeltaLabel => DeltaLabel(
+        Plan.FactManDay,
+        Plan.PlannedManDay,
+        "adam-gün",
+        "Planla aynı adam-gün");
+
+    private static string UnitLabel(Unit unit) => unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => ""
+    };
+
+    private static string DeltaLabel(decimal? actual, decimal planned, string unit, string equalText)
+    {
+        if (actual is null)
+            return "Gerçekleşen değer girilmedi";
+
+        var delta = actual.Value - planned;
+        if (delta == 0)
+            return equalText;
+
+        var direction = delta > 0 ? "Plan üstü" : "Plan altı";
+        return $"{direction}: {NumberDisplay.Format(Math.Abs(delta))} {unit}";
+    }
+}

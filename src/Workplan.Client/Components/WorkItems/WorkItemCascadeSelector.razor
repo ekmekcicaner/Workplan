@@ -1,0 +1,14 @@
+<div class="card">
+    <h2 class="mb-3 text-base font-semibold">İş Kalemi</h2>
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <WorkItemTypeSelector Value="Value"
+                              ValueChanged="ValueChanged"
+                              SelectedLeafChanged="SelectedLeafChanged" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? Value { get; set; }
+    [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+    [Parameter] public EventCallback<WorkItemTypeDto?> SelectedLeafChanged { get; set; }
+}

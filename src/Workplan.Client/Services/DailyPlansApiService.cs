@@ -12,9 +12,9 @@ public class DailyPlansApiService(HttpClient http)
         return await response.ToApiResultAsync<Guid>(ct);
     }
 
-    public async Task<ApiResult<bool>> StartAsync(Guid id, Guid crewId, CancellationToken ct = default)
+    public async Task<ApiResult<bool>> StartAsync(Guid id, Guid crewTypeId, CancellationToken ct = default)
     {
-        var response = await http.PostAsJsonAsync($"/api/daily-plans/{id}/start", new StartWorkRequest(crewId), AppJsonOptions.Default, ct);
+        var response = await http.PostAsJsonAsync($"/api/daily-plans/{id}/start", new StartWorkRequest(crewTypeId), AppJsonOptions.Default, ct);
         return await response.ToApiResultAsync(ct);
     }
 
@@ -42,6 +42,48 @@ public class DailyPlansApiService(HttpClient http)
         return await response.ToApiResultAsync<List<DailyPlanDto>>(ct);
     }
 
+    public async Task<ApiResult<List<DailyPlanListItemDto>>> GetMyWorkAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("/api/daily-plans/my-work", ct);
+        return await response.ToApiResultAsync<List<DailyPlanListItemDto>>(ct);
+    }
+
+    public async Task<ApiResult<List<DailyPlanListItemDto>>> GetApprovalQueueAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("/api/daily-plans/approval-queue", ct);
+        return await response.ToApiResultAsync<List<DailyPlanListItemDto>>(ct);
+    }
+
+    public async Task<ApiResult<DailyTrackingOptionsDto>> GetTrackingOptionsAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("/api/daily-plans/tracking/options", ct);
+        return await response.ToApiResultAsync<DailyTrackingOptionsDto>(ct);
+    }
+
+    public async Task<ApiResult<List<DailyTrackingPlanDto>>> GetTrackingAsync(
+        DateOnly workDate,
+        IReadOnlyCollection<Guid>? projectIds = null,
+        IReadOnlyCollection<Guid>? crewRegionIds = null,
+        IReadOnlyCollection<Guid>? locationIds = null,
+        IReadOnlyCollection<Guid>? headOfMasterIds = null,
+        IReadOnlyCollection<Guid>? siteChiefIds = null,
+        IReadOnlyCollection<Guid>? projectManagerIds = null,
+        IReadOnlyCollection<WorkStatus>? statuses = null,
+        CancellationToken ct = default)
+    {
+        var query = new List<string> { $"workDate={workDate:yyyy-MM-dd}" };
+        AddGuidValues(query, "projectIds", projectIds);
+        AddGuidValues(query, "crewRegionIds", crewRegionIds);
+        AddGuidValues(query, "locationIds", locationIds);
+        AddGuidValues(query, "headOfMasterIds", headOfMasterIds);
+        AddGuidValues(query, "siteChiefIds", siteChiefIds);
+        AddGuidValues(query, "projectManagerIds", projectManagerIds);
+        AddStatusValues(query, statuses);
+
+        var response = await http.GetAsync($"/api/daily-plans/tracking?{string.Join("&", query)}", ct);
+        return await response.ToApiResultAsync<List<DailyTrackingPlanDto>>(ct);
+    }
+
     public async Task<ApiResult<List<DailyPlanDto>>> GetApprovedAsync(CancellationToken ct = default)
     {
         var response = await http.GetAsync("/api/daily-plans/approved", ct);
@@ -58,5 +100,23 @@ public class DailyPlansApiService(HttpClient http)
     {
         var response = await http.GetAsync($"/api/daily-plans/{id}", ct);
         return await response.ToApiResultAsync<DailyPlanDto>(ct);
+    }
+
+    public async Task<ApiResult<DailyPlanDetailDto>> GetDetailAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await http.GetAsync($"/api/daily-plans/{id}/detail", ct);
+        return await response.ToApiResultAsync<DailyPlanDetailDto>(ct);
+    }
+
+    private static void AddGuidValues(List<string> query, string name, IReadOnlyCollection<Guid>? values)
+    {
+        if (values is null) return;
+        query.AddRange(values.Select(value => $"{name}={value}"));
+    }
+
+    private static void AddStatusValues(List<string> query, IReadOnlyCollection<WorkStatus>? statuses)
+    {
+        if (statuses is null) return;
+        query.AddRange(statuses.Select(status => $"statuses={Uri.EscapeDataString(status.ToString())}"));
     }
 }

@@ -21,9 +21,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<CrewRegion> CrewRegions => Set<CrewRegion>();
     public DbSet<Location> Locations => Set<Location>();
+    public DbSet<CrewType> CrewTypes => Set<CrewType>();
     public DbSet<WorkItemType> WorkItemTypes => Set<WorkItemType>();
-    public DbSet<Crew> Crews => Set<Crew>();
-    public DbSet<CrewMember> CrewMembers => Set<CrewMember>();
     public DbSet<DailyPlan> DailyPlans => Set<DailyPlan>();
     public DbSet<StatusTransition> StatusTransitions => Set<StatusTransition>();
     public DbSet<Notification> Notifications => Set<Notification>();

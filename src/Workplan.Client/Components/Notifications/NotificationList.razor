@@ -1,0 +1,36 @@
+<div class="card">
+    <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 class="text-base font-semibold">Bildirimler</h2>
+        <span class="badge">@Items.Count</span>
+    </div>
+
+    <LoadingBlock Loading="Loading" ErrorText="@LoadError" />
+    @if (!Loading && string.IsNullOrWhiteSpace(LoadError))
+    {
+        @if (Items.Count == 0)
+        {
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">Okunmamış bildirim yok.</p>
+        }
+        else
+        {
+            <ul class="flex flex-col gap-2">
+                @foreach (var notification in Items)
+                {
+                    <li>
+                        <a class="block rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/50"
+                           href="@(notification.Link ?? "#")">
+                            <span class="block truncate font-medium">@notification.Title</span>
+                            <span class="block truncate text-neutral-500 dark:text-neutral-400">@notification.Message</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<NotificationDto> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? LoadError { get; set; }
+}

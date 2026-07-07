@@ -1,0 +1,227 @@
+@page "/crews"
+@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer")]
+@inject CrewTypesApiService CrewTypesApi
+@inject ConfirmService Confirm
+@inject ToastService Toast
+
+<PageTitle>Ekip Tipleri | Workplan</PageTitle>
+
+<section class="space-y-4">
+    <PageHeader Title="Ekip Tipleri"
+                Subtitle="İş başlatırken kullanılacak ekip tiplerini sade bir master listede yönet. Düzenleme ve durum işlemleri seçili kayıt panelindedir.">
+        <Actions>
+            <button class="btn-secondary" @onclick="LoadAsync">
+                <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+            </button>
+        </Actions>
+    </PageHeader>
+
+    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createContext">
+        <Authorized>
+            <div class="surface-panel p-3">
+                <EditForm Model="_newCrewType" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                    <DataAnnotationsValidator />
+                    <div>
+                        <label class="field-label">Yeni ekip tipi</label>
+                        <input class="input" placeholder="Örn. Kalıp ekibi" @bind="_newCrewType.Name" @bind:event="oninput" />
+                    </div>
+                    <button class="btn-primary" type="submit" disabled="@(!CanCreateCrewType)">
+                        <Icon Name="plus" CssClass="h-4 w-4" />Oluştur
+                    </button>
+                </EditForm>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <input type="checkbox" class="size-4" @bind="_includeInactive" @bind:after="LoadAsync" />
+            Pasif ekip tiplerini de göster
+        </label>
+        <span class="text-sm text-neutral-500 dark:text-neutral-400">@_crewTypes.Count kayıt</span>
+    </div>
+
+    <ResponsiveEntityList TItem="CrewTypeDto"
+                          Items="_crewTypes"
+                          Loading="_loading"
+                          LoadError="@_loadError"
+                          EmptyTitle="Henüz ekip tipi yok"
+                          EmptyText="İş başlatma akışı için en az bir aktif ekip tipi oluşturun.">
+        <HeaderRow>
+            <th>Ad</th>
+            <th>Durum</th>
+            <th class="w-24 text-right">İşlem</th>
+        </HeaderRow>
+        <DesktopRowTemplate Context="crewType">
+            <td>@crewType.Name</td>
+            <td>@StatusPill(crewType.IsActive)</td>
+            <td class="text-right">
+                <button class="entity-row-action" @onclick="() => OpenDetail(crewType)">Yönet</button>
+            </td>
+        </DesktopRowTemplate>
+        <MobileCardTemplate Context="crewType">
+            <article class="entity-card">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 class="truncate font-semibold">@crewType.Name</h2>
+                        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Ekip tipi</p>
+                    </div>
+                    @StatusPill(crewType.IsActive)
+                </div>
+                <button class="btn-secondary mt-3 w-full" @onclick="() => OpenDetail(crewType)">Yönet</button>
+            </article>
+        </MobileCardTemplate>
+    </ResponsiveEntityList>
+</section>
+
+<DetailPanel Show="_selectedCrewType is not null"
+             Title="@(_selectedCrewType?.Name ?? "")"
+             Subtitle="Ekip tipi kaydı"
+             OnClose="CloseDetail">
+    @if (_selectedCrewType is not null)
+    {
+        <div class="space-y-4">
+            <div>
+                <label class="field-label">Ad</label>
+                <input class="input" @bind="_editName" @bind:event="oninput" />
+            </div>
+            <button class="btn-primary w-full" disabled="@(!CanUpdateCrewType)" @onclick="ConfirmUpdateAsync">
+                <Icon Name="check" CssClass="h-4 w-4" />Kaydet
+            </button>
+
+            <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                <p class="field-label">Durum</p>
+                <div class="flex items-center justify-between gap-3">
+                    @StatusPill(_selectedCrewType.IsActive)
+                    <button class="@(_selectedCrewType.IsActive ? "btn-danger" : "btn-secondary")"
+                            @onclick="() => ConfirmSetActiveAsync(_selectedCrewType, !_selectedCrewType.IsActive)">
+                        @(_selectedCrewType.IsActive ? "Pasif Yap" : "Aktif Yap")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</DetailPanel>
+
+@code {
+    private List<CrewTypeDto> _crewTypes = [];
+    private readonly CrewTypeFormModel _newCrewType = new();
+    private bool _includeInactive;
+    private bool _loading = true;
+    private bool _creating;
+    private string? _loadError;
+    private CrewTypeDto? _selectedCrewType;
+    private string _editName = "";
+
+    private bool CanCreateCrewType => !_creating && !string.IsNullOrWhiteSpace(_newCrewType.Name);
+    private bool CanUpdateCrewType => _selectedCrewType is not null && !string.IsNullOrWhiteSpace(_editName);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+
+        var result = await CrewTypesApi.GetAllAsync(_includeInactive);
+        if (result.Success)
+        {
+            _crewTypes = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage ?? "Ekip tipleri yüklenemedi.";
+        }
+
+        _loading = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        var name = _newCrewType.Name.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var confirmed = await Confirm.ConfirmAsync("Ekip tipi oluştur", $"\"{name}\" ekip tipini oluşturmak istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        _creating = true;
+        var result = await CrewTypesApi.CreateAsync(new CreateCrewTypeRequest(name));
+        if (result.Success)
+        {
+            Toast.Success("Ekip tipi oluşturuldu.");
+            _newCrewType.Name = "";
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Ekip tipi oluşturulamadı.");
+        }
+
+        _creating = false;
+    }
+
+    private void OpenDetail(CrewTypeDto crewType)
+    {
+        _selectedCrewType = crewType;
+        _editName = crewType.Name;
+    }
+
+    private void CloseDetail()
+    {
+        _selectedCrewType = null;
+        _editName = "";
+    }
+
+    private async Task ConfirmUpdateAsync()
+    {
+        if (_selectedCrewType is null) return;
+        var name = _editName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var confirmed = await Confirm.ConfirmAsync("Ekip tipini güncelle", $"Ekip tipi adını \"{name}\" yapmak istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        var result = await CrewTypesApi.UpdateAsync(_selectedCrewType.Id, new UpdateCrewTypeRequest(name));
+        if (result.Success)
+        {
+            Toast.Success("Ekip tipi güncellendi.");
+            CloseDetail();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Ekip tipi güncellenemedi.");
+        }
+    }
+
+    private async Task ConfirmSetActiveAsync(CrewTypeDto crewType, bool isActive)
+    {
+        var action = isActive ? "aktif" : "pasif";
+        var confirmed = await Confirm.ConfirmAsync(
+            "Ekip tipi durumunu güncelle",
+            $"\"{crewType.Name}\" ekip tipini {action} yapmak istediğinize emin misiniz?",
+            danger: !isActive);
+        if (!confirmed) return;
+
+        var result = await CrewTypesApi.SetActiveAsync(crewType.Id, isActive);
+        if (result.Success)
+        {
+            Toast.Success($"Ekip tipi {action} yapıldı.");
+            CloseDetail();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu.");
+        }
+    }
+
+    private static RenderFragment StatusPill(bool isActive) => @<span class="badge @(isActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
+        @(isActive ? "Aktif" : "Pasif")
+    </span>;
+
+    private sealed class CrewTypeFormModel
+    {
+        public string Name { get; set; } = "";
+    }
+}

@@ -4,77 +4,98 @@
 @inject ProjectsApiService ProjectsApi
 @inject CrewRegionsApiService CrewRegionsApi
 @inject LocationsApiService LocationsApi
+@inject UsersApiService UsersApi
 @inject ConfirmService Confirm
 @inject ToastService Toast
+@inject ConnectivityService Connectivity
 
-<h1 class="mb-4 text-2xl font-semibold">Günlük Plan Oluştur</h1>
+<PageTitle>Günlük Plan Oluştur | Workplan</PageTitle>
 
-<div class="card mb-6">
-    <h2 class="mb-1 font-semibold">Yeni günlük plan oluştur</h2>
-    <AccessNote Roles="SystemAdmin,TechnicalOfficeEngineer" />
-    <EditForm Model="_newPlan" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <DataAnnotationsValidator />
-        <div>
-            <label class="field-label">Proje</label>
-            <select class="input" @bind="_newPlan.ProjectId" @bind:after="OnProjectChangedAsync">
-                <option value="">Seçiniz</option>
-                @foreach (var project in _projects)
+<section class="space-y-4">
+    <PageHeader Title="Günlük Plan Oluştur"
+                Subtitle="T-1 planlama: kapsam, SSToW, metrikler ve Head of Master ataması." />
+
+    <PlanScopeSelector Projects="_projects"
+                       Regions="_regions"
+                       Locations="_locations"
+                       @bind-ProjectId="_newPlan.ProjectId"
+                       @bind-CrewRegionId="_newPlan.CrewRegionId"
+                       @bind-LocationId="_newPlan.LocationId"
+                       OnProjectChanged="OnProjectChangedAsync"
+                       OnRegionChanged="OnRegionChangedAsync"
+                       OnLocationChanged="OnLocationChanged" />
+
+    <WorkItemCascadeSelector @bind-Value="_newPlan.WorkItemTypeId"
+                             SelectedLeafChanged="OnSelectedLeafChanged" />
+
+    <PlannedMetricsForm @bind-WorkDate="_newPlan.WorkDate"
+                        @bind-PlannedQuantity="_newPlan.PlannedQuantity"
+                        @bind-PlannedManDay="_newPlan.PlannedManDay"
+                        Unit="@(_selectedLeaf?.Unit ?? WorkUnit.None)" />
+
+    <div class="card">
+        <h2 class="mb-3 text-base font-semibold">Saha Sorumlusu</h2>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+                <p class="field-label">Proje Yöneticisi</p>
+                @if (SelectedProject is null)
                 {
-                    <option value="@project.Id">@project.Name</option>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
                 }
-            </select>
-        </div>
-        <div>
-            <label class="field-label">Saha bölgesi</label>
-            <select class="input" @bind="_newPlan.CrewRegionId" @bind:after="OnRegionChangedAsync">
-                <option value="">Seçiniz</option>
-                @foreach (var region in _regions)
+                else if (SelectedProject.PmUserId is { } pmId)
                 {
-                    <option value="@region.Id">@region.Name</option>
+                    <p class="text-sm font-medium">@DisplayUser(pmId)</p>
                 }
-            </select>
-        </div>
-        <div>
-            <label class="field-label">Lokasyon</label>
-            <select class="input" @bind="_newPlan.LocationId">
-                <option value="">Seçiniz</option>
-                @foreach (var location in _locations)
+                else
                 {
-                    <option value="@location.Id">@location.Name</option>
+                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu projeye proje yöneticisi atanmamış.</p>
                 }
-            </select>
+            </div>
+            <div>
+                <p class="field-label">Head of Master</p>
+                @if (SelectedLocation is null)
+                {
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
+                }
+                else if (SelectedLocation.HeadOfMasterUserId is { } homId)
+                {
+                    <p class="text-sm font-medium">@DisplayUser(homId)</p>
+                }
+                else
+                {
+                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu lokasyona Head of Master atanmamış.</p>
+                }
+            </div>
+            <div>
+                <p class="field-label">Şantiye Şefi</p>
+                @if (SelectedRegion is null)
+                {
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
+                }
+                else if (SelectedRegion.SiteChiefUserId is { } siteChiefId)
+                {
+                    <p class="text-sm font-medium">@DisplayUser(siteChiefId)</p>
+                }
+                else
+                {
+                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu saha bölgesine Şantiye Şefi atanmamış.</p>
+                }
+            </div>
         </div>
-        <div>
-            <label class="field-label">Ustabaşı</label>
-            <UserPicker Role="HeadOfMaster" @bind-Value="_newPlan.AssignedHoMId" Placeholder="Ustabaşı ara..." />
-        </div>
-        <WorkItemTypeSelector @bind-Value="_newPlan.WorkItemTypeId" SelectedLeafChanged="OnSelectedLeafChanged" />
-        <div>
-            <label class="field-label">İş tarihi</label>
-            <input class="input" type="date" @bind="_newPlan.WorkDate" />
-        </div>
-        <div>
-            <label class="field-label">Planlanan miktar</label>
-            <input class="input" type="number" step="0.01" @bind="_newPlan.PlannedQuantity" />
-        </div>
-        <div>
-            <label class="field-label">Birim</label>
-            <input class="input" value="@(_selectedLeaf is null ? "—" : WorkUnitLabel(_selectedLeaf.Unit))" disabled />
-        </div>
-        <div>
-            <label class="field-label">Planlanan adam-gün</label>
-            <input class="input" type="number" step="0.01" @bind="_newPlan.PlannedManDay" />
-        </div>
-        <div class="flex items-end">
-            <button class="btn-primary" type="submit" disabled="@(!CanCreateDailyPlan)">Oluştur</button>
-        </div>
-    </EditForm>
-</div>
+    </div>
+
+    <StickyActionBar StatusText="@CreateStatusText">
+        <button class="btn-primary w-full sm:w-auto" type="button" disabled="@(!CanCreateDailyPlan || !Connectivity.IsOnline)" @onclick="CreateAsync">
+            @(_creating ? "Oluşturuluyor..." : "Oluştur")
+        </button>
+    </StickyActionBar>
+</section>
 
 @code {
     private List<ProjectDto> _projects = [];
     private List<CrewRegionDto> _regions = [];
     private List<LocationDto> _locations = [];
+    private Dictionary<Guid, string> _userNames = new();
     private WorkItemTypeDto? _selectedLeaf;
     private readonly NewPlanModel _newPlan = new();
     private bool _creating;
@@ -87,13 +108,36 @@
         _newPlan.AssignedHoMId is not null &&
         _newPlan.WorkItemTypeId is not null &&
         _selectedLeaf is not null &&
-        _newPlan.PlannedQuantity >= 0 &&
-        _newPlan.PlannedManDay >= 0;
+        _newPlan.PlannedQuantity is >= 0 &&
+        _newPlan.PlannedManDay is >= 0;
+
+    private LocationDto? SelectedLocation =>
+        Guid.TryParse(_newPlan.LocationId, out var locationId)
+            ? _locations.FirstOrDefault(location => location.Id == locationId)
+            : null;
+
+    private ProjectDto? SelectedProject =>
+        Guid.TryParse(_newPlan.ProjectId, out var projectId)
+            ? _projects.FirstOrDefault(project => project.Id == projectId)
+            : null;
+
+    private CrewRegionDto? SelectedRegion =>
+        Guid.TryParse(_newPlan.CrewRegionId, out var regionId)
+            ? _regions.FirstOrDefault(region => region.Id == regionId)
+            : null;
+
+    private string CreateStatusText =>
+        !Connectivity.IsOnline ? "Bağlantı yokken plan oluşturulamaz." :
+        !CanCreateDailyPlan ? "Zorunlu seçimleri ve planlanan metrikleri tamamlayın." :
+        "Plan oluşturulmaya hazır.";
 
     protected override async Task OnInitializedAsync()
     {
+        await Connectivity.InitializeAsync();
         var projectsResult = await ProjectsApi.GetAllAsync();
         _projects = projectsResult.Data ?? [];
+        var usersResult = await UsersApi.GetUsersAsync();
+        _userNames = (usersResult.Data ?? []).ToDictionary(user => user.Id, user => user.FullName);
     }
 
     private async Task OnProjectChangedAsync()
@@ -102,6 +146,7 @@
         _locations = [];
         _newPlan.CrewRegionId = "";
         _newPlan.LocationId = "";
+        _newPlan.AssignedHoMId = null;
 
         if (Guid.TryParse(_newPlan.ProjectId, out var projectId))
         {
@@ -114,6 +159,7 @@
     {
         _locations = [];
         _newPlan.LocationId = "";
+        _newPlan.AssignedHoMId = null;
 
         if (Guid.TryParse(_newPlan.CrewRegionId, out var regionId))
         {
@@ -122,44 +168,51 @@
         }
     }
 
+    private void OnLocationChanged() =>
+        _newPlan.AssignedHoMId = SelectedLocation?.HeadOfMasterUserId;
+
     private void OnSelectedLeafChanged(WorkItemTypeDto? leaf) => _selectedLeaf = leaf;
 
     private async Task CreateAsync()
     {
+        if (!Connectivity.IsOnline)
+        {
+            Toast.Error("Bağlantı yokken plan oluşturulamaz.");
+            return;
+        }
+
         if (!Guid.TryParse(_newPlan.ProjectId, out var projectId) ||
             !Guid.TryParse(_newPlan.CrewRegionId, out var crewRegionId) ||
             !Guid.TryParse(_newPlan.LocationId, out var locationId) ||
             _newPlan.WorkItemTypeId is not { } workItemTypeId ||
-            _newPlan.AssignedHoMId is not { } assignedHoMId)
+            _newPlan.AssignedHoMId is not { } assignedHoMId ||
+            _newPlan.PlannedQuantity is not { } plannedQuantity ||
+            _newPlan.PlannedManDay is not { } plannedManDay)
         {
-            Toast.Error("Lütfen proje, saha bölgesi, lokasyon, ustabaşı ve iş kalemi tipini (Tip → Alt Tip → Alt-Alt Tip) seçin.");
+            Toast.Error("Lütfen proje, bölge, lokasyon, SSToW, HoM ve planlanan metrikleri tamamlayın.");
             return;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("Günlük plan oluştur", "Bu günlük plan taslağını oluşturmak istediğinize emin misiniz?");
+        var confirmed = await Confirm.ConfirmAsync("Günlük plan oluştur", "Bu günlük planı Head of Master'a atamak istediğinize emin misiniz?");
         if (!confirmed) return;
 
         _creating = true;
 
         var request = new CreateDailyPlanRequest(
-            projectId, crewRegionId, locationId, workItemTypeId,
-            _newPlan.WorkDate, _newPlan.PlannedQuantity, _newPlan.PlannedManDay,
+            projectId,
+            crewRegionId,
+            locationId,
+            workItemTypeId,
+            _newPlan.WorkDate,
+            plannedQuantity,
+            plannedManDay,
             assignedHoMId);
 
         var result = await DailyPlansApi.CreateAsync(request);
         if (result.Success)
         {
-            Toast.Success("Günlük plan oluşturuldu.");
-            _newPlan.ProjectId = "";
-            _newPlan.CrewRegionId = "";
-            _newPlan.LocationId = "";
-            _newPlan.AssignedHoMId = null;
-            _newPlan.WorkItemTypeId = null;
-            _newPlan.PlannedQuantity = 0;
-            _newPlan.PlannedManDay = 0;
-            _selectedLeaf = null;
-            _regions = [];
-            _locations = [];
+            Toast.Success("Günlük plan oluşturuldu ve HoM'a bildirildi.");
+            ResetForm();
         }
         else
         {
@@ -169,33 +222,32 @@
         _creating = false;
     }
 
-    private static string WorkUnitLabel(WorkUnit unit) => unit switch
+    private void ResetForm()
     {
-        WorkUnit.Ton => "ton",
-        WorkUnit.M3 => "m³",
-        WorkUnit.M2 => "m²",
-        _ => "—"
-    };
+        _newPlan.ProjectId = "";
+        _newPlan.CrewRegionId = "";
+        _newPlan.LocationId = "";
+        _newPlan.AssignedHoMId = null;
+        _newPlan.WorkItemTypeId = null;
+        _newPlan.PlannedQuantity = null;
+        _newPlan.PlannedManDay = null;
+        _selectedLeaf = null;
+        _regions = [];
+        _locations = [];
+    }
+
+    private string DisplayUser(Guid userId) =>
+        _userNames.TryGetValue(userId, out var name) ? name : userId.ToString();
 
     private class NewPlanModel
     {
-        [Required]
         public string ProjectId { get; set; } = "";
-
-        [Required]
         public string CrewRegionId { get; set; } = "";
-
-        [Required]
         public string LocationId { get; set; } = "";
-
-        [Required]
         public Guid? AssignedHoMId { get; set; }
-
-        [Required]
         public Guid? WorkItemTypeId { get; set; }
-
         public DateOnly WorkDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
-        public decimal PlannedQuantity { get; set; }
-        public decimal PlannedManDay { get; set; }
+        public decimal? PlannedQuantity { get; set; }
+        public decimal? PlannedManDay { get; set; }
     }
 }

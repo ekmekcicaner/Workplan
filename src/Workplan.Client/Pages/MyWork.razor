@@ -1,30 +1,58 @@
 @page "/my-work"
 @attribute [Authorize(Roles = "HeadOfMaster")]
 @inject DailyPlansApiService DailyPlansApi
-@inject AuthenticationStateProvider AuthStateProvider
+<PageTitle>İşlerim | Workplan</PageTitle>
 
-<h1 class="mb-4 text-2xl font-semibold">Bana Atanan İşler</h1>
+<section class="space-y-4">
+    <PageHeader Title="Bana Atanan İşler"
+                Subtitle="Ekip tipi seç, işi başlat ve gün sonu beyanını gönder." />
 
-<DailyPlanTable Items="_plans" Loading="_loading" LoadError="@_loadError" />
+    <SegmentedFilter TValue="WorkStatus?" Items="FilterItems" Value="_selectedStatus" ValueChanged="OnStatusChanged" />
+
+    <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+
+    @if (!_loading && string.IsNullOrWhiteSpace(_loadError))
+    {
+        @if (FilteredPlans.Count == 0)
+        {
+            <EmptyState Title="Bu filtrede iş yok" Text="Atanan işler geldiğinde burada kart olarak listelenir." />
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                @foreach (var plan in FilteredPlans)
+                {
+                    <DailyPlanMobileCard @key="plan.Id" Plan="plan" />
+                }
+            </div>
+        }
+    }
+</section>
 
 @code {
-    private List<DailyPlanDto> _plans = [];
+    private List<DailyPlanListItemDto> _plans = [];
     private bool _loading = true;
     private string? _loadError;
+    private WorkStatus? _selectedStatus;
+
+    private IReadOnlyList<SegmentedFilterItem<WorkStatus?>> FilterItems =>
+    [
+        new(null, "Tümü", _plans.Count),
+        new(WorkStatus.Assigned, "Atandı", _plans.Count(plan => plan.Status == WorkStatus.Assigned)),
+        new(WorkStatus.InProgress, "Devam Ediyor", _plans.Count(plan => plan.Status == WorkStatus.InProgress)),
+        new(WorkStatus.Submitted, "Onaya Gönderildi", _plans.Count(plan => plan.Status == WorkStatus.Submitted)),
+        new(WorkStatus.ApprovedBySiteChief, "Şantiye Onayı", _plans.Count(plan => plan.Status == WorkStatus.ApprovedBySiteChief)),
+        new(WorkStatus.ApprovedByPM, "Tamamlandı", _plans.Count(plan => plan.Status == WorkStatus.ApprovedByPM))
+    ];
+
+    private IReadOnlyList<DailyPlanListItemDto> FilteredPlans =>
+        _selectedStatus is null
+            ? _plans
+            : _plans.Where(plan => plan.Status == _selectedStatus).ToList();
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userId = Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : (Guid?)null;
-
-        if (userId is null)
-        {
-            _loadError = "Kullanıcı kimliği bulunamadı.";
-            _loading = false;
-            return;
-        }
-
-        var result = await DailyPlansApi.GetByHeadOfMasterAsync(userId.Value);
+        var result = await DailyPlansApi.GetMyWorkAsync();
         if (result.Success)
         {
             _plans = result.Data ?? [];
@@ -35,5 +63,11 @@
         }
 
         _loading = false;
+    }
+
+    private Task OnStatusChanged(WorkStatus? status)
+    {
+        _selectedStatus = status;
+        return Task.CompletedTask;
     }
 }

@@ -1,0 +1,28 @@
+@typeparam TValue
+
+<div class="segmented-filter" role="tablist">
+    @foreach (var item in Items)
+    {
+        var selected = EqualityComparer<TValue>.Default.Equals(item.Value, Value);
+        <button @key="item"
+                type="button"
+                role="tab"
+                aria-selected="@selected"
+                class="segment-item @(selected ? "segment-item-active" : "")"
+                @onclick="() => SelectAsync(item.Value)">
+            <span>@item.Label</span>
+            @if (item.Count is not null)
+            {
+                <span class="segment-count">@item.Count</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SegmentedFilterItem<TValue>> Items { get; set; } = [];
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
+
+    private Task SelectAsync(TValue value) => ValueChanged.InvokeAsync(value);
+}

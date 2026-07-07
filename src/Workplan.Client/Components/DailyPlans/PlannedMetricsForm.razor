@@ -1,0 +1,47 @@
+<div class="card">
+    <h2 class="mb-3 text-base font-semibold">Planlanan Üretim</h2>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+            <label class="field-label">İş tarihi</label>
+            <input class="input" type="date" value="@WorkDate.ToString("yyyy-MM-dd")" @onchange="OnWorkDateChangedAsync" />
+        </div>
+        <div>
+            <label class="field-label">Planlanan miktar</label>
+            <DecimalInput Value="PlannedQuantity" ValueChanged="PlannedQuantityChanged" AllowNegative="false" Placeholder="Örn. 12,5" />
+        </div>
+        <div>
+            <label class="field-label">Birim</label>
+            <input class="input" value="@UnitLabel(Unit)" disabled />
+        </div>
+        <div>
+            <label class="field-label">Planlanan adam-gün</label>
+            <DecimalInput Value="PlannedManDay" ValueChanged="PlannedManDayChanged" AllowNegative="false" Placeholder="Örn. 3" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateOnly WorkDate { get; set; }
+    [Parameter] public EventCallback<DateOnly> WorkDateChanged { get; set; }
+    [Parameter] public decimal? PlannedQuantity { get; set; }
+    [Parameter] public EventCallback<decimal?> PlannedQuantityChanged { get; set; }
+    [Parameter] public decimal? PlannedManDay { get; set; }
+    [Parameter] public EventCallback<decimal?> PlannedManDayChanged { get; set; }
+    [Parameter] public WorkUnit Unit { get; set; }
+
+    private async Task OnWorkDateChangedAsync(ChangeEventArgs args)
+    {
+        if (DateOnly.TryParse(args.Value?.ToString(), out var date))
+        {
+            await WorkDateChanged.InvokeAsync(date);
+        }
+    }
+
+    private static string UnitLabel(WorkUnit unit) => unit switch
+    {
+        WorkUnit.Ton => "ton",
+        WorkUnit.M3 => "m³",
+        WorkUnit.M2 => "m²",
+        _ => "SSToW seçilince dolar"
+    };
+}

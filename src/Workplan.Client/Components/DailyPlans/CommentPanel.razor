@@ -1,0 +1,15 @@
+<div class="card">
+    <h2 class="mb-3 text-base font-semibold">Açıklama / Red Gerekçesi</h2>
+    @if (string.IsNullOrWhiteSpace(Comment))
+    {
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">Açıklama girilmemiş.</p>
+    }
+    else
+    {
+        <p class="whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-200">@Comment</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Comment { get; set; }
+}

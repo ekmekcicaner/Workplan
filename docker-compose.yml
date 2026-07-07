@@ -10,7 +10,7 @@
 #   Docker Client: http://localhost:5277
 #   Docker API   : http://localhost:5292/scalar
 #   PostgreSQL   : localhost:5433
-#   Giriş  : admin@workplan.local / ChangeMe123! (SystemAdmin)
+#   Giriş  : admin@workplan.local / Demo123! (SystemAdmin)
 #            veya pm1@workplan.local / Demo123! (ProjectManager)
 #            veya hom1@workplan.local / Demo123! (HeadOfMaster) vb. seed edilen kullanıcılar
 #

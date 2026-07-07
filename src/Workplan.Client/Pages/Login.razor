@@ -6,34 +6,41 @@
 @inject NavigationManager Navigation
 @inject ToastService Toast
 
-<div class="mx-auto mt-16 max-w-sm px-4">
-    <div class="mb-6 flex flex-col items-center gap-2">
-        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500 text-lg font-bold text-neutral-950">W</span>
-        <span class="text-lg font-semibold text-white">Workplan</span>
-    </div>
-    <div class="card">
-        <h1 class="mb-4 text-xl font-semibold">Giriş yap</h1>
-
-        <EditForm Model="_model" OnValidSubmit="LoginAsync" class="flex flex-col gap-3">
-            <DataAnnotationsValidator />
-            <div>
-                <label class="field-label">E-posta</label>
-                <input class="input" @bind="_model.Email" @bind:event="oninput" />
+<PageTitle>Giriş Yap | Workplan</PageTitle>
+<div class="flex min-h-screen items-center bg-neutral-50 px-4 py-6 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 sm:px-6">
+    <div class="mx-auto flex w-full max-w-sm flex-col gap-6">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-lg font-bold text-neutral-950">W</span>
+                <span class="text-lg font-semibold text-neutral-950 dark:text-white">Workplan</span>
             </div>
-            <div>
-                <label class="field-label">Şifre</label>
-                <input class="input" type="password" @bind="_model.Password" @bind:event="oninput" />
-            </div>
+            <ThemeModeSelector />
+        </div>
 
-            @if (_error is not null)
-            {
-                <p class="text-sm text-red-600 dark:text-red-400">@_error</p>
-            }
+        <div class="card p-5 sm:p-6">
+            <h1 class="mb-5 text-2xl font-semibold text-neutral-950 dark:text-neutral-50">Giriş yap</h1>
 
-            <button class="btn-primary mt-2" type="submit" disabled="@(!CanLogin)">
-                @(_busy ? "Giriş yapılıyor..." : "Giriş yap")
-            </button>
-        </EditForm>
+            <EditForm Model="_model" OnValidSubmit="LoginAsync" class="flex flex-col gap-4">
+                <DataAnnotationsValidator />
+                <div>
+                    <label class="field-label">E-posta</label>
+                    <input class="input" @bind="_model.Email" @bind:event="oninput" autocomplete="email" />
+                </div>
+                <div>
+                    <label class="field-label">Şifre</label>
+                    <input class="input" type="password" @bind="_model.Password" @bind:event="oninput" autocomplete="current-password" />
+                </div>
+
+                @if (_error is not null)
+                {
+                    <p class="text-sm text-red-600 dark:text-red-400">@_error</p>
+                }
+
+                <button class="btn-primary mt-1 w-full" type="submit" disabled="@(!CanLogin)">
+                    @(_busy ? "Giriş yapılıyor..." : "Giriş yap")
+                </button>
+            </EditForm>
+        </div>
     </div>
 </div>
 

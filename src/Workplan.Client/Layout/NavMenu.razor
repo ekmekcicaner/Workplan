@@ -1,46 +1,80 @@
-<nav class="flex flex-col gap-1 text-sm">
-    <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="Navigated">
-        <Icon Name="home" />Ana Sayfa
-    </NavLink>
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
-        <Authorized>
-            <NavLink class="nav-link" href="daily-plans/new" @onclick="Navigated">
-                <Icon Name="clipboard" />Günlük Plan Oluştur
+<nav class="flex flex-col gap-4 text-sm">
+    <div class="flex flex-col gap-1">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="Navigated">
+            <Icon Name="home" />Ana Sayfa
+        </NavLink>
+    </div>
+
+    <div>
+        <p class="nav-section-label">Operasyon</p>
+        <div class="flex flex-col gap-1">
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+                <Authorized>
+                    <NavLink class="nav-link" href="daily-plans/new" @onclick="Navigated">
+                        <Icon Name="clipboard" />Günlük Plan Oluştur
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,ProjectManager,SiteChief,HeadOfMaster">
+                <Authorized>
+                    <NavLink class="nav-link" href="daily-tracking" @onclick="Navigated">
+                        <Icon Name="calendar" />Günlük İş Takibi
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="HeadOfMaster">
+                <Authorized>
+                    <NavLink class="nav-link" href="my-work" @onclick="Navigated">
+                        <Icon Name="clipboard" />Bana Atanan İşler
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="SiteChief,ProjectManager">
+                <Authorized>
+                    <NavLink class="nav-link" href="approvals" @onclick="Navigated">
+                        <Icon Name="check-circle" />Beklenen Onaylar
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,ProjectManager">
+                <Authorized>
+                    <NavLink class="nav-link" href="reports" @onclick="Navigated">
+                        <Icon Name="bar-chart" />Raporlar
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </div>
+
+    <div>
+        <p class="nav-section-label">Saha Yapısı</p>
+        <div class="flex flex-col gap-1">
+            <NavLink class="nav-link" href="projects" @onclick="Navigated">
+                <Icon Name="folder" />Projeler
             </NavLink>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="HeadOfMaster">
-        <Authorized>
-            <NavLink class="nav-link" href="my-work" @onclick="Navigated">
-                <Icon Name="clipboard" />Bana Atanan İşler
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+                <Authorized>
+                    <NavLink class="nav-link" href="crews" @onclick="Navigated">
+                        <Icon Name="hard-hat" />Ekip Tipleri
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <NavLink class="nav-link" href="work-item-types" @onclick="Navigated">
+                <Icon Name="layers" />İş Kalemi Tipleri
             </NavLink>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="HeadOfMaster,SiteChief,ProjectManager">
-        <Authorized>
-            <NavLink class="nav-link" href="approvals" @onclick="Navigated">
-                <Icon Name="check-circle" />Beklenen Onaylar
-            </NavLink>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,SiteChief,ProjectManager">
-        <Authorized>
-            <NavLink class="nav-link" href="reports" @onclick="Navigated">
-                <Icon Name="bar-chart" />Raporlar
-            </NavLink>
-        </Authorized>
-    </AuthorizeView>
-    <NavLink class="nav-link" href="projects" @onclick="Navigated">
-        <Icon Name="folder" />Projeler
-    </NavLink>
-    <NavLink class="nav-link" href="work-item-types" @onclick="Navigated">
-        <Icon Name="layers" />İş Kalemi Tipleri
-    </NavLink>
+        </div>
+    </div>
+
     <AuthorizeView Roles="SystemAdmin">
         <Authorized>
-            <NavLink class="nav-link" href="user-management" @onclick="Navigated">
-                <Icon Name="users" />Kullanıcı Yönetimi
-            </NavLink>
+            <div>
+                <p class="nav-section-label">Yönetim</p>
+                <div class="flex flex-col gap-1">
+                    <NavLink class="nav-link" href="user-management" @onclick="Navigated">
+                        <Icon Name="users" />Kullanıcı Yönetimi
+                    </NavLink>
+                </div>
+            </div>
         </Authorized>
     </AuthorizeView>
 </nav>

@@ -37,6 +37,15 @@ public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanComm
         if (!await _accessScope.CanAccessCrewRegionAsync(request.CrewRegionId, cancellationToken))
             return Result<Guid>.Fail(Error.ScopeMismatch("Bu bölge için günlük plan oluşturma yetkiniz yok."));
 
+        var locationHeadOfMasterId = await _db.Locations.AsNoTracking()
+            .Where(l => l.Id == request.LocationId)
+            .Select(l => l.HeadOfMasterUserId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (locationHeadOfMasterId is null)
+            return Result<Guid>.Fail(Error.Validation("Seçilen lokasyona atanmış Head of Master yok."));
+        if (locationHeadOfMasterId != request.AssignedHoMId)
+            return Result<Guid>.Fail(Error.Validation("Günlük plan seçilen lokasyonun Head of Master'ına atanmalıdır."));
+
         var workItemType = await _db.WorkItemTypes.AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == request.WorkItemTypeId, cancellationToken);
         if (workItemType is null)

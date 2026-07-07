@@ -7,6 +7,6 @@ public class StartWorkCommandValidator : AbstractValidator<StartWorkCommand>
     public StartWorkCommandValidator()
     {
         RuleFor(x => x.DailyPlanId).NotEmpty();
-        RuleFor(x => x.CrewId).NotEmpty();
+        RuleFor(x => x.CrewTypeId).NotEmpty();
     }
 }

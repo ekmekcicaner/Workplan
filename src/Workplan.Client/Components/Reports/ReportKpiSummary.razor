@@ -1,0 +1,92 @@
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="card">
+        <p class="field-label">Onaylı kayıt</p>
+        <p class="text-2xl font-semibold">@Report.Summary.ApprovedWorkCount</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">PM onayı tamamlandı</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Gerçekleşen adam-gün</p>
+        <p class="text-2xl font-semibold">@NumberDisplay.Format(Report.Summary.FactManDay)</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">Planlanan: @NumberDisplay.Format(Report.Summary.PlannedManDay)</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Beyan edilen fazla mesai</p>
+        <p class="text-2xl font-semibold">@NumberDisplay.Format(Report.Summary.Overtime)</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">Adam-günden ayrı takip edilir</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Adam-gün gerçekleşme</p>
+        <p class="text-2xl font-semibold">@RatioLabel</p>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">Gerçekleşen / planlanan</p>
+    </div>
+</div>
+
+@if (Report.QuantityByWorkItem.Count > 0)
+{
+    <div class="card mt-3">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+                <h2 class="text-base font-semibold">İş Kalemi Miktarları</h2>
+                <p class="text-sm text-neutral-500 dark:text-neutral-400">Miktar KPI iş kalemi bazında okunur; birim toplamları aşağıda özetlenir.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            @foreach (var item in Report.QuantityByWorkItem)
+            {
+                <div class="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
+                    <p class="mb-2 min-h-10 font-semibold">@item.WorkItemTypeName</p>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="field-label">Plan</p>
+                            <p>@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</p>
+                        </div>
+                        <div>
+                            <p class="field-label">Gerçek</p>
+                            <p class="font-semibold">@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</p>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">@QuantityDeltaLabel(item)</p>
+                </div>
+            }
+        </div>
+
+        @if (Report.QuantityByUnit.Count > 0)
+        {
+            <div class="mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-700">
+                <p class="field-label">Birim bazlı toplam</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var item in Report.QuantityByUnit)
+                    {
+                        <span class="badge">@UnitLabel(item.Unit): @NumberDisplay.Format(item.FactQuantity) / @NumberDisplay.Format(item.PlannedQuantity)</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public DailyReportDto Report { get; set; } = default!;
+
+    private string RatioLabel =>
+        Report.Summary.ManDayRealizationRatio is { } ratio ? $"{NumberDisplay.Format(ratio * 100)}%" : "-";
+
+    private static string UnitLabel(Unit unit) => unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => "-"
+    };
+
+    private static string QuantityDeltaLabel(WorkItemQuantityKpiDto item)
+    {
+        var delta = item.FactQuantity - item.PlannedQuantity;
+        if (delta == 0)
+            return "Planla aynı";
+
+        var direction = delta > 0 ? "Plan üstü" : "Plan altı";
+        return $"{direction}: {NumberDisplay.Format(Math.Abs(delta))} {UnitLabel(item.Unit)}";
+    }
+}

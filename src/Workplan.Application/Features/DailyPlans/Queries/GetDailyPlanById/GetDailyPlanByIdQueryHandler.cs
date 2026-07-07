@@ -34,12 +34,12 @@ public class GetDailyPlanByIdQueryHandler : IRequestHandler<GetDailyPlanByIdQuer
 
         var history = plan.History
             .OrderBy(h => h.TransitionedAt)
-            .Select(h => new StatusTransitionDto(h.FromStatus, h.ToStatus, h.ActionById, h.TransitionedAt, h.Note))
+            .Select(h => new StatusTransitionDto(h.FromStatus, h.ToStatus, h.ActionById, h.TransitionedAt, null, h.Note))
             .ToList();
 
         return new DailyPlanDto(
             plan.Id, plan.ProjectId, plan.CrewRegionId, plan.LocationId, plan.WorkItemTypeId,
-            plan.WorkDate, plan.PlannedById, plan.AssignedHoMId, plan.CrewId,
+            plan.WorkDate, plan.PlannedById, plan.AssignedHoMId, plan.CrewTypeId,
             plan.PlannedQuantity, plan.PlannedManDay, plan.Unit, plan.FactQuantity, plan.FactManDay,
             plan.Overtime, plan.Comment, plan.Status, history);
     }

@@ -4,112 +4,133 @@
 @inject ConfirmService Confirm
 @inject ToastService Toast
 
-<h1 class="mb-4 text-2xl font-semibold">Kullanıcı Yönetimi</h1>
+<PageTitle>Kullanıcı Yönetimi | Workplan</PageTitle>
 
-<div class="card mb-6">
-    <h2 class="mb-1 font-semibold">Yeni kullanıcı oluştur</h2>
-    <AccessNote Roles="SystemAdmin" />
-    <EditForm Model="_newUser" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <DataAnnotationsValidator />
-        <div>
-            <label class="field-label">E-posta</label>
-            <input class="input" @bind="_newUser.Email" @bind:event="oninput" />
-        </div>
-        <div>
-            <label class="field-label">Ad Soyad</label>
-            <input class="input" @bind="_newUser.FullName" @bind:event="oninput" />
-        </div>
-        <div>
-            <label class="field-label">Şifre</label>
-            <input class="input" type="password" @bind="_newUser.Password" @bind:event="oninput" />
-        </div>
-        <div>
-            <label class="field-label">Roller</label>
-            <div class="flex flex-wrap gap-2 pt-1">
-                @foreach (var role in AllRoles)
-                {
-                    <label class="flex items-center gap-1 text-xs">
-                        <input type="checkbox" checked="@_newUser.Roles.Contains(role)" @onchange="e => ToggleRole(_newUser.Roles, role, e.Value)" />
-                        @role
-                    </label>
-                }
+<section class="space-y-4">
+    <PageHeader Title="Kullanıcı Yönetimi"
+                Subtitle="Kullanıcı oluştur, rolleri güncelle, şifre sıfırla ve erişimi aktif/pasif yönet.">
+        <Actions>
+            <button class="btn-secondary" @onclick="LoadAsync">
+                <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+            </button>
+        </Actions>
+    </PageHeader>
+
+    <div class="surface-panel p-3">
+        <EditForm Model="_newUser" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <DataAnnotationsValidator />
+            <div>
+                <label class="field-label">E-posta</label>
+                <input class="input" @bind="_newUser.Email" @bind:event="oninput" />
             </div>
-        </div>
-        <div class="flex items-end lg:col-span-4">
-            <button class="btn-primary" type="submit" disabled="@(!CanCreateUser)">Oluştur</button>
-        </div>
-    </EditForm>
-</div>
-
-<DataTable TItem="UserDto" Items="_users" Loading="_loading" LoadError="@_loadError" EmptyText="Henüz kullanıcı yok.">
-    <HeaderRow>
-        <th>E-posta</th>
-        <th>Ad Soyad</th>
-        <th>Roller</th>
-        <th>Durum</th>
-        <th></th>
-    </HeaderRow>
-    <RowTemplate Context="user">
-        <td data-label="E-posta">@user.Email</td>
-        <td data-label="Ad Soyad">@user.FullName</td>
-        <td data-label="Roller">
-            @if (_editingRolesId == user.Id)
-            {
-                <div class="flex flex-wrap gap-2">
+            <div>
+                <label class="field-label">Ad Soyad</label>
+                <input class="input" @bind="_newUser.FullName" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="field-label">Şifre</label>
+                <input class="input" type="password" @bind="_newUser.Password" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="field-label">Roller</label>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     @foreach (var role in AllRoles)
                     {
-                        <label class="flex items-center gap-1 text-xs">
-                            <input type="checkbox" checked="@_editRoles.Contains(role)" @onchange="e => ToggleRole(_editRoles, role, e.Value)" />
-                            @role
+                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm dark:border-neutral-800">
+                            <input type="checkbox" class="size-4" checked="@_newUser.Roles.Contains(role)" @onchange="e => ToggleRole(_newUser.Roles, role, e.Value)" />
+                            @RoleLabel(role)
                         </label>
                     }
                 </div>
-            }
-            else
-            {
-                @string.Join(", ", user.Roles)
-            }
-        </td>
-        <td data-label="Durum">
-            <span class="badge @(user.IsActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
-                @(user.IsActive ? "Aktif" : "Pasif")
-            </span>
-        </td>
-        <td data-label="">
-            <div class="flex flex-wrap items-center gap-2">
-                @if (_editingRolesId == user.Id)
-                {
-                    <button class="btn-primary" disabled="@(_editRoles.Count == 0)" @onclick="() => ConfirmUpdateRolesAsync(user.Id)">Kaydet</button>
-                    <button class="btn-secondary" @onclick="() => _editingRolesId = null">Vazgeç</button>
-                }
-                else
-                {
-                    <button class="btn-secondary" @onclick="() => StartEditRoles(user)">Rolleri Düzenle</button>
-                }
-
-                @if (user.IsActive)
-                {
-                    <button class="btn-danger" @onclick="() => ConfirmSetActiveAsync(user, false)">Pasif Yap</button>
-                }
-                else
-                {
-                    <button class="btn-secondary" @onclick="() => ConfirmSetActiveAsync(user, true)">Aktif Yap</button>
-                }
-
-                @if (_resettingPasswordId == user.Id)
-                {
-                    <input class="input w-40" type="password" placeholder="Yeni şifre" @bind="_newPassword" @bind:event="oninput" />
-                    <button class="btn-primary" disabled="@(!CanResetPassword)" @onclick="() => ConfirmResetPasswordAsync(user.Id)">Kaydet</button>
-                    <button class="btn-secondary" @onclick="() => _resettingPasswordId = null">Vazgeç</button>
-                }
-                else
-                {
-                    <button class="btn-secondary" @onclick="() => StartResetPassword(user.Id)">Şifre Sıfırla</button>
-                }
             </div>
-        </td>
-    </RowTemplate>
-</DataTable>
+            <div class="lg:col-span-2">
+                <button class="btn-primary w-full sm:w-auto" type="submit" disabled="@(!CanCreateUser)">
+                    <Icon Name="plus" CssClass="h-4 w-4" />Kullanıcı Oluştur
+                </button>
+            </div>
+        </EditForm>
+    </div>
+
+    <ResponsiveEntityList TItem="UserDto"
+                          Items="_users"
+                          Loading="_loading"
+                          LoadError="@_loadError"
+                          EmptyTitle="Henüz kullanıcı yok"
+                          EmptyText="Sistem rolleri için kullanıcı oluşturun.">
+        <HeaderRow>
+            <th>E-posta</th>
+            <th>Ad Soyad</th>
+            <th>Roller</th>
+            <th>Durum</th>
+            <th class="w-28 text-right">İşlem</th>
+        </HeaderRow>
+        <DesktopRowTemplate Context="user">
+            <td>@user.Email</td>
+            <td>@user.FullName</td>
+            <td>@string.Join(", ", user.Roles.Select(RoleLabel))</td>
+            <td>@StatusPill(user.IsActive)</td>
+            <td class="text-right"><button class="entity-row-action" @onclick="() => OpenDetail(user)">Yönet</button></td>
+        </DesktopRowTemplate>
+        <MobileCardTemplate Context="user">
+            <article class="entity-card">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 class="truncate font-semibold">@user.FullName</h2>
+                        <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@user.Email</p>
+                        <p class="mt-1 line-clamp-2 text-sm text-neutral-500 dark:text-neutral-400">@string.Join(", ", user.Roles.Select(RoleLabel))</p>
+                    </div>
+                    @StatusPill(user.IsActive)
+                </div>
+                <button class="btn-secondary mt-3 w-full" @onclick="() => OpenDetail(user)">Yönet</button>
+            </article>
+        </MobileCardTemplate>
+    </ResponsiveEntityList>
+</section>
+
+<DetailPanel Show="_selectedUser is not null"
+             Title="@(_selectedUser?.FullName ?? "")"
+             Subtitle="@(_selectedUser?.Email ?? "Kullanıcı")"
+             OnClose="CloseDetail">
+    @if (_selectedUser is not null)
+    {
+        <div class="space-y-4">
+            <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                <h3 class="text-sm font-semibold">Roller</h3>
+                <div class="grid grid-cols-1 gap-2">
+                    @foreach (var role in AllRoles)
+                    {
+                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-800 dark:bg-neutral-900">
+                            <input type="checkbox" class="size-4" checked="@_editRoles.Contains(role)" @onchange="e => ToggleRole(_editRoles, role, e.Value)" />
+                            @RoleLabel(role)
+                        </label>
+                    }
+                </div>
+                <button class="btn-primary w-full" disabled="@(_editRoles.Count == 0)" @onclick="ConfirmUpdateRolesAsync">
+                    <Icon Name="check" CssClass="h-4 w-4" />Rolleri Kaydet
+                </button>
+            </div>
+
+            <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                <h3 class="text-sm font-semibold">Şifre sıfırla</h3>
+                <input class="input" type="password" placeholder="Yeni şifre" @bind="_newPassword" @bind:event="oninput" />
+                <button class="btn-secondary w-full" disabled="@(!CanResetPassword)" @onclick="ConfirmResetPasswordAsync">
+                    Şifreyi Sıfırla
+                </button>
+            </div>
+
+            <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                <p class="field-label">Durum</p>
+                <div class="flex items-center justify-between gap-3">
+                    @StatusPill(_selectedUser.IsActive)
+                    <button class="@(_selectedUser.IsActive ? "btn-danger" : "btn-secondary")"
+                            @onclick="() => ConfirmSetActiveAsync(_selectedUser, !_selectedUser.IsActive)">
+                        @(_selectedUser.IsActive ? "Pasif Yap" : "Aktif Yap")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</DetailPanel>
 
 @code {
     private static readonly string[] AllRoles =
@@ -122,13 +143,9 @@
     private string? _loadError;
     private bool _creating;
     private readonly NewUserModel _newUser = new();
-
-    private Guid? _editingRolesId;
+    private UserDto? _selectedUser;
     private readonly List<string> _editRoles = [];
-
-    private Guid? _resettingPasswordId;
     private string _newPassword = "";
-
     private static readonly EmailAddressAttribute EmailValidator = new();
 
     private bool CanCreateUser =>
@@ -155,6 +172,7 @@
         {
             _loadError = result.ErrorMessage;
         }
+
         _loading = false;
     }
 
@@ -197,15 +215,24 @@
         _creating = false;
     }
 
-    private void StartEditRoles(UserDto user)
+    private void OpenDetail(UserDto user)
     {
-        _editingRolesId = user.Id;
+        _selectedUser = user;
         _editRoles.Clear();
         _editRoles.AddRange(user.Roles);
+        _newPassword = "";
     }
 
-    private async Task ConfirmUpdateRolesAsync(Guid userId)
+    private void CloseDetail()
     {
+        _selectedUser = null;
+        _editRoles.Clear();
+        _newPassword = "";
+    }
+
+    private async Task ConfirmUpdateRolesAsync()
+    {
+        if (_selectedUser is null) return;
         if (_editRoles.Count == 0)
         {
             Toast.Error("Lütfen en az bir rol seçin.");
@@ -215,11 +242,11 @@
         var confirmed = await Confirm.ConfirmAsync("Rolleri güncelle", "Bu kullanıcının rollerini güncellemek istediğinize emin misiniz?");
         if (!confirmed) return;
 
-        var result = await UsersApi.UpdateRolesAsync(userId, new UpdateUserRolesRequest(_editRoles.ToList()));
+        var result = await UsersApi.UpdateRolesAsync(_selectedUser.Id, new UpdateUserRolesRequest(_editRoles.ToList()));
         if (result.Success)
         {
             Toast.Success("Roller güncellendi.");
-            _editingRolesId = null;
+            CloseDetail();
             await LoadAsync();
         }
         else
@@ -239,6 +266,7 @@
         if (result.Success)
         {
             Toast.Success($"Kullanıcı {action} yapıldı.");
+            CloseDetail();
             await LoadAsync();
         }
         else
@@ -247,14 +275,9 @@
         }
     }
 
-    private void StartResetPassword(Guid userId)
+    private async Task ConfirmResetPasswordAsync()
     {
-        _resettingPasswordId = userId;
-        _newPassword = "";
-    }
-
-    private async Task ConfirmResetPasswordAsync(Guid userId)
-    {
+        if (_selectedUser is null) return;
         if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 6)
         {
             Toast.Error("Şifre en az 6 karakter olmalı.");
@@ -265,11 +288,11 @@
             "Şifreyi sıfırla", "Bu kullanıcının şifresini sıfırlamak istediğinize emin misiniz?", danger: true);
         if (!confirmed) return;
 
-        var result = await UsersApi.ResetPasswordAsync(userId, new ResetPasswordRequest(_newPassword));
+        var result = await UsersApi.ResetPasswordAsync(_selectedUser.Id, new ResetPasswordRequest(_newPassword));
         if (result.Success)
         {
             Toast.Success("Şifre sıfırlandı.");
-            _resettingPasswordId = null;
+            _newPassword = "";
         }
         else
         {
@@ -277,17 +300,25 @@
         }
     }
 
+    private static RenderFragment StatusPill(bool isActive) => @<span class="badge @(isActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
+        @(isActive ? "Aktif" : "Pasif")
+    </span>;
+
+    private static string RoleLabel(string role) => role switch
+    {
+        "SystemAdmin" => "Sistem Admin",
+        "TechnicalOfficeEngineer" => "Teknik Ofis",
+        "HeadOfMaster" => "Ustabaşı",
+        "SiteChief" => "Şantiye Şefi",
+        "ProjectManager" => "Proje Müdürü",
+        _ => role
+    };
+
     private class NewUserModel
     {
-        [Required, EmailAddress]
-        public string Email { get; set; } = "";
-
-        [Required]
-        public string FullName { get; set; } = "";
-
-        [Required, MinLength(6)]
-        public string Password { get; set; } = "";
-
+        [Required, EmailAddress] public string Email { get; set; } = "";
+        [Required] public string FullName { get; set; } = "";
+        [Required, MinLength(6)] public string Password { get; set; } = "";
         public List<string> Roles { get; } = [];
     }
 }

@@ -2,9 +2,22 @@ using Microsoft.JSInterop;
 
 namespace Workplan.Client.Services;
 
+public enum ThemeMode
+{
+    System,
+    Light,
+    Dark
+}
+
 public class ThemeService
 {
+    private const string GetMethod = "workplanTheme.get";
+    private const string SetMethod = "workplanTheme.set";
+    private const string ApplyMethod = "workplanTheme.apply";
+
     private readonly IJSRuntime _js;
+
+    public ThemeMode Mode { get; private set; } = ThemeMode.System;
 
     public bool IsDark { get; private set; }
 
@@ -17,12 +30,12 @@ public class ThemeService
 
     public async Task InitializeAsync()
     {
-        var stored = await _js.InvokeAsync<string?>("workplanTheme.get");
-        IsDark = stored switch
+        var stored = await _js.InvokeAsync<string?>(GetMethod);
+        Mode = stored switch
         {
-            "dark" => true,
-            "light" => false,
-            _ => await _js.InvokeAsync<bool>("workplanTheme.prefersDark")
+            "dark" => ThemeMode.Dark,
+            "light" => ThemeMode.Light,
+            _ => ThemeMode.System
         };
 
         await ApplyAsync();
@@ -30,14 +43,27 @@ public class ThemeService
 
     public async Task ToggleAsync()
     {
-        IsDark = !IsDark;
-        await _js.InvokeVoidAsync("workplanTheme.set", IsDark ? "dark" : "light");
-        await ApplyAsync();
+        await SetModeAsync(IsDark ? ThemeMode.Light : ThemeMode.Dark);
+    }
+
+    public async Task SetModeAsync(ThemeMode mode)
+    {
+        Mode = mode;
+        IsDark = await _js.InvokeAsync<bool>(SetMethod, ToStorageValue(mode));
+        Changed?.Invoke();
     }
 
     private async Task ApplyAsync()
     {
-        await _js.InvokeVoidAsync("workplanTheme.apply", IsDark);
+        IsDark = await _js.InvokeAsync<bool>(ApplyMethod, ToStorageValue(Mode));
         Changed?.Invoke();
     }
+
+    private static string ToStorageValue(ThemeMode mode) =>
+        mode switch
+        {
+            ThemeMode.Dark => "dark",
+            ThemeMode.Light => "light",
+            _ => "system"
+        };
 }

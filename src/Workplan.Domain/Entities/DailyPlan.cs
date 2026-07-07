@@ -16,7 +16,7 @@ public class DailyPlan : AggregateRoot<Guid>
     public DateOnly WorkDate { get; private set; }
     public Guid PlannedById { get; private set; } // Teknik Ofis
     public Guid? AssignedHoMId { get; private set; }
-    public Guid? CrewId { get; private set; } // Tek bir ekip referansı (MVP)
+    public Guid? CrewTypeId { get; private set; }
 
     public decimal PlannedQuantity { get; private set; }
     public decimal PlannedManDay { get; private set; }
@@ -80,8 +80,8 @@ public class DailyPlan : AggregateRoot<Guid>
         return work;
     }
 
-    // T0: Ustabaşı işi başlatır, kendi ekibini seçer.
-    public Result StartWork(Guid actorId, Guid crewId)
+    // T0: Ustabaşı işi başlatır, crew type seçer.
+    public Result StartWork(Guid actorId, Guid crewTypeId)
     {
         if (Status != WorkStatus.Assigned)
             return Result.Fail(Error.Validation("İş başlatılabilir durumda değil."));
@@ -89,10 +89,10 @@ public class DailyPlan : AggregateRoot<Guid>
         if (AssignedHoMId != actorId)
             return Result.Fail(Error.ScopeMismatch("Bu iş size atanmış değil."));
 
-        if (crewId == Guid.Empty)
-            return Result.Fail(Error.Validation("Ekip seçilmelidir."));
+        if (crewTypeId == Guid.Empty)
+            return Result.Fail(Error.Validation("Ekip tipi seçilmelidir."));
 
-        CrewId = crewId;
+        CrewTypeId = crewTypeId;
         ApplyTransition(WorkStatus.InProgress, actorId, "Ustabaşı işi başlattı.");
         return Result.Ok();
     }
@@ -119,12 +119,14 @@ public class DailyPlan : AggregateRoot<Guid>
         if (!hasAnyActual && string.IsNullOrWhiteSpace(comment))
             return Result.Fail(Error.Validation("O gün hiçbir ilerleme kaydedilmediyse gerekçe yazmalısınız."));
 
+        var trimmedComment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+
         FactQuantity = factQty;
         FactManDay = factManDay;
         Overtime = overtime;
-        Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+        Comment = trimmedComment;
 
-        ApplyTransition(WorkStatus.Submitted, masterId, "Ustabaşı gün sonu verilerini girdi ve Site Chief onayına sundu.");
+        ApplyTransition(WorkStatus.Submitted, masterId, trimmedComment);
         return Result.Ok();
     }
 
@@ -152,17 +154,22 @@ public class DailyPlan : AggregateRoot<Guid>
 
     public Result Reject(WorkStatus rejecterRole, Guid approverUserId, string reason)
     {
-        if (Status is not (WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief))
-            return Result.Fail(Error.Validation("Onay aşamasında olmayan iş reddedilemez."));
-
         if (string.IsNullOrWhiteSpace(reason))
             return Result.Fail(Error.Validation("Red gerekçesi boş olamaz."));
 
-        string logNote = $"[{rejecterRole} REDDETTİ] Gerekçe: {reason}";
+        var targetStatus = (rejecterRole, Status) switch
+        {
+            (WorkStatus.ApprovedBySiteChief, WorkStatus.Submitted or WorkStatus.ApprovedByHoM) => WorkStatus.InProgress,
+            (WorkStatus.ApprovedByPM, WorkStatus.ApprovedBySiteChief) => WorkStatus.Submitted,
+            _ => (WorkStatus?)null
+        };
 
-        // Reddedilen iş her halükarda InProgress (Ustanın ekranına) geri döner
-        ApplyTransition(WorkStatus.InProgress, approverUserId, logNote);
-        Comment = logNote;
+        if (targetStatus is null)
+            return Result.Fail(Error.Validation("Bu iş şu anda sizin red aşamanızda değil."));
+
+        string trimmedReason = reason.Trim();
+
+        ApplyTransition(targetStatus.Value, approverUserId, trimmedReason);
 
         return Result.Ok();
     }

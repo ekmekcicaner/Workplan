@@ -1,0 +1,50 @@
+@using System.Text.RegularExpressions
+
+<section class="card">
+    <div class="mb-4 flex items-center justify-between gap-3">
+        <div>
+            <h2 class="text-base font-semibold">Durum Geçmişi</h2>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">İşlem sırası ve kaydı güncelleyen kişi.</p>
+        </div>
+        <Icon Name="clock" CssClass="h-5 w-5 text-neutral-400" />
+    </div>
+
+    @if (History.Count == 0)
+    {
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">Geçmiş kaydı yok.</p>
+    }
+    else
+    {
+        <ol class="relative border-s border-neutral-200 ps-5 dark:border-neutral-800">
+            @foreach (var entry in History.OrderByDescending(item => item.TransitionedAt))
+            {
+                <li class="relative pb-5 last:pb-0">
+                    <span class="absolute -start-[1.65rem] top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-4 border-white bg-brand-500 dark:border-neutral-900"></span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <StatusBadge Status="entry.FromStatus" />
+                        <Icon Name="arrow-right" CssClass="h-4 w-4 text-neutral-400" />
+                        <StatusBadge Status="entry.ToStatus" />
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        <span class="font-medium text-neutral-700 dark:text-neutral-200">@ActorLabel(entry)</span>
+                        <span>@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(entry.Note))
+                    {
+                        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700 dark:text-neutral-300">@CleanNote(entry.Note)</p>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyCollection<StatusTransitionDto> History { get; set; } = [];
+
+    private static string ActorLabel(StatusTransitionDto entry) =>
+        string.IsNullOrWhiteSpace(entry.ActionByName) ? "Sistem kaydı" : entry.ActionByName;
+
+    private static string CleanNote(string note) =>
+        Regex.Replace(note, @"\s*\([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\)", "");
+}

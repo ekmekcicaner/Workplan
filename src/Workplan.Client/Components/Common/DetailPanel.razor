@@ -1,0 +1,39 @@
+@if (Show)
+{
+    <div class="detail-panel-backdrop" @onclick="CloseAsync">
+        <aside class="detail-panel" @onclick:stopPropagation="true">
+            <header class="detail-panel-header">
+                <div class="min-w-0">
+                    <h2 class="truncate text-lg font-semibold">@Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Subtitle))
+                    {
+                        <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@Subtitle</p>
+                    }
+                </div>
+                <button type="button" class="icon-button" @onclick="CloseAsync" aria-label="Kapat">
+                    <Icon Name="close" CssClass="h-5 w-5" />
+                </button>
+            </header>
+            <div class="detail-panel-body">
+                @ChildContent
+            </div>
+            @if (Footer is not null)
+            {
+                <footer class="detail-panel-footer">
+                    @Footer
+                </footer>
+            }
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

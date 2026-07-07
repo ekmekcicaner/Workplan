@@ -12,7 +12,7 @@ public sealed record DailyPlanDto(
     DateOnly WorkDate,
     Guid PlannedById,
     Guid? AssignedHoMId,
-    Guid? CrewId,
+    Guid? CrewTypeId,
     decimal PlannedQuantity,
     decimal PlannedManDay,
     Unit Unit,
@@ -28,4 +28,5 @@ public sealed record StatusTransitionDto(
     WorkStatus ToStatus,
     Guid ActionById,
     DateTime TransitionedAt,
+    string? ActionByName,
     string? Note);

@@ -34,10 +34,9 @@ public class AccessScopeService : IAccessScopeService
         CanViewAll ? query : ApplyLocationOwnershipFilter(query);
 
     public IQueryable<DailyPlan> ApplyDailyPlanScope(IQueryable<DailyPlan> query) =>
-        CanViewAll ? query : ApplyDailyPlanOwnershipFilter(query);
-
-    public IQueryable<Crew> ApplyCrewScope(IQueryable<Crew> query) =>
-        CanViewAll ? query : ApplyCrewOwnershipFilter(query);
+        IsSystemAdmin || HasRole(Roles.TechnicalOfficeEngineer)
+            ? query
+            : ApplyDailyPlanOwnershipFilter(query);
 
     public Task<bool> CanAccessProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
         ApplyProjectOwnershipFilter(_db.Projects.AsNoTracking())
@@ -54,10 +53,6 @@ public class AccessScopeService : IAccessScopeService
     public Task<bool> CanAccessDailyPlanAsync(Guid dailyPlanId, CancellationToken cancellationToken) =>
         ApplyDailyPlanOwnershipFilter(_db.DailyPlans.AsNoTracking())
             .AnyAsync(p => p.Id == dailyPlanId, cancellationToken);
-
-    public Task<bool> CanAccessCrewAsync(Guid crewId, CancellationToken cancellationToken) =>
-        ApplyCrewOwnershipFilter(_db.Crews.AsNoTracking())
-            .AnyAsync(c => c.Id == crewId, cancellationToken);
 
     // Aşağıdaki filtreler işlem (atama, onay, ekip/plan oluşturma vb.) yetkisini belirler:
     // proje yöneticisi ve teknik ofis de dahil olmak üzere herkes yalnızca kendi
@@ -145,30 +140,6 @@ public class AccessScopeService : IAccessScopeService
             || (isTechOffice && _db.CrewRegions.Any(r =>
                 r.Id == p.CrewRegionId && r.TechOfficeUserId == userId))
             || (isHeadOfMaster && p.AssignedHoMId == userId));
-    }
-
-    private IQueryable<Crew> ApplyCrewOwnershipFilter(IQueryable<Crew> query)
-    {
-        if (IsSystemAdmin) return query;
-        if (_currentUser.UserId is not { } userId) return query.Where(_ => false);
-
-        var isProjectManager = HasRole(Roles.ProjectManager);
-        var isSiteChief = HasRole(Roles.SiteChief);
-        var isTechOffice = HasRole(Roles.TechnicalOfficeEngineer);
-        var isHeadOfMaster = HasRole(Roles.HeadOfMaster);
-
-        return query.Where(c =>
-            (isProjectManager && _db.Locations.Any(l =>
-                l.Id == c.LocationId && _db.Projects.Any(p =>
-                    p.Id == l.ProjectId && p.PmUserId == userId)))
-            || (isSiteChief && _db.Locations.Any(l =>
-                l.Id == c.LocationId && _db.CrewRegions.Any(r =>
-                    r.Id == l.CrewRegionId && r.SiteChiefUserId == userId)))
-            || (isTechOffice && _db.Locations.Any(l =>
-                l.Id == c.LocationId && _db.CrewRegions.Any(r =>
-                    r.Id == l.CrewRegionId && r.TechOfficeUserId == userId)))
-            || (isHeadOfMaster && c.CreatedByHoMId == userId && _db.Locations.Any(l =>
-                l.Id == c.LocationId && l.HeadOfMasterUserId == userId)));
     }
 
     private bool HasRole(string role) => _currentUser.Roles.Contains(role);

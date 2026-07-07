@@ -26,7 +26,7 @@ public static class ProjectEndpoints
             .RequireAuthorization();
 
         group.MapPut("/{id:guid}", async (Guid id, UpdateProjectRequest request, ISender sender, CancellationToken ct)
-                => (await sender.Send(new UpdateProjectCommand(id, request.Code, request.Name), ct)).ToApiResult())
+                => (await sender.Send(new UpdateProjectCommand(id, request.Code, request.Name, request.PmUserId), ct)).ToApiResult())
             .RequireAuthorization(p => p.RequireRole(Roles.SystemAdmin, Roles.TechnicalOfficeEngineer));
 
         group.MapPost("/{id:guid}/activation",
@@ -38,4 +38,4 @@ public static class ProjectEndpoints
     }
 }
 
-public sealed record UpdateProjectRequest(string Code, string Name);
+public sealed record UpdateProjectRequest(string Code, string Name, Guid? PmUserId = null);

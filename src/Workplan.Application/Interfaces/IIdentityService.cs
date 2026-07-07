@@ -13,6 +13,8 @@ public interface IIdentityService
 
     Task<IReadOnlyList<UserSummary>> GetUsersAsync(string? role, CancellationToken ct);
 
+    Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken ct);
+
     Task<Result<AuthenticatedUser>> ValidateCredentialsAsync(string email, string password, CancellationToken ct);
 
     Task<IssuedRefreshToken> IssueRefreshTokenAsync(Guid userId, CancellationToken ct);

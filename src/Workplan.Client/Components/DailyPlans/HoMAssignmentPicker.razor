@@ -1,0 +1,10 @@
+<div class="card">
+    <h2 class="mb-3 text-base font-semibold">Saha Sorumlusu</h2>
+    <label class="field-label">Head of Master</label>
+    <UserPicker Role="HeadOfMaster" Value="Value" ValueChanged="ValueChanged" Placeholder="Ustabaşı ara..." />
+</div>
+
+@code {
+    [Parameter] public Guid? Value { get; set; }
+    [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+}

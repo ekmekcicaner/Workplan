@@ -32,14 +32,12 @@ public class StartWorkCommandHandler : IRequestHandler<StartWorkCommand, Result>
         if (!await _accessScope.CanAccessDailyPlanAsync(request.DailyPlanId, cancellationToken))
             return Result.Fail(Error.ScopeMismatch("Bu günlük planı başlatma yetkiniz yok."));
 
-        var crewValid = await _db.Crews.AsNoTracking()
-            .AnyAsync(c => c.Id == request.CrewId
-                           && c.LocationId == plan.LocationId
-                           && c.CreatedByHoMId == headOfMasterUserId, cancellationToken);
-        if (!crewValid)
-            return Result.Fail(Error.ScopeMismatch("Ekip, lokasyon/ustabaşı ile eşleşmiyor ya da bulunamadı."));
+        var crewTypeExists = await _db.CrewTypes.AsNoTracking()
+            .AnyAsync(type => type.Id == request.CrewTypeId && type.IsActive, cancellationToken);
+        if (!crewTypeExists)
+            return Result.Fail(Error.Validation("Aktif bir ekip tipi seçilmelidir."));
 
-        var result = plan.StartWork(headOfMasterUserId, request.CrewId);
+        var result = plan.StartWork(headOfMasterUserId, request.CrewTypeId);
         if (result.IsFailure) return result;
 
         _db.StatusTransitions.Add(plan.History.Last());

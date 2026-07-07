@@ -25,6 +25,18 @@ public class CreateCrewRegionCommandHandler : IRequestHandler<CreateCrewRegionCo
         var result = CrewRegion.Create(request.ProjectId, request.Code, request.Name);
         if (result.IsFailure) return Result<Guid>.Fail(result.Error);
 
+        if (request.SiteChiefUserId is { } siteChiefUserId)
+        {
+            var assignSiteChief = result.Value.AssignSiteChief(siteChiefUserId);
+            if (assignSiteChief.IsFailure) return Result<Guid>.Fail(assignSiteChief.Error);
+        }
+
+        if (request.TechOfficeUserId is { } techOfficeUserId)
+        {
+            var assignTechOffice = result.Value.AssignTechOffice(techOfficeUserId);
+            if (assignTechOffice.IsFailure) return Result<Guid>.Fail(assignTechOffice.Error);
+        }
+
         _db.CrewRegions.Add(result.Value);
         await _db.SaveChangesAsync(cancellationToken);
 

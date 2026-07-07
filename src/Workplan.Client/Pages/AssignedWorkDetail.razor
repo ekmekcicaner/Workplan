@@ -1,201 +1,113 @@
 @page "/daily-plans/{Id:guid}"
 @attribute [Authorize]
 @inject DailyPlansApiService DailyPlansApi
-@inject ProjectsApiService ProjectsApi
-@inject CrewRegionsApiService CrewRegionsApi
-@inject LocationsApiService LocationsApi
-@inject WorkItemTypesApiService WorkItemTypesApi
-@inject CrewsApiService CrewsApi
 @inject NotificationsApiService NotificationsApi
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ConfirmService Confirm
 @inject ToastService Toast
+@inject ConnectivityService Connectivity
 
-<p class="mb-2"><a class="text-sm text-neutral-500 hover:underline dark:text-neutral-400" href="">&larr; Ana Sayfa</a></p>
-<h1 class="mb-4 text-2xl font-semibold">İş Detayı</h1>
+<PageTitle>İş Detayı | Workplan</PageTitle>
+
+<PageHeader Title="İş Detayı"
+            Subtitle="Saha işi, sorumlular, gerçekleşen değerler ve onay akışı."
+            BackHref=""
+            BackText="Ana Sayfa" />
 
 <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
 
 @if (!_loading && _plan is not null)
 {
-    <div class="card mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-            <p class="field-label">Proje</p>
-            <p>@(_project?.Name ?? "-")</p>
-        </div>
-        <div>
-            <p class="field-label">Saha Bölgesi</p>
-            <p>@(_region?.Name ?? "-")</p>
-        </div>
-        <div>
-            <p class="field-label">Lokasyon</p>
-            <p>@(_location?.Name ?? "-")</p>
-        </div>
-        <div>
-            <p class="field-label">İş Kalemi Tipi</p>
-            <p>@(_workItemTypeName ?? "-")</p>
-        </div>
-        <div>
-            <p class="field-label">Tarih</p>
-            <p>@_plan.WorkDate.ToString("dd.MM.yyyy")</p>
-        </div>
-        <div>
-            <p class="field-label">Durum</p>
-            <StatusBadge Status="_plan.Status" />
-        </div>
-        <div>
-            <p class="field-label">Planlanan</p>
-            <p>@NumberDisplay.Format(_plan.PlannedQuantity) @UnitLabel(_plan.Unit) &middot; @NumberDisplay.Format(_plan.PlannedManDay) adam-gün</p>
-        </div>
-        <div>
-            <p class="field-label">Gerçekleşen</p>
-            <p>
-                @NumberDisplay.Format(_plan.FactQuantity) @UnitLabel(_plan.Unit) &middot;
-                @NumberDisplay.Format(_plan.FactManDay) adam-gün
-                @(_plan.Overtime is { } ot ? $" · {NumberDisplay.Format(ot)} fazla mesai" : "")
-            </p>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(_plan.Comment))
-        {
-            <div class="sm:col-span-2">
-                <p class="field-label">Yorum</p>
-                <p>@_plan.Comment</p>
-            </div>
-        }
-    </div>
+    <div class="flex flex-col gap-4">
+        <WorkDetailHero Plan="_plan" />
+        <WorkResponsibilityStrip Plan="_plan" />
 
-    @if (_crew is not null)
-    {
-        <div class="card mb-6">
-            <div class="mb-2 flex items-center justify-between">
-                <h2 class="font-semibold">@_crew.Name</h2>
-                <span class="badge">@_crew.Members.Count üye</span>
-            </div>
-            @if (_crew.Members.Count > 0)
-            {
-                <table class="table-base mb-3">
-                    <thead>
-                        <tr>
-                            <th>Rol</th>
-                            <th>Personel Ref.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var member in _crew.Members)
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+            <main class="order-2 flex flex-col gap-4 lg:order-1 lg:col-span-8">
+                <PlanActualComparison Plan="_plan" />
+                <FieldCommentPanel Comments="@_plan.Comments" />
+                <WorkStatusTimeline History="_plan.History" />
+            </main>
+
+            <aside class="order-1 flex flex-col gap-4 lg:sticky lg:top-4 lg:order-2 lg:col-span-4">
+                <AuthorizeView Roles="HeadOfMaster" Context="homContext">
+                    <Authorized>
+                        @if (_plan.Status == WorkStatus.Assigned || _plan.CrewTypeId is not null)
                         {
-                            <tr>
-                                <td>@member.WorkerType</td>
-                                <td>@member.PersonnelRef</td>
-                            </tr>
+                            <CrewAssignmentPanel Plan="_plan"
+                                                 @bind-SelectedCrewTypeId="_selectedCrewTypeId"
+                                                 Busy="_busy"
+                                                 IsOnline="Connectivity.IsOnline"
+                                                 OnStart="ConfirmStartAsync" />
                         }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <p class="mb-3 text-sm text-neutral-500 dark:text-neutral-400">Ekipte kayıtlı üye yok.</p>
-            }
-            <a class="btn-secondary" href="@($"locations/{_plan.LocationId}/crews")">Ekip detayına git</a>
-        </div>
-    }
 
-    <AuthorizeView Roles="HeadOfMaster" Context="assignContext">
-        <Authorized>
-            @if (_plan.Status == WorkStatus.Assigned)
-            {
-                <div class="card mb-6">
-                    <h2 class="mb-1 font-semibold">İşi başlat</h2>
-                    <AccessNote Roles="HeadOfMaster" />
-                    <div class="flex flex-wrap items-end gap-2">
-                        <div class="w-full sm:w-64">
-                            <label class="field-label">Ekip</label>
-                            <select class="input" @bind="_selectedCrewId" disabled="@(_crews.Count == 0)">
-                                <option value="">Seçiniz</option>
-                                @foreach (var crew in _crews)
-                                {
-                                    <option value="@crew.Id">@crew.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <button class="btn-primary" disabled="@(!Guid.TryParse(_selectedCrewId, out _))" @onclick="ConfirmStartAsync">Başlat</button>
-                        <a class="btn-secondary" href="@($"locations/{_plan.LocationId}/crews")">Yeni ekip oluştur</a>
-                    </div>
-                </div>
-            }
-            @if (_plan.Status == WorkStatus.InProgress)
-            {
-                <ProgressForm Model="_submitProgress" OnSubmit="ConfirmSubmitProgressAsync" />
-            }
-        </Authorized>
-    </AuthorizeView>
-
-    @if (_plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief)
-    {
-        <AuthorizeView Roles="SiteChief,ProjectManager" Context="approveContext">
-            <Authorized>
-                <ApprovalPanel OnApprove="ConfirmApproveAsync" OnReject="ConfirmRejectAsync" />
-            </Authorized>
-        </AuthorizeView>
-    }
-
-    <div class="card">
-        <h2 class="mb-3 font-semibold">Durum Geçmişi</h2>
-        @if (_plan.History is null || _plan.History.Count == 0)
-        {
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">Geçmiş kaydı yok.</p>
-        }
-        else
-        {
-            <ul class="flex flex-col gap-2 text-sm">
-                @foreach (var entry in _plan.History)
-                {
-                    <li class="border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-700/60">
-                        <div class="flex items-center gap-2">
-                            <StatusBadge Status="entry.FromStatus" />
-                            <span>&rarr;</span>
-                            <StatusBadge Status="entry.ToStatus" />
-                            <span class="text-neutral-400">@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(entry.Note))
+                        @if (_plan.Status == WorkStatus.InProgress)
                         {
-                            <p class="mt-1 text-neutral-600 dark:text-neutral-300">@entry.Note</p>
+                            <ProgressSubmissionForm Model="_submitProgress"
+                                                    Plan="_plan"
+                                                    Busy="_busy"
+                                                    IsOnline="Connectivity.IsOnline"
+                                                    OnSubmit="ConfirmSubmitProgressAsync" />
                         }
-                    </li>
-                }
-            </ul>
-        }
+                    </Authorized>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalContext">
+                    <Authorized>
+                        @if (CanApproveCurrentStage(approvalContext.User))
+                        {
+                            <ApprovalActionPanel Busy="_busy"
+                                                 IsOnline="Connectivity.IsOnline"
+                                                 HelpText="@ApprovalHelpText(approvalContext.User)"
+                                                 OnApprove="ConfirmApproveAsync"
+                                                 OnReject="ConfirmRejectAsync" />
+                        }
+                        else if (_plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief)
+                        {
+                            <div class="card">
+                                <h2 class="mb-1 text-base font-semibold">Onay</h2>
+                                <p class="text-sm text-neutral-500 dark:text-neutral-400">Bu kayıt şu anda sizin onay aşamanızda değil.</p>
+                            </div>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+
+                <ApprovalStepTracker Plan="_plan" />
+            </aside>
+        </div>
     </div>
 }
 
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private DailyPlanDto? _plan;
-    private ProjectDto? _project;
-    private CrewRegionDto? _region;
-    private LocationDto? _location;
-    private string? _workItemTypeName;
+    private DailyPlanDetailDto? _plan;
     private bool _loading = true;
     private string? _loadError;
+    private bool _busy;
+    private Guid? _selectedCrewTypeId;
+    private IReadOnlyList<string> _currentRoles = [];
+    private readonly ProgressSubmissionForm.ProgressModel _submitProgress = new();
 
-    private Guid? _currentUserId;
-    private List<CrewDto> _crews = [];
-    private CrewDto? _crew;
-    private string _selectedCrewId = "";
-
-    private readonly ProgressForm.ProgressModel _submitProgress = new();
-
-    protected override Task OnInitializedAsync() => LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await Connectivity.InitializeAsync();
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
         _loading = true;
         _loadError = null;
+        _selectedCrewTypeId = null;
 
-        var result = await DailyPlansApi.GetByIdAsync(Id);
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentRoles = authState.User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).ToList();
+
+        var result = await DailyPlansApi.GetDetailAsync(Id);
         if (!result.Success || result.Data is null)
         {
-            _loadError = result.ErrorMessage ?? "Plan bulunamadı.";
+            _loadError = result.ErrorMessage ?? "Plan bulunamadı veya görüntüleme yetkiniz yok.";
             _loading = false;
             return;
         }
@@ -203,118 +115,131 @@
         _plan = result.Data;
         await NotificationsApi.MarkDailyPlanReadAsync(Id);
 
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _currentUserId = Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
-
-        var projectTask = ProjectsApi.GetByIdAsync(_plan.ProjectId);
-        var regionTask = CrewRegionsApi.GetByIdAsync(_plan.CrewRegionId);
-        var locationTask = LocationsApi.GetByIdAsync(_plan.LocationId);
-        var typesTask = WorkItemTypesApi.GetTreeAsync(includeInactive: true);
-
-        await Task.WhenAll(projectTask, regionTask, locationTask, typesTask);
-
-        _project = (await projectTask).Data;
-        _region = (await regionTask).Data;
-        _location = (await locationTask).Data;
-
-        var types = (await typesTask).Data ?? [];
-        _workItemTypeName = Flatten(types).FirstOrDefault(t => t.Id == _plan.WorkItemTypeId)?.Name;
-
-        if (_plan.Status == WorkStatus.Assigned)
-        {
-            var crewsResult = await CrewsApi.GetByLocationAsync(_plan.LocationId);
-            _crews = (crewsResult.Data ?? []).Where(c => c.CreatedByHoMId == _currentUserId).ToList();
-        }
-        else if (_plan.CrewId is { } crewId)
-        {
-            var crewsResult = await CrewsApi.GetByLocationAsync(_plan.LocationId);
-            _crew = (crewsResult.Data ?? []).FirstOrDefault(c => c.Id == crewId);
-        }
-
         _loading = false;
     }
 
-    private static string UnitLabel(Unit unit) => unit switch
+    private bool CanApproveCurrentStage(ClaimsPrincipal user)
     {
-        Unit.Ton => "ton",
-        Unit.M3 => "m³",
-        Unit.M2 => "m²",
-        _ => ""
-    };
+        if (_plan is null) return false;
+        return (user.IsInRole("SiteChief") && _plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
+               || (user.IsInRole("ProjectManager") && _plan.Status == WorkStatus.ApprovedBySiteChief);
+    }
 
-    private static IEnumerable<WorkItemTypeDto> Flatten(IEnumerable<WorkItemTypeDto> nodes)
+    private string ApprovalHelpText(ClaimsPrincipal user)
     {
-        foreach (var node in nodes)
-        {
-            yield return node;
-            foreach (var child in Flatten(node.Children))
-            {
-                yield return child;
-            }
-        }
+        if (user.IsInRole("SiteChief"))
+            return "Şantiye Şefi onayı sonrası kayıt Proje Yöneticisi aşamasına geçer.";
+        if (user.IsInRole("ProjectManager"))
+            return "Project Manager son onayı sonrası kayıt Daily Report'a dahil edilir.";
+        return "Bu kayıt yalnızca sizin onay aşamanızdaysa işlenir.";
     }
 
     private async Task ConfirmStartAsync()
     {
-        if (!Guid.TryParse(_selectedCrewId, out var crewId))
+        if (_plan is null) return;
+        if (!Connectivity.IsOnline)
         {
-            Toast.Error("Lütfen bir ekip seçin.");
+            Toast.Error("Bağlantı yokken iş başlatılamaz.");
             return;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("İşi başlat", "Bu işi başlatmak istediğinize emin misiniz?");
+        if (_selectedCrewTypeId is null)
+        {
+            Toast.Error("Lütfen bir ekip tipi seçin.");
+            return;
+        }
+
+        var confirmed = await Confirm.ConfirmAsync("İşi başlat", "Bu işi seçilen ekip tipi ile başlatmak istediğinize emin misiniz?");
         if (!confirmed) return;
 
-        var result = await DailyPlansApi.StartAsync(Id, crewId);
+        _busy = true;
+        var result = await DailyPlansApi.StartAsync(Id, _selectedCrewTypeId.Value);
         await HandleResultAsync(result, "İş başlatıldı.");
+        _busy = false;
     }
 
     private async Task ConfirmSubmitProgressAsync()
     {
-        var confirmed = await Confirm.ConfirmAsync("İlerlemeyi onaya sun", "Girilen değerlerle onaya sunmak istediğinize emin misiniz?");
+        if (!Connectivity.IsOnline)
+        {
+            Toast.Error("Bağlantı yokken gün sonu beyanı gönderilemez.");
+            return;
+        }
+
+        var confirmed = await Confirm.ConfirmAsync("Gün sonu beyanını gönder", "Bu beyan HoM onayı kabul edilip Şantiye Şefi onayına gönderilecek. Emin misiniz?");
         if (!confirmed) return;
 
+        _busy = true;
         var request = new SubmitProgressRequest(
-            _submitProgress.FactQuantity, _submitProgress.FactManDay, _submitProgress.Overtime, _submitProgress.Comment);
+            _submitProgress.FactQuantity,
+            _submitProgress.FactManDay,
+            _submitProgress.Overtime,
+            _submitProgress.Comment);
         var result = await DailyPlansApi.SubmitProgressAsync(Id, request);
-        await HandleResultAsync(result, "İlerleme kaydedildi ve onaya sunuldu.");
+        await HandleResultAsync(result, "Beyan kaydedildi ve Şantiye Şefi onayına gönderildi.");
+        _busy = false;
     }
 
     private async Task ConfirmApproveAsync()
     {
+        if (!Connectivity.IsOnline)
+        {
+            Toast.Error("Bağlantı yokken onay verilemez.");
+            return;
+        }
+
         var confirmed = await Confirm.ConfirmAsync("Onayla", "Bu işi onaylamak istediğinize emin misiniz?");
         if (!confirmed) return;
 
+        _busy = true;
         var result = await DailyPlansApi.ApproveAsync(Id);
         await HandleResultAsync(result, "İş onaylandı.");
+        _busy = false;
     }
 
     private async Task<bool> ConfirmRejectAsync(string reason)
     {
-        if (string.IsNullOrWhiteSpace(reason))
+        if (!Connectivity.IsOnline)
         {
-            Toast.Error("Lütfen red nedeni girin.");
+            Toast.Error("Bağlantı yokken red gönderilemez.");
             return false;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("Reddet", "Bu işi reddetmek istediğinize emin misiniz?", danger: true);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            Toast.Error("Lütfen red gerekçesi girin.");
+            return false;
+        }
+
+        var targetLabel = RejectTargetLabel();
+        var confirmed = await Confirm.ConfirmAsync("Reddet", $"Bu işi gerekçeyle {targetLabel} geri göndermek istediğinize emin misiniz?", danger: true);
         if (!confirmed) return false;
 
+        _busy = true;
         var result = await DailyPlansApi.RejectAsync(Id, new RejectRequest(reason));
-        await HandleResultAsync(result, "İş reddedildi.");
+        await HandleResultAsync(result, $"İş {targetLabel} geri gönderildi.");
+        _busy = false;
         return result.Success;
     }
+
+    private string RejectTargetLabel() =>
+        _plan?.Status == WorkStatus.ApprovedBySiteChief ? "Şantiye Şefi'ne" : "Ustabaşı'na";
 
     private async Task HandleResultAsync(ApiResult<bool> result, string successMessage)
     {
         if (result.Success)
         {
             Toast.Success(successMessage);
+            _submitProgress.FactQuantity = null;
+            _submitProgress.FactManDay = null;
+            _submitProgress.Overtime = null;
+            _submitProgress.Comment = null;
             await LoadAsync();
         }
         else
         {
-            Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu.");
+            Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu. Kayıt başka bir kullanıcı tarafından değişmiş olabilir.");
+            await LoadAsync();
         }
     }
 }

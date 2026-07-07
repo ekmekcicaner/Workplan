@@ -1,0 +1,81 @@
+<section class="surface-panel p-3">
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-[12rem_1fr_auto] lg:items-end">
+        <div>
+            <label class="field-label">İş tarihi</label>
+            <input class="input" type="date" value="@WorkDate.ToString("yyyy-MM-dd")" @onchange="OnDateChangedAsync" />
+        </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatusSelector Statuses="Options?.Statuses ?? []"
+                            SelectedStatuses="SelectedStatuses"
+                            SelectedStatusesChanged="SelectedStatusesChanged" />
+            <MultiSelectFilter Label="Proje"
+                               Options="Options?.Projects ?? []"
+                               SelectedIds="SelectedProjectIds"
+                               SelectedIdsChanged="SelectedProjectIdsChanged" />
+            <MultiSelectFilter Label="Saha bölgesi"
+                               Options="Options?.CrewRegions ?? []"
+                               SelectedIds="SelectedCrewRegionIds"
+                               SelectedIdsChanged="SelectedCrewRegionIdsChanged" />
+            <MultiSelectFilter Label="Lokasyon"
+                               Options="Options?.Locations ?? []"
+                               SelectedIds="SelectedLocationIds"
+                               SelectedIdsChanged="SelectedLocationIdsChanged" />
+        </div>
+        <div class="flex gap-2">
+            <button class="btn-secondary" type="button" @onclick="OnClear">Temizle</button>
+            <button class="btn-primary" type="button" @onclick="OnApply">
+                <Icon Name="search" CssClass="h-4 w-4" />Filtrele
+            </button>
+        </div>
+    </div>
+
+    <details class="mt-3">
+        <summary class="cursor-pointer text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+            Sorumlu filtreleri
+        </summary>
+        <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <MultiSelectFilter Label="Ustabaşı"
+                               Options="Options?.HeadOfMasters ?? []"
+                               SelectedIds="SelectedHeadOfMasterIds"
+                               SelectedIdsChanged="SelectedHeadOfMasterIdsChanged" />
+            <MultiSelectFilter Label="Şantiye şefi"
+                               Options="Options?.SiteChiefs ?? []"
+                               SelectedIds="SelectedSiteChiefIds"
+                               SelectedIdsChanged="SelectedSiteChiefIdsChanged" />
+            <MultiSelectFilter Label="PM"
+                               Options="Options?.ProjectManagers ?? []"
+                               SelectedIds="SelectedProjectManagerIds"
+                               SelectedIdsChanged="SelectedProjectManagerIdsChanged" />
+        </div>
+    </details>
+</section>
+
+@code {
+    [Parameter] public DailyTrackingOptionsDto? Options { get; set; }
+    [Parameter] public DateOnly WorkDate { get; set; }
+    [Parameter] public EventCallback<DateOnly> WorkDateChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedProjectIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedProjectIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedCrewRegionIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedCrewRegionIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedLocationIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedLocationIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedHeadOfMasterIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedHeadOfMasterIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedSiteChiefIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedSiteChiefIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedProjectManagerIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedProjectManagerIdsChanged { get; set; }
+    [Parameter, EditorRequired] public HashSet<WorkStatus> SelectedStatuses { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<WorkStatus>> SelectedStatusesChanged { get; set; }
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+
+    private async Task OnDateChangedAsync(ChangeEventArgs args)
+    {
+        if (DateOnly.TryParse(args.Value?.ToString(), out var date))
+        {
+            await WorkDateChanged.InvokeAsync(date);
+        }
+    }
+}

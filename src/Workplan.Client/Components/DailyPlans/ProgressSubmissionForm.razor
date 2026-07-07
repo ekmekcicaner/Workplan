@@ -1,0 +1,86 @@
+<div class="card">
+    <h2 class="mb-1 text-base font-semibold">Gün Sonu Beyanı</h2>
+    <p class="mb-3 text-sm text-neutral-500 dark:text-neutral-400">HoM gönderimi, HoM onayı kabul edilir ve kayıt Şantiye Şefi onayına düşer.</p>
+    <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <div>
+            <label class="field-label">Gerçek miktar</label>
+            <p class="mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Planlanan: <span class="font-medium text-neutral-700 dark:text-neutral-200">@NumberDisplay.Format(Plan.PlannedQuantity) @UnitLabel</span>
+            </p>
+            <DecimalInput @bind-Value="Model.FactQuantity" AllowNegative="false" Placeholder="Örn. 5,5" />
+        </div>
+        <div>
+            <label class="field-label">Gerçek adam-gün</label>
+            <p class="mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Planlanan: <span class="font-medium text-neutral-700 dark:text-neutral-200">@NumberDisplay.Format(Plan.PlannedManDay)</span>
+            </p>
+            <DecimalInput @bind-Value="Model.FactManDay" AllowNegative="false" Placeholder="Örn. 2,5" />
+        </div>
+        <div>
+            <label class="field-label">Fazla mesai</label>
+            <p class="mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Referans: <span class="font-medium text-neutral-700 dark:text-neutral-200">Plan dışı takip</span>
+            </p>
+            <DecimalInput @bind-Value="Model.Overtime" AllowNegative="false" Placeholder="Örn. 1,5" />
+        </div>
+        <div>
+            <label class="field-label">Açıklama / ZZZ</label>
+            <p class="mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Gerekçe: <span class="font-medium text-neutral-700 dark:text-neutral-200">İlerleme yoksa zorunlu</span>
+            </p>
+            <input class="input" @bind="Model.Comment" @bind:event="oninput" />
+        </div>
+    </div>
+
+    @if (!CanSubmit)
+    {
+        <p class="mt-3 text-sm text-amber-700 dark:text-amber-300">@ValidationMessage</p>
+    }
+
+    <button class="btn-primary mt-3" disabled="@(!CanSubmit || Busy || !IsOnline)" @onclick="OnSubmit">
+        Kaydet ve Şantiye Şefi Onayına Gönder
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ProgressModel Model { get; set; } = new();
+    [Parameter, EditorRequired] public DailyPlanDetailDto Plan { get; set; } = default!;
+    [Parameter, EditorRequired] public EventCallback OnSubmit { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool IsOnline { get; set; } = true;
+
+    private bool HasAnyActual =>
+        (Model.FactQuantity is > 0) || (Model.FactManDay is > 0);
+
+    private bool HasCompleteActuals =>
+        Model.FactQuantity is > 0 && Model.FactManDay is > 0;
+
+    private bool HasNoActualComment =>
+        !HasAnyActual && !string.IsNullOrWhiteSpace(Model.Comment);
+
+    private bool CanSubmit =>
+        (HasCompleteActuals || HasNoActualComment) &&
+        (Model.Overtime is null or >= 0);
+
+    private string ValidationMessage =>
+        !IsOnline ? "Bağlantı yokken kayıt gönderilemez." :
+        HasAnyActual && !HasCompleteActuals ? "Gerçekleşme varsa gerçek miktar ve adam-gün birlikte girilmelidir." :
+        !HasAnyActual ? "Hiç ilerleme yoksa açıklama / gerekçe zorunludur." :
+        "Girilen değerleri kontrol edin.";
+
+    private string UnitLabel => Plan.Unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => ""
+    };
+
+    public class ProgressModel
+    {
+        public decimal? FactQuantity { get; set; }
+        public decimal? FactManDay { get; set; }
+        public decimal? Overtime { get; set; }
+        public string? Comment { get; set; }
+    }
+}

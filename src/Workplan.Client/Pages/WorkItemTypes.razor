@@ -1,15 +1,16 @@
 @page "/work-item-types"
 @attribute [Authorize]
 @inject WorkItemTypesApiService WorkItemTypesApi
-
+<PageTitle>İş Kalemi Tipleri | Workplan</PageTitle>
 <h1 class="mb-1 text-2xl font-semibold">İş Kalemi Tipleri</h1>
 <p class="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-    Hiyerarşi: Tip &rarr; Alt Tip &rarr; Alt-Alt Tip (en fazla 3 seviye). Bir sonraki seviyeyi görmek için soldaki listeden bir kayıt seçin.
+    Hiyerarşi: Tip &rarr; Alt Tip &rarr; Alt-Alt Tip (en fazla 3 seviye). Bir sonraki seviyeyi görmek için soldaki
+    listeden bir kayıt seçin.
 </p>
 
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
+        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync"/>
         Pasif tipleri de göster
     </label>
 
@@ -19,40 +20,41 @@
             <span class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedTip.Name</span>
             @if (SelectedAltTip is not null)
             {
-                <text> &rarr; <span class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedAltTip.Name</span></text>
+                <text>&rarr; <span
+                        class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedAltTip.Name</span></text>
             }
         </p>
     }
 </div>
 
-<LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+<LoadingBlock Loading="_loading" ErrorText="@_loadError"/>
 
 @if (!_loading && _loadError is null)
 {
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <WorkItemTypeColumn Title="Tip"
-                             Items="Tips"
-                             SelectedId="_selectedTipId"
-                             OnSelect="SelectTip"
-                             OnChanged="LoadAsync" />
+                            Items="Tips"
+                            SelectedId="_selectedTipId"
+                            OnSelect="SelectTip"
+                            OnChanged="LoadAsync"/>
 
         <WorkItemTypeColumn Title="Alt Tip"
-                             Items="AltTips"
-                             SelectedId="_selectedAltTipId"
-                             OnSelect="SelectAltTip"
-                             Locked="SelectedTip is null"
-                             LockedMessage="Devam etmek için soldan bir Tip seçin."
-                             ParentId="_selectedTipId"
-                             OnChanged="LoadAsync" />
+                            Items="AltTips"
+                            SelectedId="_selectedAltTipId"
+                            OnSelect="SelectAltTip"
+                            Locked="SelectedTip is null"
+                            LockedMessage="Devam etmek için soldan bir Tip seçin."
+                            ParentId="_selectedTipId"
+                            OnChanged="LoadAsync"/>
 
         <WorkItemTypeColumn Title="Alt-Alt Tip"
-                             Items="AltAltTips"
-                             Selectable="false"
-                             Locked="SelectedAltTip is null"
-                             LockedMessage="Devam etmek için bir Alt Tip seçin."
-                             ParentId="_selectedAltTipId"
-                             RequireUnit="true"
-                             OnChanged="LoadAsync" />
+                            Items="AltAltTips"
+                            Selectable="false"
+                            Locked="SelectedAltTip is null"
+                            LockedMessage="Devam etmek için bir Alt Tip seçin."
+                            ParentId="_selectedAltTipId"
+                            RequireUnit="true"
+                            OnChanged="LoadAsync"/>
     </div>
 }
 
@@ -88,6 +90,7 @@
         {
             _loadError = result.ErrorMessage;
         }
+
         _loading = false;
     }
 
@@ -104,4 +107,5 @@
 
     private static List<WorkItemTypeDto> Sort(IReadOnlyCollection<WorkItemTypeDto> items) =>
         items.OrderBy(i => !i.IsActive).ThenBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+
 }

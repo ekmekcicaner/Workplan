@@ -1,0 +1,75 @@
+<div class="rounded-md border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900">
+    <div class="mb-2 flex items-center justify-between gap-2">
+        <label class="field-label mb-0">@Label</label>
+        @if (SelectedIds.Count > 0)
+        {
+            <button type="button" class="text-xs font-semibold text-brand-600 dark:text-brand-400" @onclick="ClearAsync">
+                Temizle
+            </button>
+        }
+    </div>
+
+    @if (Options.Count > SearchThreshold)
+    {
+        <input class="input mb-2" placeholder="Ara..." value="@_query" @oninput="OnSearch" />
+    }
+
+    <div class="max-h-44 space-y-1 overflow-y-auto pr-1">
+        @if (FilteredOptions.Count == 0)
+        {
+            <p class="py-2 text-sm text-neutral-500 dark:text-neutral-400">Seçenek yok.</p>
+        }
+        else
+        {
+            @foreach (var option in FilteredOptions)
+            {
+                var selected = SelectedIds.Contains(option.Id);
+                <label @key="option.Id" class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                    <input type="checkbox"
+                           class="size-4"
+                           checked="@selected"
+                           @onchange="args => ToggleAsync(option.Id, args.Value)" />
+                    <span class="truncate">@option.Label</span>
+                </label>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<TrackingFilterOptionDto> Options { get; set; } = [];
+    [Parameter, EditorRequired] public HashSet<Guid> SelectedIds { get; set; } = [];
+    [Parameter] public EventCallback<HashSet<Guid>> SelectedIdsChanged { get; set; }
+    [Parameter] public int SearchThreshold { get; set; } = 8;
+
+    private string _query = "";
+
+    private IReadOnlyList<TrackingFilterOptionDto> FilteredOptions =>
+        string.IsNullOrWhiteSpace(_query)
+            ? Options
+            : Options.Where(option => option.Label.Contains(_query, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private Task OnSearch(ChangeEventArgs args)
+    {
+        _query = args.Value?.ToString() ?? "";
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleAsync(Guid id, object? value)
+    {
+        var next = new HashSet<Guid>(SelectedIds);
+        if (value is true)
+        {
+            next.Add(id);
+        }
+        else
+        {
+            next.Remove(id);
+        }
+
+        return SelectedIdsChanged.InvokeAsync(next);
+    }
+
+    private Task ClearAsync() => SelectedIdsChanged.InvokeAsync([]);
+}

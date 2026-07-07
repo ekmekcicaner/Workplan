@@ -1,0 +1,37 @@
+<section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="card">
+        <p class="field-label">Toplam iş</p>
+        <p class="mt-1 text-2xl font-semibold">@Items.Count</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Planlanan adam-gün</p>
+        <p class="mt-1 text-2xl font-semibold">@NumberDisplay.Format(Items.Sum(item => item.PlannedManDay))</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Gerçek adam-gün</p>
+        <p class="mt-1 text-2xl font-semibold">@NumberDisplay.Format(Items.Sum(item => item.FactManDay ?? 0))</p>
+    </div>
+    <div class="card">
+        <p class="field-label">Fazla mesai</p>
+        <p class="mt-1 text-2xl font-semibold">@NumberDisplay.Format(Items.Sum(item => item.Overtime ?? 0))</p>
+    </div>
+</section>
+
+@if (Items.Count > 0)
+{
+    <section class="surface-panel p-3">
+        <div class="flex flex-wrap gap-2">
+            @foreach (var group in Items.GroupBy(item => item.Status).OrderBy(group => group.Key))
+            {
+                <span class="inline-flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-1.5 text-sm dark:border-neutral-700">
+                    <StatusBadge Status="group.Key" />
+                    <span class="font-semibold">@group.Count()</span>
+                </span>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DailyTrackingPlanDto> Items { get; set; } = [];
+}

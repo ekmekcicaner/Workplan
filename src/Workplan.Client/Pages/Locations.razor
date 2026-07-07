@@ -5,111 +5,138 @@
 @inject ConfirmService Confirm
 @inject ToastService Toast
 
-<p class="mb-2"><a class="text-sm text-neutral-500 hover:underline dark:text-neutral-400" href="@($"projects/{ProjectId}/regions")">&larr; Saha bölgeleri</a></p>
-<h1 class="mb-4 text-2xl font-semibold">Lokasyonlar</h1>
+<PageTitle>Lokasyonlar | Workplan</PageTitle>
 
-<AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
-    <Authorized>
-        <div class="card mb-6">
-            <h2 class="mb-1 font-semibold">Yeni lokasyon oluştur</h2>
-            <AccessNote Roles="SystemAdmin,TechnicalOfficeEngineer" />
-            <EditForm Model="_newLocation" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <DataAnnotationsValidator />
-                <div>
-                    <label class="field-label">İsim</label>
-                    <input class="input" @bind="_newLocation.Name" @bind:event="oninput" />
+<section class="space-y-4">
+    <PageHeader Title="Lokasyonlar"
+                Subtitle="Saha bölgesi altındaki lokasyonları ve atanmış ustabaşını yönet."
+                BackHref="@($"projects/{ProjectId}/regions")"
+                BackText="Saha bölgeleri">
+        <Actions>
+            <button class="btn-secondary" @onclick="LoadAsync">
+                <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+            </button>
+        </Actions>
+    </PageHeader>
+
+    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+        <Authorized>
+            <div class="surface-panel p-3">
+                <EditForm Model="_newLocation" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_18rem_auto] lg:items-end">
+                    <DataAnnotationsValidator />
+                    <div>
+                        <label class="field-label">İsim</label>
+                        <input class="input" @bind="_newLocation.Name" @bind:event="oninput" />
+                    </div>
+                    <div>
+                        <label class="field-label">Üst lokasyon</label>
+                        <select class="input" @bind="_newLocation.ParentId">
+                            <option value="">Yok</option>
+                            @foreach (var location in _locations)
+                            {
+                                <option value="@location.Id">@location.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <button class="btn-primary" type="submit" disabled="@(!CanCreateLocation)">
+                        <Icon Name="plus" CssClass="h-4 w-4" />Oluştur
+                    </button>
+                </EditForm>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <input type="checkbox" class="size-4" @bind="_includeInactive" @bind:after="LoadAsync" />
+            Pasif lokasyonları da göster
+        </label>
+        <span class="text-sm text-neutral-500 dark:text-neutral-400">@_locations.Count kayıt</span>
+    </div>
+
+    <ResponsiveEntityList TItem="LocationDto"
+                          Items="_locations"
+                          Loading="_loading"
+                          LoadError="@_loadError"
+                          EmptyTitle="Henüz lokasyon yok"
+                          EmptyText="Bu saha bölgesi için lokasyon oluşturarak plan kapsamını tamamlayın.">
+        <HeaderRow>
+            <th>İsim</th>
+            <th>Ustabaşı</th>
+            <th>Durum</th>
+            <th class="w-28 text-right">İşlem</th>
+        </HeaderRow>
+        <DesktopRowTemplate Context="location">
+            <td>@location.Name</td>
+            <td>@(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</td>
+            <td>@StatusPill(location.IsActive)</td>
+            <td class="text-right"><button class="entity-row-action" @onclick="() => OpenDetail(location)">Yönet</button></td>
+        </DesktopRowTemplate>
+        <MobileCardTemplate Context="location">
+            <article class="entity-card">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 class="truncate font-semibold">@location.Name</h2>
+                        <p class="mt-1 truncate text-sm text-neutral-500 dark:text-neutral-400">Ustabaşı: @(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</p>
+                    </div>
+                    @StatusPill(location.IsActive)
                 </div>
-                <div>
-                    <label class="field-label">Üst lokasyon (opsiyonel)</label>
-                    <select class="input" @bind="_newLocation.ParentId">
-                        <option value="">(yok)</option>
-                        @foreach (var location in _locations)
-                        {
-                            <option value="@location.Id">@location.Name</option>
-                        }
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button class="btn-primary" type="submit" disabled="@(!CanCreateLocation)">Oluştur</button>
-                </div>
-            </EditForm>
+                <button class="btn-secondary mt-3 w-full" @onclick="() => OpenDetail(location)">Yönet</button>
+            </article>
+        </MobileCardTemplate>
+    </ResponsiveEntityList>
+</section>
+
+<DetailPanel Show="_selectedLocation is not null"
+             Title="@(_selectedLocation?.Name ?? "")"
+             Subtitle="Lokasyon kaydı"
+             OnClose="CloseDetail">
+    @if (_selectedLocation is not null)
+    {
+        <div class="space-y-4">
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,SiteChief" Context="assignAuth">
+                <Authorized>
+                    <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                        <h3 class="text-sm font-semibold">Ustabaşı ataması</h3>
+                        <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                            Mevcut: @(_selectedLocation.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")
+                        </p>
+                        <UserPicker Role="HeadOfMaster" @bind-Value="_assignHeadOfMasterUserId" Placeholder="Ustabaşı ara..." />
+                        <button class="btn-primary w-full" disabled="@(_assignHeadOfMasterUserId is null)" @onclick="ConfirmAssignAsync">
+                            <Icon Name="check" CssClass="h-4 w-4" />Ustabaşı Ata
+                        </button>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="editAuth">
+                <Authorized>
+                    <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                        <h3 class="text-sm font-semibold">Lokasyon bilgileri</h3>
+                        <div>
+                            <label class="field-label">İsim</label>
+                            <input class="input" @bind="_editModel.Name" @bind:event="oninput" />
+                        </div>
+                        <button class="btn-primary w-full" disabled="@(!CanUpdateLocation)" @onclick="ConfirmUpdateAsync">
+                            <Icon Name="check" CssClass="h-4 w-4" />Kaydet
+                        </button>
+                    </div>
+
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                        <p class="field-label">Durum</p>
+                        <div class="flex items-center justify-between gap-3">
+                            @StatusPill(_selectedLocation.IsActive)
+                            <button class="@(_selectedLocation.IsActive ? "btn-danger" : "btn-secondary")"
+                                    @onclick="() => ConfirmSetActiveAsync(_selectedLocation, !_selectedLocation.IsActive)">
+                                @(_selectedLocation.IsActive ? "Pasif Yap" : "Aktif Yap")
+                            </button>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
-    </Authorized>
-</AuthorizeView>
-
-<div class="mb-3 flex items-center justify-between">
-    <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
-        Pasif lokasyonları da göster
-    </label>
-</div>
-
-<DataTable TItem="LocationDto" Items="_locations" Loading="_loading" LoadError="@_loadError" EmptyText="Henüz lokasyon yok.">
-    <HeaderRow>
-        <th>İsim</th>
-        <th>Ustabaşı</th>
-        <th>Durum</th>
-        <th></th>
-    </HeaderRow>
-    <RowTemplate Context="location">
-        @if (_editingId == location.Id)
-        {
-            <td data-label="İsim" colspan="4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <input class="input w-48" @bind="_editModel.Name" @bind:event="oninput" />
-                    <button class="btn-primary" disabled="@(!CanUpdateLocation)" @onclick="() => ConfirmUpdateAsync(location.Id)">Kaydet</button>
-                    <button class="btn-secondary" @onclick="() => _editingId = null">Vazgeç</button>
-                </div>
-            </td>
-        }
-        else
-        {
-            <td data-label="İsim">@location.Name</td>
-            <td data-label="Ustabaşı">@(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</td>
-            <td data-label="Durum">
-                <span class="badge @(location.IsActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
-                    @(location.IsActive ? "Aktif" : "Pasif")
-                </span>
-            </td>
-            <td data-label="">
-                <div class="flex flex-wrap items-center gap-2">
-                    <a class="btn-secondary" href="@($"locations/{location.Id}/crews")">Ekipler</a>
-                    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,SiteChief" Context="innerContext">
-                        <Authorized>
-                            @if (_assigningLocationId == location.Id)
-                            {
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <div class="w-full min-w-0 sm:w-56">
-                                        <UserPicker Role="HeadOfMaster" @bind-Value="_assignHeadOfMasterUserId" Placeholder="Ustabaşı ara..." />
-                                    </div>
-                                    <button class="btn-primary" disabled="@(_assignHeadOfMasterUserId is null)" @onclick="() => ConfirmAssignAsync(location.Id)">Kaydet</button>
-                                    <button class="btn-secondary" @onclick="() => _assigningLocationId = null">Vazgeç</button>
-                                </div>
-                            }
-                            else
-                            {
-                                <button class="btn-secondary" @onclick="() => StartAssign(location.Id)">Ustabaşı ata</button>
-                            }
-                        </Authorized>
-                    </AuthorizeView>
-                    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="rowAuth">
-                        <Authorized>
-                            <button class="btn-secondary" @onclick="() => StartEdit(location)">Düzenle</button>
-                            @if (location.IsActive)
-                            {
-                                <button class="btn-danger" @onclick="() => ConfirmSetActiveAsync(location, false)">Pasif Yap</button>
-                            }
-                            else
-                            {
-                                <button class="btn-secondary" @onclick="() => ConfirmSetActiveAsync(location, true)">Aktif Yap</button>
-                            }
-                        </Authorized>
-                    </AuthorizeView>
-                </div>
-            </td>
-        }
-    </RowTemplate>
-</DataTable>
+    }
+</DetailPanel>
 
 @code {
     [Parameter] public Guid ProjectId { get; set; }
@@ -122,18 +149,12 @@
     private bool _creating;
     private bool _includeInactive;
     private readonly NewLocationModel _newLocation = new();
-
-    private Guid? _editingId;
+    private LocationDto? _selectedLocation;
     private readonly EditLocationModel _editModel = new();
-
-    private Guid? _assigningLocationId;
     private Guid? _assignHeadOfMasterUserId;
 
-    private bool CanCreateLocation =>
-        !_creating && !string.IsNullOrWhiteSpace(_newLocation.Name);
-
-    private bool CanUpdateLocation =>
-        !string.IsNullOrWhiteSpace(_editModel.Name);
+    private bool CanCreateLocation => !_creating && !string.IsNullOrWhiteSpace(_newLocation.Name);
+    private bool CanUpdateLocation => _selectedLocation is not null && !string.IsNullOrWhiteSpace(_editModel.Name);
 
     protected override async Task OnInitializedAsync()
     {
@@ -185,27 +206,61 @@
         _creating = false;
     }
 
-    private void StartEdit(LocationDto location)
+    private void OpenDetail(LocationDto location)
     {
-        _editingId = location.Id;
+        _selectedLocation = location;
         _editModel.Name = location.Name;
+        _assignHeadOfMasterUserId = location.HeadOfMasterUserId;
     }
 
-    private async Task ConfirmUpdateAsync(Guid id)
+    private void CloseDetail()
     {
+        _selectedLocation = null;
+        _assignHeadOfMasterUserId = null;
+    }
+
+    private async Task ConfirmUpdateAsync()
+    {
+        if (_selectedLocation is null) return;
+
         var confirmed = await Confirm.ConfirmAsync("Lokasyonu güncelle", "Değişiklikleri kaydetmek istediğinize emin misiniz?");
         if (!confirmed) return;
 
-        var result = await LocationsApi.UpdateAsync(id, new UpdateLocationRequest(_editModel.Name));
+        var result = await LocationsApi.UpdateAsync(_selectedLocation.Id, new UpdateLocationRequest(_editModel.Name));
         if (result.Success)
         {
             Toast.Success("Lokasyon güncellendi.");
-            _editingId = null;
+            CloseDetail();
             await LoadAsync();
         }
         else
         {
             Toast.Error(result.ErrorMessage ?? "Lokasyon güncellenemedi.");
+        }
+    }
+
+    private async Task ConfirmAssignAsync()
+    {
+        if (_selectedLocation is null) return;
+        if (_assignHeadOfMasterUserId is not { } userId)
+        {
+            Toast.Error("Lütfen listeden bir ustabaşı seçin.");
+            return;
+        }
+
+        var confirmed = await Confirm.ConfirmAsync("Ustabaşı ata", "Bu lokasyona ustabaşı atamak istediğinize emin misiniz?");
+        if (!confirmed) return;
+
+        var result = await LocationsApi.AssignHeadOfMasterAsync(_selectedLocation.Id, new AssignHeadOfMasterRequest(userId));
+        if (result.Success)
+        {
+            Toast.Success("Ustabaşı atandı.");
+            CloseDetail();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(result.ErrorMessage ?? "Atama başarısız oldu.");
         }
     }
 
@@ -220,6 +275,7 @@
         if (result.Success)
         {
             Toast.Success($"Lokasyon {action} yapıldı.");
+            CloseDetail();
             await LoadAsync();
         }
         else
@@ -228,47 +284,18 @@
         }
     }
 
-    private void StartAssign(Guid locationId)
-    {
-        _assigningLocationId = locationId;
-        _assignHeadOfMasterUserId = null;
-    }
-
-    private async Task ConfirmAssignAsync(Guid locationId)
-    {
-        if (_assignHeadOfMasterUserId is not { } userId)
-        {
-            Toast.Error("Lütfen listeden bir ustabaşı seçin.");
-            return;
-        }
-
-        var confirmed = await Confirm.ConfirmAsync("Ustabaşı ata", "Bu lokasyona ustabaşı atamak istediğinize emin misiniz?");
-        if (!confirmed) return;
-
-        var result = await LocationsApi.AssignHeadOfMasterAsync(locationId, new AssignHeadOfMasterRequest(userId));
-        if (result.Success)
-        {
-            Toast.Success("Ustabaşı atandı.");
-            _assigningLocationId = null;
-            await LoadAsync();
-        }
-        else
-        {
-            Toast.Error(result.ErrorMessage ?? "Atama başarısız oldu.");
-        }
-    }
+    private static RenderFragment StatusPill(bool isActive) => @<span class="badge @(isActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
+        @(isActive ? "Aktif" : "Pasif")
+    </span>;
 
     private class NewLocationModel
     {
-        [Required, MaxLength(100)]
-        public string Name { get; set; } = "";
-
+        [Required, MaxLength(100)] public string Name { get; set; } = "";
         public string ParentId { get; set; } = "";
     }
 
     private class EditLocationModel
     {
-        [Required, MaxLength(100)]
-        public string Name { get; set; } = "";
+        [Required, MaxLength(100)] public string Name { get; set; } = "";
     }
 }

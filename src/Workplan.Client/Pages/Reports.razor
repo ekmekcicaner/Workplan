@@ -1,70 +1,194 @@
 @page "/reports"
-@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,SiteChief,ProjectManager")]
-@inject DailyPlansApiService DailyPlansApi
+@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,ProjectManager")]
+@inject ReportsApiService ReportsApi
+@inject ProjectsApiService ProjectsApi
+@inject CrewRegionsApiService CrewRegionsApi
 
-<h1 class="mb-4 text-2xl font-semibold">Raporlar</h1>
+<PageTitle>Raporlamalar | Workplan</PageTitle>
+<section class="space-y-4">
+<PageHeader Title="Daily Report"
+            Subtitle="PM onayı tamamlanan işlerde plan, gerçekleşen ve fazla mesai özetini takip et.">
+    <Actions>
+        <button class="btn-secondary" @onclick="LoadReportAsync">
+            <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+        </button>
+    </Actions>
+</PageHeader>
 
-<div class="card mb-6">
-    <h2 class="mb-3 font-semibold">Onaylanmış İşler</h2>
-    <DailyPlanTable Items="_approved" Loading="_approvedLoading" LoadError="@_approvedLoadError" />
-</div>
-
-<div class="card">
-    <h2 class="mb-3 font-semibold">Yönetici İzleme</h2>
-    <div class="mb-4 w-full sm:w-72">
-        <label class="field-label">Ustabaşı</label>
-        <UserPicker Role="HeadOfMaster" @bind-Value="_selectedHoMId" @bind-Value:after="LoadHoMPlansAsync" Placeholder="Ustabaşı ara..." />
+<div class="surface-panel p-3">
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-[12rem_1fr_1fr_auto] lg:items-end">
+        <div>
+            <label class="field-label">İş tarihi</label>
+            <input class="input" type="date" value="@(_workDate?.ToString("yyyy-MM-dd") ?? "")" @onchange="OnDateChangedAsync" />
+        </div>
+        <div>
+            <label class="field-label">Proje</label>
+            <select class="input" value="@_projectId" @onchange="OnProjectChangedAsync">
+                <option value="">Tümü</option>
+                @foreach (var project in _projects)
+                {
+                    <option value="@project.Id">@project.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="field-label">Saha bölgesi</label>
+            <select class="input" value="@_crewRegionId" @onchange="OnRegionChangedAsync" disabled="@(_regions.Count == 0)">
+                <option value="">Tümü</option>
+                @foreach (var region in _regions)
+                {
+                    <option value="@region.Id">@region.Name</option>
+                }
+            </select>
+        </div>
+        <div class="flex items-end">
+            <button class="btn-primary w-full" @onclick="LoadReportAsync">
+                <Icon Name="search" CssClass="h-4 w-4" />Filtrele
+            </button>
+        </div>
     </div>
-    <DailyPlanTable Items="_hom" Loading="_homLoading" LoadError="@_homLoadError" />
 </div>
+
+<LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+
+@if (!_loading && _report is not null)
+{
+    <ReportKpiSummary Report="_report" />
+
+    <div class="surface-panel p-3">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <h2 class="text-base font-semibold">Onaylanmış İşler</h2>
+            <span class="badge">@_report.Items.Count</span>
+        </div>
+        <ResponsiveEntityList TItem="DailyReportItemDto"
+                              Items="_report.Items"
+                              EmptyTitle="Onaylanmış kayıt yok"
+                              EmptyText="Bu filtrelerle rapora dahil edilmiş kayıt bulunamadı.">
+            <HeaderRow>
+                <th>Tarih</th>
+                <th>Proje</th>
+                <th>Lokasyon</th>
+                <th>İş Kalemi</th>
+                <th>Plan</th>
+                <th>Gerçek</th>
+                <th>AG</th>
+                <th>FM</th>
+                <th></th>
+            </HeaderRow>
+            <DesktopRowTemplate Context="item">
+                <td>@item.WorkDate.ToString("dd.MM.yyyy")</td>
+                <td>@item.ProjectName</td>
+                <td>@item.LocationName</td>
+                <td>@item.WorkItemTypeName</td>
+                <td>@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</td>
+                <td>@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</td>
+                <td>@NumberDisplay.Format(item.FactManDay) / @NumberDisplay.Format(item.PlannedManDay)</td>
+                <td>@NumberDisplay.Format(item.Overtime)</td>
+                <td class="text-right"><a class="entity-row-action" href="@($"daily-plans/{item.Id}")">Detay</a></td>
+            </DesktopRowTemplate>
+            <MobileCardTemplate Context="item">
+                <article class="entity-card">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h3 class="truncate font-semibold">@item.WorkItemTypeName</h3>
+                            <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@item.ProjectName · @item.LocationName</p>
+                        </div>
+                        <span class="badge">@item.WorkDate.ToString("dd.MM")</span>
+                    </div>
+                    <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="field-label">Plan</dt>
+                            <dd>@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</dd>
+                        </div>
+                        <div>
+                            <dt class="field-label">Gerçek</dt>
+                            <dd>@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</dd>
+                        </div>
+                        <div>
+                            <dt class="field-label">Adam-gün</dt>
+                            <dd>@NumberDisplay.Format(item.FactManDay)</dd>
+                        </div>
+                        <div>
+                            <dt class="field-label">FM</dt>
+                            <dd>@NumberDisplay.Format(item.Overtime)</dd>
+                        </div>
+                    </dl>
+                    <a class="btn-secondary mt-3 w-full" href="@($"daily-plans/{item.Id}")">Detay</a>
+                </article>
+            </MobileCardTemplate>
+        </ResponsiveEntityList>
+    </div>
+}
+</section>
 
 @code {
-    private List<DailyPlanDto> _approved = [];
-    private bool _approvedLoading = true;
-    private string? _approvedLoadError;
-
-    private Guid? _selectedHoMId;
-    private List<DailyPlanDto> _hom = [];
-    private bool _homLoading;
-    private string? _homLoadError;
+    private DailyReportDto? _report;
+    private List<ProjectDto> _projects = [];
+    private List<CrewRegionDto> _regions = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private DateOnly? _workDate;
+    private string _projectId = "";
+    private string _crewRegionId = "";
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await DailyPlansApi.GetApprovedAsync();
-        if (result.Success)
-        {
-            _approved = result.Data ?? [];
-        }
-        else
-        {
-            _approvedLoadError = result.ErrorMessage;
-        }
-
-        _approvedLoading = false;
+        var projectsResult = await ProjectsApi.GetAllAsync();
+        _projects = projectsResult.Data ?? [];
+        await LoadReportAsync();
     }
 
-    private async Task LoadHoMPlansAsync()
+    private async Task LoadReportAsync()
     {
-        if (_selectedHoMId is not { } homId)
-        {
-            _hom = [];
-            _homLoadError = null;
-            return;
-        }
+        _loading = true;
+        _loadError = null;
+        var result = await ReportsApi.GetDailyAsync(
+            _workDate,
+            Guid.TryParse(_projectId, out var projectId) ? projectId : null,
+            Guid.TryParse(_crewRegionId, out var regionId) ? regionId : null);
 
-        _homLoading = true;
-        _homLoadError = null;
-
-        var result = await DailyPlansApi.GetByHeadOfMasterAsync(homId);
         if (result.Success)
         {
-            _hom = result.Data ?? [];
+            _report = result.Data ?? new DailyReportDto(
+                new DailyReportSummaryDto(0, 0, 0, 0, null), [], [], []);
         }
         else
         {
-            _homLoadError = result.ErrorMessage;
+            _loadError = result.ErrorMessage;
         }
-
-        _homLoading = false;
+        _loading = false;
     }
+
+    private async Task OnDateChangedAsync(ChangeEventArgs args)
+    {
+        _workDate = DateOnly.TryParse(args.Value?.ToString(), out var date) ? date : null;
+        await LoadReportAsync();
+    }
+
+    private async Task OnProjectChangedAsync(ChangeEventArgs args)
+    {
+        _projectId = args.Value?.ToString() ?? "";
+        _crewRegionId = "";
+        _regions = [];
+        if (Guid.TryParse(_projectId, out var projectId))
+        {
+            var result = await CrewRegionsApi.GetByProjectAsync(projectId);
+            _regions = result.Data ?? [];
+        }
+        await LoadReportAsync();
+    }
+
+    private async Task OnRegionChangedAsync(ChangeEventArgs args)
+    {
+        _crewRegionId = args.Value?.ToString() ?? "";
+        await LoadReportAsync();
+    }
+
+    private static string UnitLabel(Unit unit) => unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => ""
+    };
 }

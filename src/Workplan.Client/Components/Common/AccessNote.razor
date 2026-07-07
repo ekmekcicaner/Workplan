@@ -1,0 +1,21 @@
+<p class="access-note">
+    <span aria-hidden="true"></span> Yalnızca: @string.Join(", ", RoleLabels)
+</p>
+
+@code {
+    [Parameter, EditorRequired] public string Roles { get; set; } = "";
+
+    private IEnumerable<string> RoleLabels =>
+        Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(RoleLabel);
+
+    private static string RoleLabel(string role) => role switch
+    {
+        "SystemAdmin" => "Sistem Admin",
+        "TechnicalOfficeEngineer" => "Teknik Ofis",
+        "HeadOfMaster" => "Ustabaşı",
+        "SiteChief" => "Şantiye Şefi",
+        "ProjectManager" => "Proje Yöneticisi",
+        _ => role
+    };
+}

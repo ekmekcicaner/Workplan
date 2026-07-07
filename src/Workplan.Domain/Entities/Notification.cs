@@ -47,6 +47,35 @@ public class Notification : Entity<Guid>
             dailyPlanId);
     }
 
+    public static Result<Notification> CreateDailyPlanRejected(
+        Guid userId,
+        Guid dailyPlanId,
+        DateOnly workDate,
+        string rejectedByLabel,
+        string reason)
+    {
+        if (userId == Guid.Empty)
+            return Result<Notification>.Fail(Error.Validation("Bildirim kullanıcısı boş olamaz."));
+
+        if (dailyPlanId == Guid.Empty)
+            return Result<Notification>.Fail(Error.Validation("Günlük plan ID boş olamaz."));
+
+        if (string.IsNullOrWhiteSpace(rejectedByLabel))
+            return Result<Notification>.Fail(Error.Validation("Reddeden rol boş olamaz."));
+
+        if (string.IsNullOrWhiteSpace(reason))
+            return Result<Notification>.Fail(Error.Validation("Red gerekçesi boş olamaz."));
+
+        return new Notification(
+            Guid.NewGuid(),
+            userId,
+            "DailyPlanRejected",
+            "İş reddedildi",
+            $"{workDate:yyyy-MM-dd} tarihli günlük plan {rejectedByLabel.Trim()} tarafından reddedildi. Tekrar kontrol edin.",
+            $"daily-plans/{dailyPlanId}",
+            dailyPlanId);
+    }
+
     public Result MarkAsRead(Guid actorUserId)
     {
         if (actorUserId != UserId)

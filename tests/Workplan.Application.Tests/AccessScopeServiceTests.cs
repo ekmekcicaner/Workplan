@@ -62,21 +62,6 @@ public class AccessScopeServiceTests
     }
 
     [Fact]
-    public async Task HeadOfMaster_sees_only_own_created_crews_in_own_location()
-    {
-        await using var db = CreateDbContext();
-        var seed = await SeedAsync(db);
-        var scope = CreateScope(db, seed.HomA, Roles.HeadOfMaster);
-
-        var crews = await scope.ApplyCrewScope(db.Crews.AsNoTracking())
-            .OrderBy(c => c.Name)
-            .ToListAsync();
-
-        Assert.Single(crews);
-        Assert.Equal(seed.CrewA.Id, crews[0].Id);
-    }
-
-    [Fact]
     public async Task SystemAdmin_sees_all_regions()
     {
         await using var db = CreateDbContext();
@@ -221,8 +206,6 @@ public class AccessScopeServiceTests
         locationB.AssignHeadOfMaster(homB);
 
         var workItemType = WorkItemType.Create("Leaf", Guid.NewGuid(), 1, Unit.M2).Value;
-        var crewA = Crew.Create(locationA.Id, "Crew A", homA).Value;
-        var crewB = Crew.Create(locationB.Id, "Crew B", homB).Value;
 
         var planA = DailyPlan.CreateFromPlan(
             projectA.Id, regionA.Id, locationA.Id, workItemType.Id,
@@ -235,13 +218,12 @@ public class AccessScopeServiceTests
         db.CrewRegions.AddRange(regionA, regionB);
         db.Locations.AddRange(locationA, locationB);
         db.WorkItemTypes.Add(workItemType);
-        db.Crews.AddRange(crewA, crewB);
         db.DailyPlans.AddRange(planA, planB);
         await db.SaveChangesAsync(CancellationToken.None);
 
         return new SeedData(
             pmA, pmB, siteChiefA, siteChiefB, techA, techB, homA, homB,
-            projectA, projectB, regionA, regionB, locationA, locationB, workItemType, crewA, crewB);
+            projectA, projectB, regionA, regionB, locationA, locationB, workItemType);
     }
 
     private sealed record CurrentUserStub(Guid? UserId, IReadOnlyList<string> Roles) : ICurrentUserService;
@@ -261,7 +243,5 @@ public class AccessScopeServiceTests
         CrewRegion RegionB,
         Location LocationA,
         Location LocationB,
-        WorkItemType WorkItemType,
-        Crew CrewA,
-        Crew CrewB);
+        WorkItemType WorkItemType);
 }

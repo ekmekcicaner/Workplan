@@ -26,6 +26,11 @@ public class DailyPlanConfiguration : IEntityTypeConfiguration<DailyPlan>
             .HasForeignKey("DailyPlanId")
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne<CrewType>()
+            .WithMany()
+            .HasForeignKey(x => x.CrewTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(x => new { x.LocationId, x.WorkDate });
     }
 }

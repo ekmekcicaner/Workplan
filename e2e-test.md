@@ -76,7 +76,7 @@
 * [ ] `Proje` alanında `Silopi Kombine Çevrim Doğalgaz Santrali İnşaatı` seç
 * [ ] `Saha bölgesi` alanında `A Bölgesi - Türbin Binası ve Jeneratör Sahası` seç
 * [ ] `Lokasyon` alanında `Türbin Binası - Zemin Kat` seç
-* [ ] `Ustabaşı` alanında `Ali Kaya` veya `hom1@workplan.local` seç
+* [ ] `Saha Sorumlusu` bölümünde lokasyonun Head of Master bilgisinin otomatik `Ali Kaya` veya `hom1@workplan.local` olduğunu doğrula
 * [ ] İş kalemi seçicide yaprak iş kalemi seç:
 
   * [ ] `Betonarme İşleri`
@@ -122,37 +122,15 @@
 
 ---
 
-## E2E-04 — Ekip Oluşturma ve Üye Ekleme
+## E2E-04 — Ekip Tipi Seçerek İşi Başlatma
 
-**Amaç:** Head of Master’ın kendi lokasyonu için ekip oluşturabilmesini kontrol etmek.
+**Amaç:** Head of Master’ın iş detayından çıkmadan tek ekip tipi seçip işi başlatabilmesini kontrol etmek.
 
 * [ ] `hom1@workplan.local` ile giriş yap
 * [ ] `Bana Atanan İşler` sayfasına git
 * [ ] E2E-02’de oluşturulan `Atandı` durumlu kaydın `Detay` butonuna bas
-* [ ] `İşi başlat` bölümünde `Yeni ekip oluştur` linkine tıkla
-* [ ] `İsim` alanına `Manuel Test Ekibi` yaz
-* [ ] `Oluştur` butonuna bas
-* [ ] Onay modalini onayla
-* [ ] Oluşan ekip kartında `Üye ekle` butonuna bas
-* [ ] `Rol` seçimini `GeneralLabor` olarak bırak
-* [ ] `Personel Ref.` alanına `TEST-001 - Manuel Kullanıcı` yaz
-* [ ] `Ekle` butonuna bas
-* [ ] Onay modalini onayla
-
-**Beklenen sonuç:**
-
-* [ ] Ekip listede görünüyor
-* [ ] Eklenen üye ekip tablosuna geliyor
-
----
-
-## E2E-05 — İşi Başlatma
-
-**Amaç:** Atandı durumundaki planı InProgress durumuna geçirmek.
-
-* [ ] E2E-02’de oluşturulan işin `İş Detayı` sayfasına dön
-* [ ] `İşi başlat` bölümünde `Ekip` alanından `Manuel Test Ekibi` veya mevcut demo ekiplerden birini seç
-* [ ] `Başlat` butonuna bas
+* [ ] `Ekip` bölümünde `Ekip tipi` alanından yalnızca `Düz işçi` seçeneğini işaretle
+* [ ] `İşi Başlat` butonuna bas
 * [ ] Onay modalini onayla
 
 **Beklenen sonuç:**
@@ -160,7 +138,26 @@
 * [ ] Başarılı mesaj görünüyor
 * [ ] Durum `Devam Ediyor` oluyor
 * [ ] `Gün sonu ilerleme gir` formu görünüyor
-* [ ] `Durum Geçmişi` bölümünde `Atandı` → `Devam Ediyor` geçişi görünüyor
+* [ ] Ekip bölümünde seçilen tek ekip tipi listeleniyor
+
+---
+
+## E2E-05 — Ekip Tipi Yönetimi
+
+**Amaç:** Technical Office veya SystemAdmin kullanıcısının proje/bölge/lokasyon bağımsız ekip tipi master datasını yönetebilmesini kontrol etmek.
+
+* [ ] `to1@workplan.local` veya `admin@workplan.local` ile giriş yap
+* [ ] `Ekip Tipleri` sayfasına git
+* [ ] `Manuel E2E Ekip Tipi` adında yeni kayıt oluştur
+* [ ] Kaydın listede aktif olarak göründüğünü doğrula
+* [ ] Kaydı `Manuel E2E Ekip Tipi Güncel` olarak düzenle
+* [ ] Kaydı pasifleştir
+* [ ] Kaydı tekrar aktifleştir
+
+**Beklenen sonuç:**
+
+* [ ] Kayıt oluşturma, düzenleme ve aktif/pasif değiştirme işlemleri başarılı oluyor
+* [ ] Sayfada proje, bölge, lokasyon, personel ref veya üye ekleme alanı görünmüyor
 
 ---
 
@@ -168,6 +165,7 @@
 
 **Amaç:** InProgress iş için gerçekleşen değerleri girip Site Chief onayına göndermek.
 
+* [ ] İş detayına dön
 * [ ] `Gün sonu ilerleme gir` formunda `Gerçek Miktar` alanına `10` yaz
 * [ ] `Gerçek Adam-Gün` alanına `2.5` yaz
 * [ ] `Fazla Mesai` alanına `1` yaz
@@ -235,8 +233,8 @@
 
 * [ ] E2E-02 ile yeni bir plan oluştur
 * [ ] `hom1@workplan.local` ile plana gir
-* [ ] Ekip seç
-* [ ] `Başlat` butonuna bas
+* [ ] Worker type seç
+* [ ] `İşi Başlat` butonuna bas
 * [ ] Gün sonu formunda geçerli gerçekleşme değerleri gir
 * [ ] İşi onaya sun
 * [ ] `sc1@workplan.local` ile giriş yap
@@ -415,8 +413,8 @@
 * [ ] Üstteki menü butonuyla menüyü aç/kapat
 * [ ] `Bana Atanan İşler` sayfasına git
 * [ ] Bir işin `Detay` sayfasına gir
-* [ ] Ekip seçiminin taşmadan kullanılabildiğini doğrula
-* [ ] `Başlat` butonunun taşmadan kullanılabildiğini doğrula
+* [ ] Worker type seçiminin taşmadan kullanılabildiğini doğrula
+* [ ] `İşi Başlat` butonunun taşmadan kullanılabildiğini doğrula
 * [ ] Gün sonu formunun taşmadan kullanılabildiğini doğrula
 * [ ] `Kaydet ve Onaya Sun` butonunun taşmadan kullanılabildiğini doğrula
 

@@ -1,54 +1,51 @@
 @page "/approvals"
-@attribute [Authorize(Roles = "HeadOfMaster,SiteChief,ProjectManager")]
+@attribute [Authorize(Roles = "SiteChief,ProjectManager")]
 @inject DailyPlansApiService DailyPlansApi
-@inject AuthenticationStateProvider AuthStateProvider
 
-<h1 class="mb-4 text-2xl font-semibold">Beklenen Onaylar</h1>
+<PageTitle>Bekleyen Onaylar | Workplan  </PageTitle>
+<section class="space-y-4">
+    <PageHeader Title="Beklenen Onaylar"
+                Subtitle="Sadece kendi onay aşamandaki işler listelenir. Plan ve gerçekleşen değerleri inceleyip aksiyon ver.">
+        <Metadata>
+            <span class="badge">@_plans.Count kayıt</span>
+        </Metadata>
+    </PageHeader>
 
-<DailyPlanTable Items="_plans" Loading="_loading" LoadError="@_loadError" />
+    <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
 
-@code {
-    private List<DailyPlanDto> _plans = [];
-    private bool _loading = true;
-    private string? _loadError;
-
-    private static readonly WorkStatus[] HomTrackedStatuses = [WorkStatus.Submitted, WorkStatus.ApprovedBySiteChief];
-
-    protected override async Task OnInitializedAsync()
+    @if (!_loading && string.IsNullOrWhiteSpace(_loadError))
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-
-        if (authState.User.IsInRole("SiteChief") || authState.User.IsInRole("ProjectManager"))
+        @if (_plans.Count == 0)
         {
-            var result = await DailyPlansApi.GetAwaitingApprovalAsync();
-            if (result.Success)
-            {
-                _plans = result.Data ?? [];
-            }
-            else
-            {
-                _loadError = result.ErrorMessage;
-            }
+            <EmptyState Icon="check-circle" Title="Onay bekleyen iş yok" Text="Yeni gönderimler geldiğinde burada görünür." />
         }
         else
         {
-            var userId = Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : (Guid?)null;
-            if (userId is null)
-            {
-                _loadError = "Kullanıcı kimliği bulunamadı.";
-            }
-            else
-            {
-                var result = await DailyPlansApi.GetByHeadOfMasterAsync(userId.Value);
-                if (result.Success)
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                @foreach (var plan in _plans)
                 {
-                    _plans = (result.Data ?? []).Where(p => HomTrackedStatuses.Contains(p.Status)).ToList();
+                    <ApprovalQueueCard @key="plan.Id" Plan="plan" />
                 }
-                else
-                {
-                    _loadError = result.ErrorMessage;
-                }
-            }
+            </div>
+        }
+    }
+</section>
+
+@code {
+    private List<DailyPlanListItemDto> _plans = [];
+    private bool _loading = true;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await DailyPlansApi.GetApprovalQueueAsync();
+        if (result.Success)
+        {
+            _plans = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
         }
 
         _loading = false;

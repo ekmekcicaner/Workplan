@@ -1,0 +1,39 @@
+<div class="inline-notice @ToneClass" role="@Role">
+    <Icon Name="@IconName" CssClass="h-4 w-4 shrink-0" />
+    <div class="min-w-0">
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <p class="font-semibold">@Title</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(Text))
+        {
+            <p class="text-sm">@Text</p>
+        }
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string Tone { get; set; } = "neutral";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Role => Tone == "danger" ? "alert" : "status";
+
+    private string IconName => Tone switch
+    {
+        "success" => "check",
+        "warning" => "alert",
+        "danger" => "alert",
+        _ => "info"
+    };
+
+    private string ToneClass => Tone switch
+    {
+        "success" => "inline-notice-success",
+        "warning" => "inline-notice-warning",
+        "danger" => "inline-notice-danger",
+        _ => "inline-notice-neutral"
+    };
+}

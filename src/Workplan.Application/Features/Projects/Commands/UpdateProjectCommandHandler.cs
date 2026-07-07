@@ -23,6 +23,12 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
         var result = project.Update(request.Code, request.Name);
         if (result.IsFailure) return result;
 
+        if (request.PmUserId is { } pmUserId)
+        {
+            var assignPm = project.AssignPm(pmUserId);
+            if (assignPm.IsFailure) return assignPm;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
         return Result.Ok();
     }

@@ -27,7 +27,7 @@ public class GetApprovedDailyPlansQueryHandler
             .Where(p => p.Status == WorkStatus.ApprovedByPM))
             .Select(plan => new DailyPlanDto(
                 plan.Id, plan.ProjectId, plan.CrewRegionId, plan.LocationId, plan.WorkItemTypeId,
-                plan.WorkDate, plan.PlannedById, plan.AssignedHoMId, plan.CrewId,
+                plan.WorkDate, plan.PlannedById, plan.AssignedHoMId, plan.CrewTypeId,
                 plan.PlannedQuantity, plan.PlannedManDay, plan.Unit, plan.FactQuantity, plan.FactManDay,
                 plan.Overtime, plan.Comment, plan.Status, null))
             .ToListAsync(cancellationToken);

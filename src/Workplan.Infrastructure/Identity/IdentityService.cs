@@ -57,6 +57,24 @@ public class IdentityService : IIdentityService
         return summaries;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken ct)
+    {
+        if (userIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        var distinctIds = userIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (distinctIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        return await _userManager.Users
+            .AsNoTracking()
+            .Where(user => distinctIds.Contains(user.Id))
+            .Select(user => new { user.Id, user.FullName })
+            .ToDictionaryAsync(user => user.Id, user => user.FullName, ct);
+    }
+
     public async Task<Result<AuthenticatedUser>> ValidateCredentialsAsync(
         string email, string password, CancellationToken ct)
     {

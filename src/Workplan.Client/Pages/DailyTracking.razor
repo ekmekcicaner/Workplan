@@ -1,0 +1,119 @@
+@page "/daily-tracking"
+@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,ProjectManager,SiteChief,HeadOfMaster")]
+@inject DailyPlansApiService DailyPlansApi
+
+<PageTitle>Günlük İş Takibi | Workplan</PageTitle>
+
+<section class="space-y-4">
+    <PageHeader Title="Günlük İş Takibi"
+                Subtitle="Seçilen güne ait işler, sorumlular, durumlar ve gerçekleşmeler.">
+        <Actions>
+            <button class="btn-secondary" @onclick="LoadPlansAsync">
+                <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+            </button>
+        </Actions>
+        <Metadata>
+            <span class="badge">@_workDate.ToString("dd.MM.yyyy")</span>
+        </Metadata>
+    </PageHeader>
+
+    <DailyTrackingFilters Options="_options"
+                          WorkDate="_workDate"
+                          WorkDateChanged="OnWorkDateChangedAsync"
+                          @bind-SelectedProjectIds="_projectIds"
+                          @bind-SelectedCrewRegionIds="_crewRegionIds"
+                          @bind-SelectedLocationIds="_locationIds"
+                          @bind-SelectedHeadOfMasterIds="_headOfMasterIds"
+                          @bind-SelectedSiteChiefIds="_siteChiefIds"
+                          @bind-SelectedProjectManagerIds="_projectManagerIds"
+                          @bind-SelectedStatuses="_statuses"
+                          OnApply="LoadPlansAsync"
+                          OnClear="ClearFiltersAsync" />
+
+    <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+
+    @if (!_loading && string.IsNullOrWhiteSpace(_loadError))
+    {
+        <DailyTrackingSummary Items="_plans" />
+        <DailyTrackingTable Items="_plans" />
+    }
+</section>
+
+@code {
+    private DailyTrackingOptionsDto? _options;
+    private List<DailyTrackingPlanDto> _plans = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private DateOnly _workDate = DateOnly.FromDateTime(DateTime.Today);
+    private HashSet<Guid> _projectIds = [];
+    private HashSet<Guid> _crewRegionIds = [];
+    private HashSet<Guid> _locationIds = [];
+    private HashSet<Guid> _headOfMasterIds = [];
+    private HashSet<Guid> _siteChiefIds = [];
+    private HashSet<Guid> _projectManagerIds = [];
+    private HashSet<WorkStatus> _statuses = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOptionsAsync();
+        await LoadPlansAsync();
+    }
+
+    private async Task LoadOptionsAsync()
+    {
+        var result = await DailyPlansApi.GetTrackingOptionsAsync();
+        if (result.Success)
+        {
+            _options = result.Data;
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
+        }
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        _loading = true;
+        _loadError = null;
+
+        var result = await DailyPlansApi.GetTrackingAsync(
+            _workDate,
+            _projectIds,
+            _crewRegionIds,
+            _locationIds,
+            _headOfMasterIds,
+            _siteChiefIds,
+            _projectManagerIds,
+            _statuses);
+
+        if (result.Success)
+        {
+            _plans = result.Data ?? [];
+        }
+        else
+        {
+            _loadError = result.ErrorMessage;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _projectIds = [];
+        _crewRegionIds = [];
+        _locationIds = [];
+        _headOfMasterIds = [];
+        _siteChiefIds = [];
+        _projectManagerIds = [];
+        _statuses = [];
+        await LoadPlansAsync();
+    }
+
+    private async Task OnWorkDateChangedAsync(DateOnly workDate)
+    {
+        _workDate = workDate;
+        await LoadPlansAsync();
+    }
+}

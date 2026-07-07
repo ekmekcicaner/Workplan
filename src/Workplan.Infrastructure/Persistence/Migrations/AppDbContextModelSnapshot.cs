@@ -152,54 +152,6 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Workplan.Domain.Entities.Crew", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CreatedByHoMId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("LocationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LocationId");
-
-                    b.ToTable("Crews");
-                });
-
-            modelBuilder.Entity("Workplan.Domain.Entities.CrewMember", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CrewId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PersonnelRef")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("WorkerType")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CrewId");
-
-                    b.ToTable("CrewMembers");
-                });
-
             modelBuilder.Entity("Workplan.Domain.Entities.CrewRegion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -237,6 +189,30 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                     b.ToTable("CrewRegions");
                 });
 
+            modelBuilder.Entity("Workplan.Domain.Entities.CrewType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("CrewTypes");
+                });
+
             modelBuilder.Entity("Workplan.Domain.Entities.DailyPlan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -250,10 +226,10 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<Guid?>("CrewId")
+                    b.Property<Guid>("CrewRegionId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CrewRegionId")
+                    b.Property<Guid?>("CrewTypeId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("FactManDay")
@@ -300,6 +276,8 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CrewTypeId");
 
                     b.HasIndex("LocationId", "WorkDate");
 
@@ -645,28 +623,6 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Workplan.Domain.Entities.Crew", b =>
-                {
-                    b.HasOne("Workplan.Domain.Entities.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("Workplan.Domain.Entities.CrewMember", b =>
-                {
-                    b.HasOne("Workplan.Domain.Entities.Crew", "Crew")
-                        .WithMany("Members")
-                        .HasForeignKey("CrewId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Crew");
-                });
-
             modelBuilder.Entity("Workplan.Domain.Entities.CrewRegion", b =>
                 {
                     b.HasOne("Workplan.Domain.Entities.Project", "Project")
@@ -676,6 +632,14 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Workplan.Domain.Entities.DailyPlan", b =>
+                {
+                    b.HasOne("Workplan.Domain.Entities.CrewType", null)
+                        .WithMany()
+                        .HasForeignKey("CrewTypeId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Workplan.Domain.Entities.Location", b =>
@@ -720,11 +684,6 @@ namespace Workplan.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("Workplan.Domain.Entities.Crew", b =>
-                {
-                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("Workplan.Domain.Entities.CrewRegion", b =>

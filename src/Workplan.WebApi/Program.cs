@@ -77,8 +77,9 @@ app.MapProjectEndpoints();
 app.MapCrewRegionEndpoints();
 app.MapLocationEndpoints();
 app.MapWorkItemTypeEndpoints();
-app.MapCrewEndpoints();
+app.MapCrewTypeEndpoints();
 app.MapDailyPlanEndpoints();
+app.MapReportEndpoints();
 app.MapNotificationEndpoints();
 app.MapUserEndpoints();
 

@@ -1,0 +1,74 @@
+<section class="card">
+    <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h2 class="text-base font-semibold">Plan / Gerçekleşen</h2>
+            <p class="text-sm text-neutral-500 dark:text-neutral-400">Saha beyanı plan değerleriyle yan yana kontrol edilir.</p>
+        </div>
+        <span class="badge">@UnitLabel</span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <MetricComparisonCard Title="Miktar"
+                              PlannedLabel="Planlanan"
+                              ActualLabel="Gerçekleşen"
+                              PlannedValue="@($"{NumberDisplay.Format(Plan.PlannedQuantity)} {UnitLabel}")"
+                              ActualValue="@FormatQuantity(Plan.FactQuantity)"
+                              DeltaLabel="@DeltaLabel(Plan.FactQuantity, Plan.PlannedQuantity, UnitLabel, "Planla aynı miktar")"
+                              Completion="@Completion(Plan.FactQuantity, Plan.PlannedQuantity)" />
+
+        <MetricComparisonCard Title="Adam-gün"
+                              PlannedLabel="Planlanan"
+                              ActualLabel="Gerçekleşen"
+                              PlannedValue="@NumberDisplay.Format(Plan.PlannedManDay)"
+                              ActualValue="@FormatValue(Plan.FactManDay)"
+                              DeltaLabel="@DeltaLabel(Plan.FactManDay, Plan.PlannedManDay, "adam-gün", "Planla aynı adam-gün")"
+                              Completion="@Completion(Plan.FactManDay, Plan.PlannedManDay)" />
+
+        <MetricComparisonCard Title="Fazla mesai"
+                              PlannedLabel="Referans"
+                              ActualLabel="Beyan"
+                              PlannedValue="Ayrı takip"
+                              ActualValue="@FormatValue(Plan.Overtime)"
+                              DeltaLabel="Adam-günden ayrı beyan edilir"
+                              Completion="@(Plan.Overtime is > 0 ? 100 : 0)" />
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public DailyPlanDetailDto Plan { get; set; } = default!;
+
+    private string UnitLabel => Plan.Unit switch
+    {
+        Unit.Ton => "ton",
+        Unit.M3 => "m³",
+        Unit.M2 => "m²",
+        _ => ""
+    };
+
+    private string FormatQuantity(decimal? value) =>
+        value is null ? "-" : $"{NumberDisplay.Format(value)} {UnitLabel}";
+
+    private static string FormatValue(decimal? value) =>
+        value is null ? "-" : NumberDisplay.Format(value);
+
+    private static int Completion(decimal? actual, decimal planned)
+    {
+        if (actual is null || planned <= 0)
+            return 0;
+
+        return (int)Math.Clamp(decimal.Round(actual.Value / planned * 100, 0), 0, 100);
+    }
+
+    private static string DeltaLabel(decimal? actual, decimal planned, string unit, string equalText)
+    {
+        if (actual is null)
+            return "Gerçekleşen değer girilmedi";
+
+        var delta = actual.Value - planned;
+        if (delta == 0)
+            return equalText;
+
+        var direction = delta > 0 ? "Plan üstü" : "Plan altı";
+        return $"{direction}: {NumberDisplay.Format(Math.Abs(delta))} {unit}";
+    }
+}

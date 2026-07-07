@@ -6,139 +6,104 @@
 
 <PageTitle>Workplan</PageTitle>
 
-<h1 class="mb-4 text-2xl font-semibold">Ana Sayfa</h1>
+<section class="space-y-4">
+    <PageHeader Title="Ana Sayfa"
+                Subtitle="Rolüne göre günlük operasyon özeti, bekleyen işler ve hızlı geçişler." />
 
-<div class="card mb-6">
-    <h2 class="mb-3 font-semibold">Bildirimlerim</h2>
-    <LoadingBlock Loading="_loading" />
-    @if (!_loading)
-    {
-        @if (_notifications.Count == 0)
-        {
-            <p class="text-sm text-slate-500 dark:text-slate-400">Okunmamış bildirim yok.</p>
-        }
-        else
-        {
-            <ul class="flex flex-col gap-2">
-                @foreach (var notification in _notifications)
-                {
-                    <li>
-                        <a class="flex flex-col rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50"
-                           href="@(notification.Link ?? "#")">
-                            <span class="font-medium">@notification.Title</span>
-                            <span class="text-slate-500 dark:text-slate-400">@notification.Message</span>
-                        </a>
-                    </li>
-                }
-            </ul>
-        }
-    }
-</div>
+    <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <NotificationList Items="_notifications" Loading="_notificationsLoading" LoadError="@_notificationsLoadError" />
 
-<AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalContext">
-    <Authorized>
-        <div class="card mb-6">
-            <h2 class="mb-3 font-semibold">Onay Bekleyen İşlerim</h2>
-            <LoadingBlock Loading="_loading" />
-            @if (!_loading)
-            {
-                @if (_awaiting.Count == 0)
-                {
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Onay bekleyen iş yok.</p>
-                }
-                else
-                {
-                    <ul class="flex flex-col gap-2">
-                        @foreach (var plan in _awaiting)
-                        {
-                            <li>
-                                <a class="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50"
-                                   href="@($"daily-plans/{plan.Id}")">
-                                    <span>@plan.WorkDate.ToString("yyyy-MM-dd") &middot; @plan.PlannedQuantity @UnitLabel(plan.Unit)</span>
-                                    <StatusBadge Status="plan.Status" />
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                }
-            }
-        </div>
-    </Authorized>
-</AuthorizeView>
+        <AuthorizeView Roles="HeadOfMaster" Context="homContext">
+            <Authorized>
+                <TodayWorkSummary Items="_myWork" Loading="_myWorkLoading" LoadError="@_myWorkLoadError" />
+            </Authorized>
+        </AuthorizeView>
 
-<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createContext">
-        <Authorized>
-            <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="daily-plans/new">
-                <h2 class="font-semibold">Günlük Plan Oluştur</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Ustabaşına ve iş kalemine göre günlük plan oluştur.</p>
-            </a>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="HeadOfMaster" Context="myWorkContext">
-        <Authorized>
-            <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="my-work">
-                <h2 class="font-semibold">Bana Atanan İşler</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Ekibini seç, işi başlat, gün sonu ilerlemesini gir.</p>
-            </a>
-        </Authorized>
-    </AuthorizeView>
-    <AuthorizeView Roles="HeadOfMaster,SiteChief,ProjectManager" Context="approvalsContext">
-        <Authorized>
-            <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="approvals">
-                <h2 class="font-semibold">Beklenen Onaylar</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Onay sürecindeki işleri görüntüle, onayla/reddet.</p>
-            </a>
-        </Authorized>
-    </AuthorizeView>
-    <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="projects">
-        <h2 class="font-semibold">Projeler</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Proje, saha bölgesi, lokasyon ve ekipleri yönet.</p>
-    </a>
-    <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="work-item-types">
-        <h2 class="font-semibold">İş Kalemi Tipleri</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">İş kalemi ağacını görüntüle ve yeni tip ekle.</p>
-    </a>
-    <AuthorizeView Roles="SystemAdmin" Context="adminContext">
-        <Authorized>
-            <a class="card hover:border-slate-400 dark:hover:border-slate-500" href="user-management">
-                <h2 class="font-semibold">Kullanıcı Yönetimi</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Kullanıcı oluştur, rol ata, aktif/pasif yap.</p>
-            </a>
-        </Authorized>
-    </AuthorizeView>
-</div>
+        <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalContext">
+            <Authorized>
+                <ApprovalQueuePreview Items="_approvalQueue" Loading="_approvalQueueLoading" LoadError="@_approvalQueueLoadError" />
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <QuickActions />
+</section>
 
 @code {
     private List<NotificationDto> _notifications = [];
-    private List<DailyPlanDto> _awaiting = [];
-    private bool _loading = true;
+    private bool _notificationsLoading = true;
+    private string? _notificationsLoadError;
+
+    private List<DailyPlanListItemDto> _myWork = [];
+    private bool _myWorkLoading;
+    private string? _myWorkLoadError;
+
+    private List<DailyPlanListItemDto> _approvalQueue = [];
+    private bool _approvalQueueLoading;
+    private string? _approvalQueueLoadError;
 
     protected override async Task OnInitializedAsync()
     {
-        var notificationsTask = NotificationsApi.GetUnreadAsync();
+        var notificationsTask = LoadNotificationsAsync();
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        Task<ApiResult<List<DailyPlanDto>>>? awaitingTask = null;
+        Task myWorkTask = Task.CompletedTask;
+        if (authState.User.IsInRole("HeadOfMaster"))
+        {
+            myWorkTask = LoadMyWorkAsync();
+        }
+
+        Task approvalTask = Task.CompletedTask;
         if (authState.User.IsInRole("SiteChief") || authState.User.IsInRole("ProjectManager"))
         {
-            awaitingTask = DailyPlansApi.GetAwaitingApprovalAsync();
+            approvalTask = LoadApprovalQueueAsync();
         }
 
-        _notifications = (await notificationsTask).Data ?? [];
-        if (awaitingTask is not null)
-        {
-            _awaiting = (await awaitingTask).Data ?? [];
-        }
-
-        _loading = false;
+        await Task.WhenAll(notificationsTask, myWorkTask, approvalTask);
     }
 
-    private static string UnitLabel(Unit unit) => unit switch
+    private async Task LoadNotificationsAsync()
     {
-        Unit.Ton => "ton",
-        Unit.M3 => "m³",
-        Unit.M2 => "m²",
-        _ => ""
-    };
+        _notificationsLoading = true;
+        var result = await NotificationsApi.GetUnreadAsync();
+        if (result.Success)
+        {
+            _notifications = result.Data ?? [];
+        }
+        else
+        {
+            _notificationsLoadError = result.ErrorMessage;
+        }
+        _notificationsLoading = false;
+    }
+
+    private async Task LoadMyWorkAsync()
+    {
+        _myWorkLoading = true;
+        var result = await DailyPlansApi.GetMyWorkAsync();
+        if (result.Success)
+        {
+            _myWork = result.Data ?? [];
+        }
+        else
+        {
+            _myWorkLoadError = result.ErrorMessage;
+        }
+        _myWorkLoading = false;
+    }
+
+    private async Task LoadApprovalQueueAsync()
+    {
+        _approvalQueueLoading = true;
+        var result = await DailyPlansApi.GetApprovalQueueAsync();
+        if (result.Success)
+        {
+            _approvalQueue = result.Data ?? [];
+        }
+        else
+        {
+            _approvalQueueLoadError = result.ErrorMessage;
+        }
+        _approvalQueueLoading = false;
+    }
 }

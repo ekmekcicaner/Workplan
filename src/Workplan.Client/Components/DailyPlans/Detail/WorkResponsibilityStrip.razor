@@ -1,0 +1,21 @@
+<section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <ResponsibilityCard Title="Ustabaşı"
+                        Name="@DisplayName(Plan.AssignedHoMName)"
+                        Detail="Saha beyanından sorumlu"
+                        IconName="hard-hat" />
+    <ResponsibilityCard Title="Şantiye Şefi"
+                        Name="@DisplayName(Plan.SiteChiefName)"
+                        Detail="İlk onay ve saha kontrolü"
+                        IconName="user" />
+    <ResponsibilityCard Title="Proje Yöneticisi"
+                        Name="@DisplayName(Plan.ProjectManagerName)"
+                        Detail="Final onay"
+                        IconName="users" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public DailyPlanDetailDto Plan { get; set; } = default!;
+
+    private static string DisplayName(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "Atanmamış" : name;
+}

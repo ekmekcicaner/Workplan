@@ -2,6 +2,8 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Workplan.Application.Common;
 using Workplan.Application.Features.DailyPlans.Commands;
+using Workplan.Application.Features.DailyPlans.Queries.GetApprovalQueue;
+using Workplan.Application.Features.DailyPlans.Queries.GetMyWorkDailyPlans;
 using Workplan.Application.Features.Notifications.Commands;
 using Workplan.Application.Interfaces;
 using Workplan.Domain.Entities;
@@ -65,22 +67,41 @@ public class DailyPlanCommandHandlerTests
 
     [Fact]
     [Trait("Category", "Application")]
-    public async Task StartWork_rejects_crew_from_different_location()
+    public async Task CreateDailyPlan_rejects_assignee_that_is_not_location_head_of_master()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedAsync(db);
+        var currentUser = new CurrentUserStub(seed.TechOfficeId, [Roles.TechnicalOfficeEngineer]);
+        var handler = new CreateDailyPlanCommandHandler(db, currentUser, new AccessScopeService(db, currentUser));
+
+        var result = await handler.Handle(new CreateDailyPlanCommand(
+            seed.Project.Id,
+            seed.Region.Id,
+            seed.Location.Id,
+            seed.WorkItemType.Id,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            7,
+            2,
+            Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Validation");
+    }
+
+    [Fact]
+    [Trait("Category", "Application")]
+    public async Task StartWork_rejects_wrong_head_of_master()
     {
         await using var db = CreateDbContext();
         var seed = await SeedAsync(db);
         var plan = CreateAssignedPlan(seed);
-        var otherLocation = Location.Create(seed.Project.Id, seed.Region.Id, "Other").Value;
-        var invalidCrew = Crew.Create(otherLocation.Id, "Other crew", seed.HeadOfMasterId).Value;
-        db.Locations.Add(otherLocation);
-        db.Crews.Add(invalidCrew);
         db.DailyPlans.Add(plan);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var currentUser = new CurrentUserStub(seed.HeadOfMasterId, [Roles.HeadOfMaster]);
+        var currentUser = new CurrentUserStub(Guid.NewGuid(), [Roles.HeadOfMaster]);
         var handler = new StartWorkCommandHandler(db, currentUser, new AccessScopeService(db, currentUser));
 
-        var result = await handler.Handle(new StartWorkCommand(plan.Id, invalidCrew.Id), CancellationToken.None);
+        var result = await handler.Handle(new StartWorkCommand(plan.Id, seed.CrewType.Id), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("scope_mismatch");
@@ -88,27 +109,26 @@ public class DailyPlanCommandHandlerTests
 
     [Fact]
     [Trait("Category", "Application")]
-    public async Task StartWork_and_SubmitProgress_persist_status_changes()
+    public async Task StartWork_with_worker_type_creates_crew_snapshot_and_SubmitProgress_persists_status_changes()
     {
         await using var db = CreateDbContext();
         var seed = await SeedAsync(db);
         var plan = CreateAssignedPlan(seed);
-        var crew = Crew.Create(seed.Location.Id, "Crew", seed.HeadOfMasterId).Value;
         db.DailyPlans.Add(plan);
-        db.Crews.Add(crew);
         await db.SaveChangesAsync(CancellationToken.None);
 
         var currentUser = new CurrentUserStub(seed.HeadOfMasterId, [Roles.HeadOfMaster]);
         var scope = new AccessScopeService(db, currentUser);
         var startResult = await new StartWorkCommandHandler(db, currentUser, scope)
-            .Handle(new StartWorkCommand(plan.Id, crew.Id), CancellationToken.None);
+            .Handle(new StartWorkCommand(plan.Id, seed.CrewType.Id), CancellationToken.None);
         var submitResult = await new SubmitProgressCommandHandler(db, currentUser, scope)
             .Handle(new SubmitProgressCommand(plan.Id, 5, 1.5m, null, null), CancellationToken.None);
 
         startResult.IsSuccess.Should().BeTrue();
         submitResult.IsSuccess.Should().BeTrue();
-        (await db.DailyPlans.FindAsync([plan.Id], CancellationToken.None))!
-            .Status.Should().Be(WorkStatus.Submitted);
+        var savedPlan = (await db.DailyPlans.FindAsync([plan.Id], CancellationToken.None))!;
+        savedPlan.Status.Should().Be(WorkStatus.Submitted);
+        savedPlan.CrewTypeId.Should().Be(seed.CrewType.Id);
         (await db.StatusTransitions.CountAsync()).Should().BeGreaterThanOrEqualTo(2);
     }
 
@@ -136,6 +156,83 @@ public class DailyPlanCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         (await db.DailyPlans.FindAsync([plan.Id], CancellationToken.None))!
             .Status.Should().Be(WorkStatus.ApprovedBySiteChief);
+    }
+
+    [Fact]
+    [Trait("Category", "Application")]
+    public async Task SiteChief_reject_returns_to_head_of_master_and_creates_rejection_notification()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedAsync(db);
+        var plan = CreateSubmittedPlan(seed);
+        db.DailyPlans.Add(plan);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var siteChief = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
+        var result = await new RejectCommandHandler(db, siteChief)
+            .Handle(new RejectCommand(plan.Id, "revise quantity"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        (await db.DailyPlans.FindAsync([plan.Id], CancellationToken.None))!
+            .Status.Should().Be(WorkStatus.InProgress);
+
+        var notification = await db.Notifications.SingleAsync(n =>
+            n.UserId == seed.HeadOfMasterId
+            && n.DailyPlanId == plan.Id
+            && n.Type == "DailyPlanRejected");
+        notification.Message.Should().Contain("Şantiye Şefi");
+
+        var myWork = await new GetMyWorkDailyPlansQueryHandler(
+                db,
+                new CurrentUserStub(seed.HeadOfMasterId, [Roles.HeadOfMaster]),
+                new AccessScopeService(db, new CurrentUserStub(seed.HeadOfMasterId, [Roles.HeadOfMaster])))
+            .Handle(new GetMyWorkDailyPlansQuery(), CancellationToken.None);
+
+        myWork.IsSuccess.Should().BeTrue();
+        myWork.Value.Should().ContainSingle(item => item.Id == plan.Id)
+            .Which.LatestRejectionReason.Should().Be("revise quantity");
+    }
+
+    [Fact]
+    [Trait("Category", "Application")]
+    public async Task ProjectManager_reject_returns_to_site_chief_and_creates_rejection_notification()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedAsync(db);
+        var plan = CreateSubmittedPlan(seed);
+        db.DailyPlans.Add(plan);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var siteChief = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
+        var approveResult = await new ApproveCommandHandler(db, siteChief)
+            .Handle(new ApproveCommand(plan.Id), CancellationToken.None);
+        approveResult.IsSuccess.Should().BeTrue();
+
+        var pm = new CurrentUserStub(seed.PmId, [Roles.ProjectManager]);
+        var rejectResult = await new RejectCommandHandler(db, pm)
+            .Handle(new RejectCommand(plan.Id, "site chief should review"), CancellationToken.None);
+
+        rejectResult.IsSuccess.Should().BeTrue();
+        (await db.DailyPlans.FindAsync([plan.Id], CancellationToken.None))!
+            .Status.Should().Be(WorkStatus.Submitted);
+
+        var notification = await db.Notifications.SingleAsync(n =>
+            n.UserId == seed.SiteChiefId
+            && n.DailyPlanId == plan.Id
+            && n.Type == "DailyPlanRejected");
+        notification.Message.Should().Contain("Project Manager");
+
+        var siteChiefUser = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
+        var approvalQueue = await new GetApprovalQueueQueryHandler(
+                db,
+                siteChiefUser,
+                new AccessScopeService(db, siteChiefUser))
+            .Handle(new GetApprovalQueueQuery(), CancellationToken.None);
+
+        approvalQueue.IsSuccess.Should().BeTrue();
+        var item = approvalQueue.Value.Should().ContainSingle(row => row.Id == plan.Id).Which;
+        item.LatestRejectionReason.Should().Be("site chief should review");
+        item.LatestRejectionFromStatus.Should().Be(WorkStatus.ApprovedBySiteChief);
     }
 
     [Fact]
@@ -182,14 +279,16 @@ public class DailyPlanCommandHandlerTests
         var location = Location.Create(project.Id, region.Id, "Location").Value;
         location.AssignHeadOfMaster(headOfMaster);
         var workItemType = WorkItemType.Create("Leaf", Guid.NewGuid(), 1, Unit.M2).Value;
+        var crewType = CrewType.Create("Düz işçi").Value;
 
         db.Projects.Add(project);
         db.CrewRegions.Add(region);
         db.Locations.Add(location);
         db.WorkItemTypes.Add(workItemType);
+        db.CrewTypes.Add(crewType);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        return new SeedData(pm, siteChief, techOffice, headOfMaster, project, region, location, workItemType);
+        return new SeedData(pm, siteChief, techOffice, headOfMaster, project, region, location, workItemType, crewType);
     }
 
     private static DailyPlan CreateAssignedPlan(SeedData seed) =>
@@ -223,5 +322,6 @@ public class DailyPlanCommandHandlerTests
         Project Project,
         CrewRegion Region,
         Location Location,
-        WorkItemType WorkItemType);
+        WorkItemType WorkItemType,
+        CrewType CrewType);
 }

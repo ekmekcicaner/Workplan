@@ -60,7 +60,7 @@ public class DailyPlanTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void StartWork_requires_assigned_status_assigned_actor_and_non_empty_crew()
+    public void StartWork_requires_assigned_status_assigned_actor_and_crew_id()
     {
         var assignee = Guid.NewGuid();
         var plan = NewAssignedPlan(assignee);
@@ -95,6 +95,7 @@ public class DailyPlanTests
         plan.FactQuantity.Should().Be(10);
         plan.FactManDay.Should().Be(2.5m);
         plan.Comment.Should().Be("done");
+        plan.History.Last().Note.Should().Be("done");
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public class DailyPlanTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void Reject_requires_approval_status_and_reason_then_returns_to_in_progress()
+    public void Reject_requires_matching_stage_and_reason_then_returns_site_chief_rejection_to_in_progress()
     {
         var assignee = Guid.NewGuid();
         var plan = NewInProgressPlan(assignee);
@@ -127,7 +128,7 @@ public class DailyPlanTests
         plan.Reject(WorkStatus.ApprovedBySiteChief, Guid.NewGuid(), "bad status")
             .IsFailure.Should().BeTrue();
 
-        plan.SubmitProgress(1, 1, null, null, assignee).IsSuccess.Should().BeTrue();
+        plan.SubmitProgress(1, 1, null, "hom note", assignee).IsSuccess.Should().BeTrue();
         plan.Reject(WorkStatus.ApprovedBySiteChief, Guid.NewGuid(), " ")
             .IsFailure.Should().BeTrue();
 
@@ -135,7 +136,25 @@ public class DailyPlanTests
 
         result.IsSuccess.Should().BeTrue();
         plan.Status.Should().Be(WorkStatus.InProgress);
-        plan.Comment.Should().Contain("revise");
+        plan.Comment.Should().Be("hom note");
+        plan.History.Last().Note.Should().Be("revise");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Reject_returns_project_manager_rejection_to_submitted_for_site_chief_review()
+    {
+        var plan = NewSubmittedPlan(Guid.NewGuid());
+        plan.Approve(WorkStatus.ApprovedBySiteChief, Guid.NewGuid(), Guid.NewGuid())
+            .IsSuccess.Should().BeTrue();
+
+        var result = plan.Reject(WorkStatus.ApprovedByPM, Guid.NewGuid(), "site chief should review");
+
+        result.IsSuccess.Should().BeTrue();
+        plan.Status.Should().Be(WorkStatus.Submitted);
+        plan.History.Last().FromStatus.Should().Be(WorkStatus.ApprovedBySiteChief);
+        plan.History.Last().ToStatus.Should().Be(WorkStatus.Submitted);
+        plan.History.Last().Note.Should().Be("site chief should review");
     }
 
     private static DailyPlan NewAssignedPlan(Guid headOfMasterId) =>

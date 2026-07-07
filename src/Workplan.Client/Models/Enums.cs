@@ -12,23 +12,16 @@ public enum WorkStatus
     Reported
 }
 
-public enum WorkerType
-{
-    RebarFixer,
-    GeneralLabor,
-    Operators,
-    Survey,
-    Slinger,
-    Formworker,
-    ArchitecturalWorker,
-    Assembler,
-    Welder
-}
-
 public enum Unit
 {
     None,
     Ton,
     M3,
     M2
+}
+
+public enum DailyPlanCommentKind
+{
+    Progress,
+    Rejection
 }

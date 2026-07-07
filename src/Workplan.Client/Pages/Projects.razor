@@ -5,93 +5,136 @@
 @inject ConfirmService Confirm
 @inject ToastService Toast
 
-<h1 class="mb-4 text-2xl font-semibold">Projeler</h1>
+<PageTitle>Projeler | Workplan</PageTitle>
 
-<AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
-    <Authorized>
-        <div class="card mb-6">
-            <h2 class="mb-1 font-semibold">Yeni proje oluştur</h2>
-            <AccessNote Roles="SystemAdmin,TechnicalOfficeEngineer" />
-            <EditForm Model="_newProject" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                <DataAnnotationsValidator />
-                <div>
-                    <label class="field-label">Kod</label>
-                    <input class="input" @bind="_newProject.Code" @bind:event="oninput" />
+<section class="space-y-4">
+    <PageHeader Title="Projeler"
+                Subtitle="Proje master verisini, proje yöneticisini ve saha bölgesi geçişlerini yönet.">
+        <Actions>
+            <button class="btn-secondary" @onclick="LoadAsync">
+                <Icon Name="refresh" CssClass="h-4 w-4" />Yenile
+            </button>
+        </Actions>
+    </PageHeader>
+
+    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+        <Authorized>
+            <div class="surface-panel p-3">
+                <EditForm Model="_newProject" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 lg:grid-cols-[8rem_1fr_18rem_auto] lg:items-end">
+                    <DataAnnotationsValidator />
+                    <div>
+                        <label class="field-label">Kod</label>
+                        <input class="input" @bind="_newProject.Code" @bind:event="oninput" />
+                    </div>
+                    <div>
+                        <label class="field-label">İsim</label>
+                        <input class="input" @bind="_newProject.Name" @bind:event="oninput" />
+                    </div>
+                    <div>
+                        <label class="field-label">Proje Yöneticisi</label>
+                        <UserPicker Role="ProjectManager" @bind-Value="_newProject.PmUserId" Placeholder="PM ara..." />
+                    </div>
+                    <button class="btn-primary" type="submit" disabled="@(!CanCreateProject)">
+                        <Icon Name="plus" CssClass="h-4 w-4" />Oluştur
+                    </button>
+                </EditForm>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <input type="checkbox" class="size-4" @bind="_includeInactive" @bind:after="LoadAsync" />
+            Pasif projeleri de göster
+        </label>
+        <span class="text-sm text-neutral-500 dark:text-neutral-400">@_projects.Count kayıt</span>
+    </div>
+
+    <ResponsiveEntityList TItem="ProjectDto"
+                          Items="_projects"
+                          Loading="_loading"
+                          LoadError="@_loadError"
+                          EmptyTitle="Henüz proje yok"
+                          EmptyText="Yeni proje oluşturarak saha bölgesi ve lokasyon yapılandırmasına başlayın.">
+        <HeaderRow>
+            <th>Kod</th>
+            <th>İsim</th>
+            <th>Proje Yöneticisi</th>
+            <th>Durum</th>
+            <th class="w-28 text-right">İşlem</th>
+        </HeaderRow>
+        <DesktopRowTemplate Context="project">
+            <td>@project.Code</td>
+            <td>@project.Name</td>
+            <td>@PmName(project.PmUserId)</td>
+            <td>@StatusPill(project.IsActive)</td>
+            <td class="text-right">
+                <button class="entity-row-action" @onclick="() => OpenDetail(project)">Yönet</button>
+            </td>
+        </DesktopRowTemplate>
+        <MobileCardTemplate Context="project">
+            <article class="entity-card">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">@project.Code</p>
+                        <h2 class="truncate font-semibold">@project.Name</h2>
+                        <p class="mt-1 truncate text-sm text-neutral-500 dark:text-neutral-400">@PmName(project.PmUserId)</p>
+                    </div>
+                    @StatusPill(project.IsActive)
                 </div>
-                <div>
-                    <label class="field-label">İsim</label>
-                    <input class="input" @bind="_newProject.Name" @bind:event="oninput" />
-                </div>
-                <div>
-                    <label class="field-label">Proje Yöneticisi</label>
-                    <UserPicker Role="ProjectManager" @bind-Value="_newProject.PmUserId" Placeholder="PM ara..." />
-                </div>
-                <div class="flex items-end">
-                    <button class="btn-primary" type="submit" disabled="@(!CanCreateProject)">Oluştur</button>
-                </div>
-            </EditForm>
+                <button class="btn-secondary mt-3 w-full" @onclick="() => OpenDetail(project)">Yönet</button>
+            </article>
+        </MobileCardTemplate>
+    </ResponsiveEntityList>
+</section>
+
+<DetailPanel Show="_selectedProject is not null"
+             Title="@(_selectedProject?.Name ?? "")"
+             Subtitle="@(_selectedProject?.Code ?? "Proje")"
+             OnClose="CloseDetail">
+    @if (_selectedProject is not null)
+    {
+        <div class="space-y-4">
+            <a class="btn-secondary w-full" href="@($"projects/{_selectedProject.Id}/regions")">
+                <Icon Name="map-pin" CssClass="h-4 w-4" />Saha bölgeleri
+            </a>
+
+            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="editAuth">
+                <Authorized>
+                    <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                        <h3 class="text-sm font-semibold">Proje bilgileri</h3>
+                        <div>
+                            <label class="field-label">Kod</label>
+                            <input class="input" @bind="_editModel.Code" @bind:event="oninput" />
+                        </div>
+                        <div>
+                            <label class="field-label">İsim</label>
+                            <input class="input" @bind="_editModel.Name" @bind:event="oninput" />
+                        </div>
+                        <div>
+                            <label class="field-label">Proje Yöneticisi</label>
+                            <UserPicker Role="ProjectManager" @bind-Value="_editModel.PmUserId" Placeholder="PM ara..." />
+                        </div>
+                        <button class="btn-primary w-full" disabled="@(!CanUpdateProject)" @onclick="ConfirmUpdateAsync">
+                            <Icon Name="check" CssClass="h-4 w-4" />Kaydet
+                        </button>
+                    </div>
+
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+                        <p class="field-label">Durum</p>
+                        <div class="flex items-center justify-between gap-3">
+                            @StatusPill(_selectedProject.IsActive)
+                            <button class="@(_selectedProject.IsActive ? "btn-danger" : "btn-secondary")"
+                                    @onclick="() => ConfirmSetActiveAsync(_selectedProject, !_selectedProject.IsActive)">
+                                @(_selectedProject.IsActive ? "Pasif Yap" : "Aktif Yap")
+                            </button>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
-    </Authorized>
-</AuthorizeView>
-
-<div class="mb-3 flex items-center justify-between">
-    <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
-        Pasif projeleri de göster
-    </label>
-</div>
-
-<DataTable TItem="ProjectDto" Items="_projects" Loading="_loading" LoadError="@_loadError" EmptyText="Henüz proje yok.">
-    <HeaderRow>
-        <th>Kod</th>
-        <th>İsim</th>
-        <th>Proje Yöneticisi</th>
-        <th>Durum</th>
-        <th></th>
-    </HeaderRow>
-    <RowTemplate Context="project">
-        @if (_editingId == project.Id)
-        {
-            <td data-label="Kod" colspan="5">
-                <div class="flex flex-wrap items-center gap-2">
-                    <input class="input w-28" @bind="_editModel.Code" @bind:event="oninput" />
-                    <input class="input w-48" @bind="_editModel.Name" @bind:event="oninput" />
-                    <button class="btn-primary" disabled="@(!CanUpdateProject)" @onclick="() => ConfirmUpdateAsync(project.Id)">Kaydet</button>
-                    <button class="btn-secondary" @onclick="() => _editingId = null">Vazgeç</button>
-                </div>
-            </td>
-        }
-        else
-        {
-            <td data-label="Kod">@project.Code</td>
-            <td data-label="İsim">@project.Name</td>
-            <td data-label="Proje Yöneticisi">@PmName(project.PmUserId)</td>
-            <td data-label="Durum">
-                <span class="badge @(project.IsActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
-                    @(project.IsActive ? "Aktif" : "Pasif")
-                </span>
-            </td>
-            <td data-label="">
-                <div class="flex flex-wrap items-center gap-2">
-                    <a class="btn-secondary" href="@($"projects/{project.Id}/regions")">Saha bölgeleri</a>
-                    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="rowAuth">
-                        <Authorized>
-                            <button class="btn-secondary" @onclick="() => StartEdit(project)">Düzenle</button>
-                            @if (project.IsActive)
-                            {
-                                <button class="btn-danger" @onclick="() => ConfirmSetActiveAsync(project, false)">Pasif Yap</button>
-                            }
-                            else
-                            {
-                                <button class="btn-secondary" @onclick="() => ConfirmSetActiveAsync(project, true)">Aktif Yap</button>
-                            }
-                        </Authorized>
-                    </AuthorizeView>
-                </div>
-            </td>
-        }
-    </RowTemplate>
-</DataTable>
+    }
+</DetailPanel>
 
 @code {
     private List<ProjectDto> _projects = [];
@@ -101,8 +144,7 @@
     private bool _creating;
     private bool _includeInactive;
     private readonly NewProjectModel _newProject = new();
-
-    private Guid? _editingId;
+    private ProjectDto? _selectedProject;
     private readonly EditProjectModel _editModel = new();
 
     private bool CanCreateProject =>
@@ -111,6 +153,7 @@
         !string.IsNullOrWhiteSpace(_newProject.Name);
 
     private bool CanUpdateProject =>
+        _selectedProject is not null &&
         !string.IsNullOrWhiteSpace(_editModel.Code) &&
         !string.IsNullOrWhiteSpace(_editModel.Name);
 
@@ -169,23 +212,28 @@
         _creating = false;
     }
 
-    private void StartEdit(ProjectDto project)
+    private void OpenDetail(ProjectDto project)
     {
-        _editingId = project.Id;
+        _selectedProject = project;
         _editModel.Code = project.Code;
         _editModel.Name = project.Name;
+        _editModel.PmUserId = project.PmUserId;
     }
 
-    private async Task ConfirmUpdateAsync(Guid id)
+    private void CloseDetail() => _selectedProject = null;
+
+    private async Task ConfirmUpdateAsync()
     {
+        if (_selectedProject is null) return;
+
         var confirmed = await Confirm.ConfirmAsync("Projeyi güncelle", "Değişiklikleri kaydetmek istediğinize emin misiniz?");
         if (!confirmed) return;
 
-        var result = await ProjectsApi.UpdateAsync(id, new UpdateProjectRequest(_editModel.Code, _editModel.Name));
+        var result = await ProjectsApi.UpdateAsync(_selectedProject.Id, new UpdateProjectRequest(_editModel.Code, _editModel.Name, _editModel.PmUserId));
         if (result.Success)
         {
             Toast.Success("Proje güncellendi.");
-            _editingId = null;
+            CloseDetail();
             await LoadAsync();
         }
         else
@@ -205,6 +253,7 @@
         if (result.Success)
         {
             Toast.Success($"Proje {action} yapıldı.");
+            CloseDetail();
             await LoadAsync();
         }
         else
@@ -212,6 +261,10 @@
             Toast.Error(result.ErrorMessage ?? "İşlem başarısız oldu.");
         }
     }
+
+    private static RenderFragment StatusPill(bool isActive) => @<span class="badge @(isActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
+        @(isActive ? "Aktif" : "Pasif")
+    </span>;
 
     private class NewProjectModel
     {
@@ -231,5 +284,7 @@
 
         [Required, MaxLength(200)]
         public string Name { get; set; } = "";
+
+        public Guid? PmUserId { get; set; }
     }
 }

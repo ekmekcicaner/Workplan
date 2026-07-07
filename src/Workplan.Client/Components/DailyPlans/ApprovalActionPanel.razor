@@ -1,0 +1,48 @@
+<div class="card">
+    <h2 class="mb-1 text-base font-semibold">Onay</h2>
+    <p class="mb-3 text-sm text-neutral-500 dark:text-neutral-400">@HelpText</p>
+
+    <div class="flex flex-wrap items-center gap-2">
+        <button class="btn-primary" disabled="@(Busy || !IsOnline)" @onclick="OnApprove">Onayla</button>
+        @if (_rejecting)
+        {
+            <RejectReasonInput @bind-Value="_rejectReason"
+                               Busy="Busy"
+                               IsOnline="IsOnline"
+                               OnReject="RejectAsync"
+                               OnCancel="CancelReject" />
+        }
+        else
+        {
+            <button class="btn-danger" disabled="@(Busy || !IsOnline)" @onclick="() => _rejecting = true">Reddet</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback OnApprove { get; set; }
+    [Parameter, EditorRequired] public Func<string, Task<bool>>? OnReject { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool IsOnline { get; set; } = true;
+    [Parameter] public string HelpText { get; set; } = "Bu kayıt yalnızca sizin onay aşamanızdaysa işlenir.";
+
+    private bool _rejecting;
+    private string _rejectReason = "";
+
+    private void CancelReject()
+    {
+        _rejecting = false;
+        _rejectReason = "";
+    }
+
+    private async Task RejectAsync()
+    {
+        if (OnReject is null) return;
+
+        var success = await OnReject(_rejectReason);
+        if (success)
+        {
+            CancelReject();
+        }
+    }
+}

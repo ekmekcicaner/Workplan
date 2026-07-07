@@ -1,0 +1,42 @@
+<section class="card">
+    <div class="mb-4">
+        <h2 class="text-base font-semibold">Onay Akışı</h2>
+        <p class="text-sm text-neutral-500 dark:text-neutral-400">İşin kimde beklediği ve sıradaki kontrol noktası.</p>
+    </div>
+
+    <ol class="flex flex-col gap-3">
+        <ApprovalStepItem Title="Ustabaşı"
+                          Name="@DisplayName(Plan.AssignedHoMName)"
+                          State="@StepState(0)"
+                          Description="Gün sonu saha beyanı" />
+        <ApprovalStepItem Title="Şantiye Şefi"
+                          Name="@DisplayName(Plan.SiteChiefName)"
+                          State="@StepState(1)"
+                          Description="Saha kontrolü ve ilk onay" />
+        <ApprovalStepItem Title="Proje Yöneticisi"
+                          Name="@DisplayName(Plan.ProjectManagerName)"
+                          State="@StepState(2)"
+                          Description="Final onay ve rapora aktarım" />
+    </ol>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public DailyPlanDetailDto Plan { get; set; } = default!;
+
+    private static string DisplayName(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "Atanmamış" : name;
+
+    private string StepState(int index)
+    {
+        return index switch
+        {
+            0 when Plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
+            0 => "active",
+            1 when Plan.Status is WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
+            1 when Plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM => "active",
+            2 when Plan.Status is WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
+            2 when Plan.Status == WorkStatus.ApprovedBySiteChief => "active",
+            _ => "pending"
+        };
+    }
+}

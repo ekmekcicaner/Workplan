@@ -1,0 +1,25 @@
+<div class="empty-state">
+    <span class="empty-state-icon">
+        <Icon Name="@Icon" CssClass="h-5 w-5" />
+    </span>
+    <div class="min-w-0">
+        <p class="font-semibold text-neutral-800 dark:text-neutral-100">@Title</p>
+        @if (!string.IsNullOrWhiteSpace(Text))
+        {
+            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">@Text</p>
+        }
+        @if (Actions is not null)
+        {
+            <div class="mt-3 flex flex-wrap gap-2">
+                @Actions
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "info";
+    [Parameter] public string Title { get; set; } = "Kayıt bulunamadı";
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+}
