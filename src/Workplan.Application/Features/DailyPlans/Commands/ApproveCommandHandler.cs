@@ -1,5 +1,4 @@
 using Mediator;
-using Microsoft.EntityFrameworkCore;
 using Workplan.Application.Interfaces;
 using Workplan.Domain.Enums;
 using Workplan.SharedKernel.Common;
@@ -10,11 +9,13 @@ public class ApproveCommandHandler : IRequestHandler<ApproveCommand, Result>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public ApproveCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public ApproveCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result> Handle(ApproveCommand request, CancellationToken cancellationToken)
@@ -29,8 +30,7 @@ public class ApproveCommandHandler : IRequestHandler<ApproveCommand, Result>
         var plan = await _db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
         if (plan is null) return Result.Fail(Error.NotFound("Günlük plan bulunamadı."));
 
-        var scopeResult = await ValidateScopeAsync(plan.CrewRegionId, plan.ProjectId, approverRole, approverUserId,
-            cancellationToken);
+        var scopeResult = await ValidateScopeAsync(plan.CrewRegionId, plan.ProjectId, approverRole, cancellationToken);
         if (scopeResult.IsFailure) return scopeResult;
 
         var result = plan.Approve(approverRole, scopeResult.Value, approverUserId);
@@ -46,15 +46,12 @@ public class ApproveCommandHandler : IRequestHandler<ApproveCommand, Result>
         Guid crewRegionId,
         Guid projectId,
         WorkStatus approverRole,
-        Guid approverUserId,
         CancellationToken cancellationToken)
     {
         var scopeValid = approverRole switch
         {
-            WorkStatus.ApprovedBySiteChief => await _db.CrewRegions.AsNoTracking()
-                .AnyAsync(r => r.Id == crewRegionId && r.SiteChiefUserId == approverUserId, cancellationToken),
-            WorkStatus.ApprovedByPM => await _db.Projects.AsNoTracking()
-                .AnyAsync(p => p.Id == projectId && p.PmUserId == approverUserId, cancellationToken),
+            WorkStatus.ApprovedBySiteChief => await _accessScope.IsSiteChiefOfCrewRegionAsync(crewRegionId, cancellationToken),
+            WorkStatus.ApprovedByPM => await _accessScope.IsProjectManagerOfProjectAsync(projectId, cancellationToken),
             _ => false
         };
 

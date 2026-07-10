@@ -6,9 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -17,8 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Workplan.SharedKernel\Workplan.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Workplan.Domain\Workplan.Domain.csproj" />
     <ProjectReference Include="..\..\src\Workplan.Application\Workplan.Application.csproj" />
     <ProjectReference Include="..\..\src\Workplan.Infrastructure\Workplan.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Workplan.WebApi\Workplan.WebApi.csproj" />
   </ItemGroup>
 
 </Project>

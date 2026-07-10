@@ -1,6 +1,11 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
+using Serilog;
 using Workplan.Application;
 using Workplan.Application.Interfaces;
 using Workplan.Infrastructure;
@@ -12,19 +17,45 @@ using Workplan.WebApi.Endpoints;
 using Workplan.WebApi.Middlewares;
 using Workplan.WebApi.Services;
 
+const string ServiceName = "Workplan.WebApi";
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, loggerConfig) => loggerConfig
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console());
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(ServiceName))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddOtlpExporter())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter());
 
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+// UseExceptionHandler() bir ExceptionHandler/ExceptionHandlingPath ya da IProblemDetailsService
+// fallback'i şart koşuyor; GlobalExceptionHandler tüm exception'ları kendi ApiResponse zarfıyla
+// ele aldığı için ProblemDetails gövdesi hiç üretilmez, ama servis kaydı yine de gerekli.
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 const string ClientCorsPolicy = "WorkplanClient";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? throw new InvalidOperationException("'Cors:AllowedOrigins' bulunamadı.");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(ClientCorsPolicy, policy =>
-        policy.WithOrigins("https://localhost:7193", "http://localhost:5276", "http://localhost:5277")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -34,6 +65,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, HttpContextCurrentUserService>();
+
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(name: "postgres", tags: ["ready"]);
 
 var app = builder.Build();
 
@@ -82,6 +116,15 @@ app.MapDailyPlanEndpoints();
 app.MapReportEndpoints();
 app.MapNotificationEndpoints();
 app.MapUserEndpoints();
+
+// Liveness: proses ayakta mı — bağımlılık kontrolü yok, her zaman hızlı döner.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+
+// Readiness: trafiği kabul etmeye hazır mı — "ready" etiketli kontroller (örn. Postgres) çalıştırılır.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 using (var scope = app.Services.CreateScope())
 {

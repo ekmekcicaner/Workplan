@@ -1,6 +1,6 @@
 namespace Workplan.SharedKernel.Common;
 
-public class Result
+public class Result : IFailable<Result>
 {
     protected Result(bool isSuccess, Error error)
     {
@@ -26,7 +26,7 @@ public class Result
     public static Result Fail(string message) => new(false, Error.Validation(message));
 }
 
-public sealed class Result<T> : Result
+public sealed class Result<T> : Result, IFailable<Result<T>>
 {
     private readonly T? _value;
 

@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Workplan.Application.Interfaces;
 
@@ -9,22 +9,15 @@ namespace Workplan.Infrastructure.Identity;
 
 public class JwtTokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtOptions _jwtOptions;
 
-    public JwtTokenService(IConfiguration configuration)
+    public JwtTokenService(IOptions<JwtOptions> jwtOptions)
     {
-        _configuration = configuration;
+        _jwtOptions = jwtOptions.Value;
     }
 
     public (string Token, DateTime ExpiresAtUtc) CreateAccessToken(AuthenticatedUser user)
     {
-        var jwtSection = _configuration.GetSection("Jwt");
-        var signingKey = jwtSection["SigningKey"]
-            ?? throw new InvalidOperationException("'Jwt:SigningKey' bulunamadı.");
-        var issuer = jwtSection["Issuer"] ?? throw new InvalidOperationException("'Jwt:Issuer' bulunamadı.");
-        var audience = jwtSection["Audience"] ?? throw new InvalidOperationException("'Jwt:Audience' bulunamadı.");
-        var accessTokenMinutes = jwtSection.GetValue<int?>("AccessTokenMinutes") ?? 60;
-
         // Claim tipleri bilinçli olarak ClaimTypes.* (uzun URI) kullanılıyor; JwtBearer tarafında
         // MapInboundClaims = false ile eşleştirilip token'a yazıldığı gibi geri okunuyor.
         var claims = new List<Claim>
@@ -36,13 +29,13 @@ public class JwtTokenService : ITokenService
         };
         claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var expiresAtUtc = DateTime.UtcNow.AddMinutes(accessTokenMinutes);
+        var expiresAtUtc = DateTime.UtcNow.AddMinutes(_jwtOptions.AccessTokenMinutes);
         var credentials = new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)), SecurityAlgorithms.HmacSha256);
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SigningKey)), SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
             expires: expiresAtUtc,
             signingCredentials: credentials);

@@ -4,8 +4,6 @@ namespace Workplan.WebApi.Common;
 
 public static class ResultExtensions
 {
-    // TODO: bu switch büyüdükçe error code -> status code mapping'i bir yere taşınmalı (Error içine falan)
-
     public static IResult ToApiResult(this Result result) =>
         result.IsSuccess
             ? Results.Ok(ApiResponse<object?>.CreateSuccess(null))
@@ -18,16 +16,16 @@ public static class ResultExtensions
 
     private static IResult ToProblem(Error error)
     {
-        var statusCode = error.Code switch
+        var statusCode = error.Type switch
         {
-            "not_found" => StatusCodes.Status404NotFound,
-            "unauthorized" => StatusCodes.Status401Unauthorized,
-            "scope_mismatch" => StatusCodes.Status403Forbidden,
-            "out_of_order" => StatusCodes.Status409Conflict,
-            "Validation" => StatusCodes.Status422UnprocessableEntity,
-            "sentinel" => StatusCodes.Status422UnprocessableEntity,
-            "empty_submit" => StatusCodes.Status422UnprocessableEntity,
-            "terminal_immutable" => StatusCodes.Status409Conflict,
+            ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.ScopeMismatch => StatusCodes.Status403Forbidden,
+            ErrorType.OutOfOrder => StatusCodes.Status409Conflict,
+            ErrorType.TerminalImmutable => StatusCodes.Status409Conflict,
+            ErrorType.Validation => StatusCodes.Status422UnprocessableEntity,
+            ErrorType.Sentinel => StatusCodes.Status422UnprocessableEntity,
+            ErrorType.EmptySubmit => StatusCodes.Status422UnprocessableEntity,
             _ => StatusCodes.Status400BadRequest
         };
 

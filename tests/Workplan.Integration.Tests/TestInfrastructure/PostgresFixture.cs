@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
+using Workplan.Infrastructure.Messaging.Outbox;
 using Workplan.Infrastructure.Persistence;
 using Xunit;
 
@@ -38,8 +39,9 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(ConnectionString)
+            .AddInterceptors(new OutboxSaveChangesInterceptor())
             .Options;
 
-        return new AppDbContext(options, new NoopPublisher());
+        return new AppDbContext(options);
     }
 }

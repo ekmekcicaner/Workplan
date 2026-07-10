@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Workplan.Application.Interfaces;
 using Workplan.Infrastructure.Persistence;
 using Workplan.SharedKernel.Common;
@@ -13,13 +13,13 @@ public class IdentityService : IIdentityService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _db;
-    private readonly IConfiguration _configuration;
+    private readonly JwtOptions _jwtOptions;
 
-    public IdentityService(UserManager<ApplicationUser> userManager, AppDbContext db, IConfiguration configuration)
+    public IdentityService(UserManager<ApplicationUser> userManager, AppDbContext db, IOptions<JwtOptions> jwtOptions)
     {
         _userManager = userManager;
         _db = db;
-        _configuration = configuration;
+        _jwtOptions = jwtOptions.Value;
     }
 
     public async Task<Result<Guid>> RegisterAsync(
@@ -143,8 +143,7 @@ public class IdentityService : IIdentityService
     public async Task<IssuedRefreshToken> IssueRefreshTokenAsync(Guid userId, CancellationToken ct)
     {
         var rawToken = GenerateRawToken();
-        var days = _configuration.GetValue<int?>("Jwt:RefreshTokenDays") ?? 7;
-        var expiresAtUtc = DateTime.UtcNow.AddDays(days);
+        var expiresAtUtc = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenDays);
 
         _db.RefreshTokens.Add(new RefreshToken
         {

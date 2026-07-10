@@ -1,15 +1,12 @@
-using Mediator;
-
 namespace Workplan.Domain.Common;
 
-public abstract class AggregateRoot<TId>
+public abstract class AggregateRoot<TId> : Entity<TId>
+    where TId : notnull
 {
-    public TId Id { get; protected set; } = default!;
-    
-    private readonly List<INotification> _domainEvents = new();
-    public IReadOnlyCollection<INotification> DomainEvents => _domainEvents.AsReadOnly();
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    protected void Raise(INotification domainEvent)
+    protected void Raise(IDomainEvent domainEvent)
     {
         _domainEvents.Add(domainEvent);
     }

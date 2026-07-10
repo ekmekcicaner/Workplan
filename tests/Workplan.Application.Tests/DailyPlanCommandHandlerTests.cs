@@ -143,14 +143,14 @@ public class DailyPlanCommandHandlerTests
         await db.SaveChangesAsync(CancellationToken.None);
 
         var wrongSiteChief = new CurrentUserStub(Guid.NewGuid(), [Roles.SiteChief]);
-        var wrongResult = await new ApproveCommandHandler(db, wrongSiteChief)
+        var wrongResult = await new ApproveCommandHandler(db, wrongSiteChief, new AccessScopeService(db, wrongSiteChief))
             .Handle(new ApproveCommand(plan.Id), CancellationToken.None);
 
         wrongResult.IsFailure.Should().BeTrue();
         wrongResult.Error.Code.Should().Be("scope_mismatch");
 
         var siteChief = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
-        var result = await new ApproveCommandHandler(db, siteChief)
+        var result = await new ApproveCommandHandler(db, siteChief, new AccessScopeService(db, siteChief))
             .Handle(new ApproveCommand(plan.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -169,7 +169,7 @@ public class DailyPlanCommandHandlerTests
         await db.SaveChangesAsync(CancellationToken.None);
 
         var siteChief = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
-        var result = await new RejectCommandHandler(db, siteChief)
+        var result = await new RejectCommandHandler(db, siteChief, new AccessScopeService(db, siteChief))
             .Handle(new RejectCommand(plan.Id, "revise quantity"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -204,12 +204,12 @@ public class DailyPlanCommandHandlerTests
         await db.SaveChangesAsync(CancellationToken.None);
 
         var siteChief = new CurrentUserStub(seed.SiteChiefId, [Roles.SiteChief]);
-        var approveResult = await new ApproveCommandHandler(db, siteChief)
+        var approveResult = await new ApproveCommandHandler(db, siteChief, new AccessScopeService(db, siteChief))
             .Handle(new ApproveCommand(plan.Id), CancellationToken.None);
         approveResult.IsSuccess.Should().BeTrue();
 
         var pm = new CurrentUserStub(seed.PmId, [Roles.ProjectManager]);
-        var rejectResult = await new RejectCommandHandler(db, pm)
+        var rejectResult = await new RejectCommandHandler(db, pm, new AccessScopeService(db, pm))
             .Handle(new RejectCommand(plan.Id, "site chief should review"), CancellationToken.None);
 
         rejectResult.IsSuccess.Should().BeTrue();
@@ -262,7 +262,7 @@ public class DailyPlanCommandHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new AppDbContext(options, null!);
+        return new AppDbContext(options);
     }
 
     private static async Task<SeedData> SeedAsync(AppDbContext db)

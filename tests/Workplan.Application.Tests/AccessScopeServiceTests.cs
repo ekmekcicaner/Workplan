@@ -172,7 +172,7 @@ public class AccessScopeServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new AppDbContext(options, null!);
+        return new AppDbContext(options);
     }
 
     private static IAccessScopeService CreateScope(AppDbContext db, Guid userId, string role) =>

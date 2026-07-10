@@ -11,11 +11,13 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAccessScopeService _accessScope;
 
-    public RejectCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public RejectCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IAccessScopeService accessScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _accessScope = accessScope;
     }
 
     public async ValueTask<Result> Handle(RejectCommand request, CancellationToken cancellationToken)
@@ -29,8 +31,7 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
         var plan = await _db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
         if (plan is null) return Result.Fail(Error.NotFound("Günlük plan bulunamadı."));
 
-        var scopeResult = await ValidateScopeAsync(plan.CrewRegionId, plan.ProjectId, roleResult.Value, approverUserId,
-            cancellationToken);
+        var scopeResult = await ValidateScopeAsync(plan.CrewRegionId, plan.ProjectId, roleResult.Value, cancellationToken);
         if (scopeResult.IsFailure) return scopeResult;
 
         var statusBeforeReject = plan.Status;
@@ -60,15 +61,12 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
         Guid crewRegionId,
         Guid projectId,
         WorkStatus approverRole,
-        Guid approverUserId,
         CancellationToken cancellationToken)
     {
         var scopeValid = approverRole switch
         {
-            WorkStatus.ApprovedBySiteChief => await _db.CrewRegions.AsNoTracking()
-                .AnyAsync(r => r.Id == crewRegionId && r.SiteChiefUserId == approverUserId, cancellationToken),
-            WorkStatus.ApprovedByPM => await _db.Projects.AsNoTracking()
-                .AnyAsync(p => p.Id == projectId && p.PmUserId == approverUserId, cancellationToken),
+            WorkStatus.ApprovedBySiteChief => await _accessScope.IsSiteChiefOfCrewRegionAsync(crewRegionId, cancellationToken),
+            WorkStatus.ApprovedByPM => await _accessScope.IsProjectManagerOfProjectAsync(projectId, cancellationToken),
             _ => false
         };
 

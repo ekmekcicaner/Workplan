@@ -6,7 +6,7 @@ namespace Workplan.Application.Common;
 
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : Result
+    where TResponse : Result, IFailable<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -33,24 +33,10 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             if (failures.Count != 0)
             {
                 var error = Error.Validation("Doğrulama hatası.", failures);
-                return BuildFailureResponse(error);
+                return TResponse.Fail(error);
             }
         }
 
         return await next(message, cancellationToken);
-    }
-
-    private static TResponse BuildFailureResponse(Error error)
-    {
-        var responseType = typeof(TResponse);
-
-        if (responseType == typeof(Result))
-            return (TResponse)(object)Result.Fail(error);
-
-        // TResponse burada her zaman Result<T> olur (Result'ı IApplicationDbContext/handler sözleşmesi zorunlu kılar).
-        var failMethod = responseType.GetMethod(nameof(Result.Fail), [typeof(Error)])
-            ?? throw new InvalidOperationException($"{responseType.Name} bir Fail(Error) fabrika metodu sağlamalı.");
-
-        return (TResponse)failMethod.Invoke(null, [error])!;
     }
 }

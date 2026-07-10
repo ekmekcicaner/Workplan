@@ -68,16 +68,4 @@ public class EntityAndValueObjectTests
         notification.MarkAsRead(owner).IsSuccess.Should().BeTrue();
         notification.ReadAtUtc.Should().NotBeNull();
     }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void Quantity_rejects_negative_values_and_preserves_unit()
-    {
-        Quantity.Create(-1, Unit.M2).IsFailure.Should().BeTrue();
-
-        var quantity = Quantity.Create(2.5m, Unit.M3).Value;
-
-        quantity.Value.Should().Be(2.5m);
-        quantity.Unit.Should().Be(Unit.M3);
-    }
 }

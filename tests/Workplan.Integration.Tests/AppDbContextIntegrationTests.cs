@@ -30,6 +30,7 @@ public class AppDbContextIntegrationTests : IClassFixture<PostgresFixture>
         db.Projects.Add(seed.Project);
         db.CrewRegions.Add(seed.Region);
         db.Locations.Add(seed.Location);
+        db.CrewTypes.Add(seed.CrewType);
         db.WorkItemTypes.Add(seed.WorkItemType);
         db.DailyPlans.Add(seed.Plan);
         db.StatusTransitions.Add(seed.Plan.History.Last());
@@ -71,6 +72,48 @@ public class AppDbContextIntegrationTests : IClassFixture<PostgresFixture>
         activeProjectIds.Should().NotContain(inactive.Id);
     }
 
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task Final_approval_and_outbox_message_commit_in_the_same_postgres_transaction()
+    {
+        if (!DockerTestGuard.Enabled)
+            return;
+
+        await using var db = _fixture.CreateDbContext();
+        var seed = SeedDailyPlan();
+        var headOfMasterId = seed.Plan.AssignedHoMId!.Value;
+
+        seed.Plan.StartWork(headOfMasterId, seed.CrewType.Id).IsSuccess.Should().BeTrue();
+        seed.Plan.SubmitProgress(10, 2, 0, "completed", headOfMasterId)
+            .IsSuccess.Should().BeTrue();
+        seed.Plan.Approve(WorkStatus.ApprovedBySiteChief, Guid.NewGuid(), Guid.NewGuid())
+            .IsSuccess.Should().BeTrue();
+        seed.Plan.Approve(WorkStatus.ApprovedByPM, Guid.NewGuid(), Guid.NewGuid())
+            .IsSuccess.Should().BeTrue();
+
+        var domainEvent = seed.Plan.DomainEvents.Should().ContainSingle().Subject;
+
+        db.Projects.Add(seed.Project);
+        db.CrewRegions.Add(seed.Region);
+        db.Locations.Add(seed.Location);
+        db.CrewTypes.Add(seed.CrewType);
+        db.WorkItemTypes.Add(seed.WorkItemType);
+        db.DailyPlans.Add(seed.Plan);
+
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        await using var verifyDb = _fixture.CreateDbContext();
+        var savedPlan = await verifyDb.DailyPlans.SingleAsync(plan => plan.Id == seed.Plan.Id);
+        var outboxMessage = await verifyDb.OutboxMessages
+            .SingleAsync(message => message.Id == domainEvent.EventId);
+
+        savedPlan.Status.Should().Be(WorkStatus.ApprovedByPM);
+        outboxMessage.Type.Should().Be(
+            Workplan.Application.Features.DailyPlans.IntegrationEvents.DailyPlanFullyApproved.EventName);
+        outboxMessage.ProcessedOnUtc.Should().BeNull();
+        outboxMessage.PoisonedOnUtc.Should().BeNull();
+    }
+
     private static SeedData SeedDailyPlan()
     {
         var pm = Guid.NewGuid();
@@ -82,7 +125,10 @@ public class AppDbContextIntegrationTests : IClassFixture<PostgresFixture>
         region.AssignTechOffice(tech);
         var location = Location.Create(project.Id, region.Id, "Location").Value;
         location.AssignHeadOfMaster(hom);
-        var workItemType = WorkItemType.Create("Leaf", Guid.NewGuid(), 1, Unit.M2).Value;
+        var crewType = CrewType.Create($"Crew-{Guid.NewGuid():N}").Value;
+        // Bu persistence testi hiyerarşi davranışını değil DailyPlan FK'sini doğrular;
+        // var olmayan ParentId üretmek PostgreSQL'de doğal olarak FK ihlalidir.
+        var workItemType = WorkItemType.Create("Root").Value;
         var plan = DailyPlan.CreateFromPlan(
             project.Id,
             region.Id,
@@ -95,13 +141,14 @@ public class AppDbContextIntegrationTests : IClassFixture<PostgresFixture>
             2,
             Unit.M2).Value;
 
-        return new SeedData(project, region, location, workItemType, plan);
+        return new SeedData(project, region, location, crewType, workItemType, plan);
     }
 
     private sealed record SeedData(
         Project Project,
         CrewRegion Region,
         Location Location,
+        CrewType CrewType,
         WorkItemType WorkItemType,
         DailyPlan Plan);
 }

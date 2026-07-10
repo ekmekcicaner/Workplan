@@ -111,7 +111,7 @@ public class DailyTrackingQueryHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new AppDbContext(options, new NoopPublisher());
+        return new AppDbContext(options);
     }
 
     private static async Task<SeedData> SeedAsync(AppDbContext db)

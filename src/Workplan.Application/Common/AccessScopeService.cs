@@ -54,93 +54,107 @@ public class AccessScopeService : IAccessScopeService
         ApplyDailyPlanOwnershipFilter(_db.DailyPlans.AsNoTracking())
             .AnyAsync(p => p.Id == dailyPlanId, cancellationToken);
 
+    public Task<bool> IsSiteChiefOfCrewRegionAsync(Guid crewRegionId, CancellationToken cancellationToken) =>
+        _currentUser.UserId is { } userId
+            ? _db.CrewRegions.AsNoTracking()
+                .AnyAsync(r => r.Id == crewRegionId && r.SiteChiefUserId == userId, cancellationToken)
+            : Task.FromResult(false);
+
+    public Task<bool> IsProjectManagerOfProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
+        _currentUser.UserId is { } userId
+            ? _db.Projects.AsNoTracking()
+                .AnyAsync(p => p.Id == projectId && p.PmUserId == userId, cancellationToken)
+            : Task.FromResult(false);
+
     // Aşağıdaki filtreler işlem (atama, onay, ekip/plan oluşturma vb.) yetkisini belirler:
     // proje yöneticisi ve teknik ofis de dahil olmak üzere herkes yalnızca kendi
-    // projesi/bölgesi/lokasyonu üzerinde işlem yapabilir.
+    // projesi/bölgesi/lokasyonu üzerinde işlem yapabilir. Guard (admin/kimliksiz) ve rol
+    // bayrakları ResolveOwnership() içinde tek yerden çözülür; her entity'nin gezinme yolu
+    // (navigation path) farklı olduğundan predicate'lerin kendisi ayrı kalır.
+    private (bool Bypass, OwnershipContext? Context) ResolveOwnership()
+    {
+        if (IsSystemAdmin) return (true, null);
+        if (_currentUser.UserId is not { } userId) return (false, null);
+
+        return (false, new OwnershipContext(
+            userId,
+            HasRole(Roles.ProjectManager),
+            HasRole(Roles.SiteChief),
+            HasRole(Roles.TechnicalOfficeEngineer),
+            HasRole(Roles.HeadOfMaster)));
+    }
+
     private IQueryable<Project> ApplyProjectOwnershipFilter(IQueryable<Project> query)
     {
-        if (IsSystemAdmin) return query;
-        if (_currentUser.UserId is not { } userId) return query.Where(_ => false);
-
-        var isProjectManager = HasRole(Roles.ProjectManager);
-        var isSiteChief = HasRole(Roles.SiteChief);
-        var isTechOffice = HasRole(Roles.TechnicalOfficeEngineer);
-        var isHeadOfMaster = HasRole(Roles.HeadOfMaster);
+        var (bypass, context) = ResolveOwnership();
+        if (bypass) return query;
+        if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(p =>
-            (isProjectManager && p.PmUserId == userId)
-            || (isSiteChief && _db.CrewRegions.Any(r =>
-                r.ProjectId == p.Id && r.SiteChiefUserId == userId))
-            || (isTechOffice && _db.CrewRegions.Any(r =>
-                r.ProjectId == p.Id && r.TechOfficeUserId == userId))
-            || (isHeadOfMaster && _db.Locations.Any(l =>
-                l.ProjectId == p.Id && l.HeadOfMasterUserId == userId))
-            || (isHeadOfMaster && _db.DailyPlans.Any(d =>
-                d.ProjectId == p.Id && d.AssignedHoMId == userId)));
+            (c.IsProjectManager && p.PmUserId == c.UserId)
+            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+                r.ProjectId == p.Id && r.SiteChiefUserId == c.UserId))
+            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+                r.ProjectId == p.Id && r.TechOfficeUserId == c.UserId))
+            || (c.IsHeadOfMaster && _db.Locations.Any(l =>
+                l.ProjectId == p.Id && l.HeadOfMasterUserId == c.UserId))
+            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+                d.ProjectId == p.Id && d.AssignedHoMId == c.UserId)));
     }
 
     private IQueryable<CrewRegion> ApplyCrewRegionOwnershipFilter(IQueryable<CrewRegion> query)
     {
-        if (IsSystemAdmin) return query;
-        if (_currentUser.UserId is not { } userId) return query.Where(_ => false);
-
-        var isProjectManager = HasRole(Roles.ProjectManager);
-        var isSiteChief = HasRole(Roles.SiteChief);
-        var isTechOffice = HasRole(Roles.TechnicalOfficeEngineer);
-        var isHeadOfMaster = HasRole(Roles.HeadOfMaster);
+        var (bypass, context) = ResolveOwnership();
+        if (bypass) return query;
+        if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(r =>
-            (isProjectManager && _db.Projects.Any(p =>
-                p.Id == r.ProjectId && p.PmUserId == userId))
-            || (isSiteChief && r.SiteChiefUserId == userId)
-            || (isTechOffice && r.TechOfficeUserId == userId)
-            || (isHeadOfMaster && _db.Locations.Any(l =>
-                l.CrewRegionId == r.Id && l.HeadOfMasterUserId == userId))
-            || (isHeadOfMaster && _db.DailyPlans.Any(d =>
-                d.CrewRegionId == r.Id && d.AssignedHoMId == userId)));
+            (c.IsProjectManager && _db.Projects.Any(p =>
+                p.Id == r.ProjectId && p.PmUserId == c.UserId))
+            || (c.IsSiteChief && r.SiteChiefUserId == c.UserId)
+            || (c.IsTechOffice && r.TechOfficeUserId == c.UserId)
+            || (c.IsHeadOfMaster && _db.Locations.Any(l =>
+                l.CrewRegionId == r.Id && l.HeadOfMasterUserId == c.UserId))
+            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+                d.CrewRegionId == r.Id && d.AssignedHoMId == c.UserId)));
     }
 
     private IQueryable<Location> ApplyLocationOwnershipFilter(IQueryable<Location> query)
     {
-        if (IsSystemAdmin) return query;
-        if (_currentUser.UserId is not { } userId) return query.Where(_ => false);
-
-        var isProjectManager = HasRole(Roles.ProjectManager);
-        var isSiteChief = HasRole(Roles.SiteChief);
-        var isTechOffice = HasRole(Roles.TechnicalOfficeEngineer);
-        var isHeadOfMaster = HasRole(Roles.HeadOfMaster);
+        var (bypass, context) = ResolveOwnership();
+        if (bypass) return query;
+        if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(l =>
-            (isProjectManager && _db.Projects.Any(p =>
-                p.Id == l.ProjectId && p.PmUserId == userId))
-            || (isSiteChief && _db.CrewRegions.Any(r =>
-                r.Id == l.CrewRegionId && r.SiteChiefUserId == userId))
-            || (isTechOffice && _db.CrewRegions.Any(r =>
-                r.Id == l.CrewRegionId && r.TechOfficeUserId == userId))
-            || (isHeadOfMaster && l.HeadOfMasterUserId == userId)
-            || (isHeadOfMaster && _db.DailyPlans.Any(d =>
-                d.LocationId == l.Id && d.AssignedHoMId == userId)));
+            (c.IsProjectManager && _db.Projects.Any(p =>
+                p.Id == l.ProjectId && p.PmUserId == c.UserId))
+            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+                r.Id == l.CrewRegionId && r.SiteChiefUserId == c.UserId))
+            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+                r.Id == l.CrewRegionId && r.TechOfficeUserId == c.UserId))
+            || (c.IsHeadOfMaster && l.HeadOfMasterUserId == c.UserId)
+            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+                d.LocationId == l.Id && d.AssignedHoMId == c.UserId)));
     }
 
     private IQueryable<DailyPlan> ApplyDailyPlanOwnershipFilter(IQueryable<DailyPlan> query)
     {
-        if (IsSystemAdmin) return query;
-        if (_currentUser.UserId is not { } userId) return query.Where(_ => false);
-
-        var isProjectManager = HasRole(Roles.ProjectManager);
-        var isSiteChief = HasRole(Roles.SiteChief);
-        var isTechOffice = HasRole(Roles.TechnicalOfficeEngineer);
-        var isHeadOfMaster = HasRole(Roles.HeadOfMaster);
+        var (bypass, context) = ResolveOwnership();
+        if (bypass) return query;
+        if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(p =>
-            (isProjectManager && _db.Projects.Any(project =>
-                project.Id == p.ProjectId && project.PmUserId == userId))
-            || (isSiteChief && _db.CrewRegions.Any(r =>
-                r.Id == p.CrewRegionId && r.SiteChiefUserId == userId))
-            || (isTechOffice && _db.CrewRegions.Any(r =>
-                r.Id == p.CrewRegionId && r.TechOfficeUserId == userId))
-            || (isHeadOfMaster && p.AssignedHoMId == userId));
+            (c.IsProjectManager && _db.Projects.Any(project =>
+                project.Id == p.ProjectId && project.PmUserId == c.UserId))
+            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+                r.Id == p.CrewRegionId && r.SiteChiefUserId == c.UserId))
+            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+                r.Id == p.CrewRegionId && r.TechOfficeUserId == c.UserId))
+            || (c.IsHeadOfMaster && p.AssignedHoMId == c.UserId));
     }
 
     private bool HasRole(string role) => _currentUser.Roles.Contains(role);
+
+    private readonly record struct OwnershipContext(
+        Guid UserId, bool IsProjectManager, bool IsSiteChief, bool IsTechOffice, bool IsHeadOfMaster);
 }
