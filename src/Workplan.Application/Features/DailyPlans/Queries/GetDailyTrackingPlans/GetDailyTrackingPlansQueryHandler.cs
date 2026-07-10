@@ -6,39 +6,28 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetDailyTrackingPlans;
 
-public class GetDailyTrackingPlansQueryHandler
+public class GetDailyTrackingPlansQueryHandler(
+    IApplicationDbContext db,
+    IAccessScopeService accessScope,
+    IIdentityService identityService)
     : IRequestHandler<GetDailyTrackingPlansQuery, Result<List<DailyTrackingPlanDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-    private readonly IIdentityService _identityService;
-
-    public GetDailyTrackingPlansQueryHandler(
-        IApplicationDbContext db,
-        IAccessScopeService accessScope,
-        IIdentityService identityService)
-    {
-        _db = db;
-        _accessScope = accessScope;
-        _identityService = identityService;
-    }
-
     public async ValueTask<Result<List<DailyTrackingPlanDto>>> Handle(
         GetDailyTrackingPlansQuery request,
         CancellationToken cancellationToken)
     {
-        var query = _accessScope.ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
+        var query = accessScope.ApplyDailyPlanScope(db.DailyPlans.AsNoTracking())
             .Where(plan => plan.WorkDate == request.WorkDate);
 
         query = ApplyFilters(query, request);
 
         var rows = await (
             from plan in query
-            join project in _db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
-            join region in _db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
-            join location in _db.Locations.AsNoTracking() on plan.LocationId equals location.Id
-            join workItemType in _db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
-            join crewType in _db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
+            join project in db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
+            join region in db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
+            join location in db.Locations.AsNoTracking() on plan.LocationId equals location.Id
+            join workItemType in db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
+            join crewType in db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
             from crewType in crewTypeJoin.DefaultIfEmpty()
             orderby project.Name, region.Name, location.Name, workItemType.Name
             select new TrackingPlanRow(
@@ -72,7 +61,7 @@ public class GetDailyTrackingPlansQueryHandler
             .SelectMany(row => new[] { row.AssignedHoMId, row.SiteChiefUserId, row.ProjectManagerUserId }.OfType<Guid>())
             .Distinct()
             .ToList();
-        var displayNames = await _identityService.GetDisplayNamesAsync(userIds, cancellationToken);
+        var displayNames = await identityService.GetDisplayNamesAsync(userIds, cancellationToken);
 
         return rows.Select(row => new DailyTrackingPlanDto(
             row.Id,
@@ -115,12 +104,12 @@ public class GetDailyTrackingPlansQueryHandler
         if (request.HeadOfMasterIds.Count > 0)
             query = query.Where(plan => plan.AssignedHoMId.HasValue && request.HeadOfMasterIds.Contains(plan.AssignedHoMId.Value));
         if (request.SiteChiefIds.Count > 0)
-            query = query.Where(plan => _db.CrewRegions.Any(region =>
+            query = query.Where(plan => db.CrewRegions.Any(region =>
                 region.Id == plan.CrewRegionId
                 && region.SiteChiefUserId.HasValue
                 && request.SiteChiefIds.Contains(region.SiteChiefUserId.Value)));
         if (request.ProjectManagerIds.Count > 0)
-            query = query.Where(plan => _db.Projects.Any(project =>
+            query = query.Where(plan => db.Projects.Any(project =>
                 project.Id == plan.ProjectId
                 && project.PmUserId.HasValue
                 && request.ProjectManagerIds.Contains(project.PmUserId.Value)));

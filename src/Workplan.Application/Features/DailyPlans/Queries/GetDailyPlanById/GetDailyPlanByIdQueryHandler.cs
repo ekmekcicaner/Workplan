@@ -5,27 +5,19 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetDailyPlanById;
 
-public class GetDailyPlanByIdQueryHandler : IRequestHandler<GetDailyPlanByIdQuery, Result<DailyPlanDto>>
+public class GetDailyPlanByIdQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
+    : IRequestHandler<GetDailyPlanByIdQuery, Result<DailyPlanDto>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetDailyPlanByIdQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
-    {
-        _db = db;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<DailyPlanDto>> Handle(
         GetDailyPlanByIdQuery request, CancellationToken cancellationToken)
     {
-        var exists = await _db.DailyPlans
+        var exists = await db.DailyPlans
             .AsNoTracking()
             .AnyAsync(p => p.Id == request.Id, cancellationToken);
         if (!exists)
             return Result<DailyPlanDto>.Fail(Error.NotFound("Günlük plan bulunamadı."));
 
-        var plan = await _accessScope.ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
+        var plan = await accessScope.ApplyDailyPlanScope(db.DailyPlans.AsNoTracking())
             .Include(p => p.History)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 

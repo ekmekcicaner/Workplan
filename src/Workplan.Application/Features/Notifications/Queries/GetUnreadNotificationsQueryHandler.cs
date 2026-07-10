@@ -6,26 +6,17 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.Notifications.Queries;
 
-public class GetUnreadNotificationsQueryHandler
+public class GetUnreadNotificationsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
     : IRequestHandler<GetUnreadNotificationsQuery, Result<List<NotificationDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-
-    public GetUnreadNotificationsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
-
     public async ValueTask<Result<List<NotificationDto>>> Handle(
         GetUnreadNotificationsQuery request,
         CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId is not { } userId)
+        if (currentUser.UserId is not { } userId)
             return Result<List<NotificationDto>>.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var notifications = await _db.Notifications
+        var notifications = await db.Notifications
             .AsNoTracking()
             .Where(n => n.UserId == userId && n.ReadAtUtc == null)
             .OrderByDescending(n => n.CreatedAtUtc)

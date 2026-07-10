@@ -6,38 +6,28 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Commands;
 
-public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanCommand, Result<Guid>>
+public class CreateDailyPlanCommandHandler(
+    IApplicationDbContext db,
+    ICurrentUserService currentUser,
+    IAccessScopeService accessScope)
+    : IRequestHandler<CreateDailyPlanCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IAccessScopeService _accessScope;
-
-    public CreateDailyPlanCommandHandler(
-        IApplicationDbContext db,
-        ICurrentUserService currentUser,
-        IAccessScopeService accessScope)
-    {
-        _db = db;
-        _currentUser = currentUser;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<Guid>> Handle(CreateDailyPlanCommand request, CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId is not { } plannedById)
+        if (currentUser.UserId is not { } plannedById)
             return Result<Guid>.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var locationValid = await _db.Locations.AsNoTracking()
+        var locationValid = await db.Locations.AsNoTracking()
             .AnyAsync(l => l.Id == request.LocationId
                            && l.CrewRegionId == request.CrewRegionId
                            && l.ProjectId == request.ProjectId, cancellationToken);
         if (!locationValid)
             return Result<Guid>.Fail(Error.NotFound("Lokasyon, belirtilen proje/bölgeye ait değil ya da bulunamadı."));
 
-        if (!await _accessScope.CanAccessCrewRegionAsync(request.CrewRegionId, cancellationToken))
+        if (!await accessScope.CanAccessCrewRegionAsync(request.CrewRegionId, cancellationToken))
             return Result<Guid>.Fail(Error.ScopeMismatch("Bu bölge için günlük plan oluşturma yetkiniz yok."));
 
-        var locationHeadOfMasterId = await _db.Locations.AsNoTracking()
+        var locationHeadOfMasterId = await db.Locations.AsNoTracking()
             .Where(l => l.Id == request.LocationId)
             .Select(l => l.HeadOfMasterUserId)
             .FirstOrDefaultAsync(cancellationToken);
@@ -46,7 +36,7 @@ public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanComm
         if (locationHeadOfMasterId != request.AssignedHoMId)
             return Result<Guid>.Fail(Error.Validation("Günlük plan seçilen lokasyonun Head of Master'ına atanmalıdır."));
 
-        var workItemType = await _db.WorkItemTypes.AsNoTracking()
+        var workItemType = await db.WorkItemTypes.AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == request.WorkItemTypeId, cancellationToken);
         if (workItemType is null)
             return Result<Guid>.Fail(Error.NotFound("İş tipi (ToW/SToW/SSToW) bulunamadı."));
@@ -61,13 +51,13 @@ public class CreateDailyPlanCommandHandler : IRequestHandler<CreateDailyPlanComm
             request.PlannedQuantity, request.PlannedManDay, workItemType.Unit);
         if (result.IsFailure) return Result<Guid>.Fail(result.Error);
 
-        _db.DailyPlans.Add(result.Value);
+        db.DailyPlans.Add(result.Value);
         var notification = Notification.CreateDailyPlanAssigned(
             request.AssignedHoMId, result.Value.Id, request.WorkDate);
         if (notification.IsFailure) return Result<Guid>.Fail(notification.Error);
 
-        _db.Notifications.Add(notification.Value);
-        await _db.SaveChangesAsync(cancellationToken);
+        db.Notifications.Add(notification.Value);
+        await db.SaveChangesAsync(cancellationToken);
 
         return result.Value.Id;
     }

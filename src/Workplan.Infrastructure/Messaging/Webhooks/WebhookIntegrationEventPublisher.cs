@@ -7,23 +7,16 @@ using Workplan.Infrastructure.Messaging.Outbox;
 
 namespace Workplan.Infrastructure.Messaging.Webhooks;
 
-public sealed class WebhookIntegrationEventPublisher
+public sealed class WebhookIntegrationEventPublisher(
+    HttpClient httpClient,
+    IOptions<WebhookOptions> options)
 {
     public const string SignatureHeaderName = "X-Workplan-Signature";
     public const string EventIdHeaderName = "X-Workplan-Event-Id";
     public const string EventTypeHeaderName = "X-Workplan-Event-Type";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private readonly HttpClient _httpClient;
-    private readonly WebhookOptions _options;
-
-    public WebhookIntegrationEventPublisher(
-        HttpClient httpClient,
-        IOptions<WebhookOptions> options)
-    {
-        _httpClient = httpClient;
-        _options = options.Value;
-    }
+    private readonly WebhookOptions _options = options.Value;
 
     public async Task PublishAsync(
         IIntegrationEvent integrationEvent,
@@ -56,7 +49,7 @@ public sealed class WebhookIntegrationEventPublisher
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
 
-        using var response = await _httpClient.SendAsync(request, timeout.Token);
+        using var response = await httpClient.SendAsync(request, timeout.Token);
         response.EnsureSuccessStatusCode();
     }
 

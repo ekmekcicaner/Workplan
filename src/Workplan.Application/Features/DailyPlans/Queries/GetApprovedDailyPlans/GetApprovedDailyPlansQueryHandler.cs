@@ -7,22 +7,13 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetApprovedDailyPlans;
 
-public class GetApprovedDailyPlansQueryHandler
+public class GetApprovedDailyPlansQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     : IRequestHandler<GetApprovedDailyPlansQuery, Result<List<DailyPlanDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetApprovedDailyPlansQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
-    {
-        _db = db;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<List<DailyPlanDto>>> Handle(
         GetApprovedDailyPlansQuery request, CancellationToken cancellationToken)
     {
-        var plans = await _accessScope.ApplyDailyPlanScope(_db.DailyPlans
+        var plans = await accessScope.ApplyDailyPlanScope(db.DailyPlans
             .AsNoTracking()
             .Where(p => p.Status == WorkStatus.ApprovedByPM))
             .Select(plan => new DailyPlanDto(

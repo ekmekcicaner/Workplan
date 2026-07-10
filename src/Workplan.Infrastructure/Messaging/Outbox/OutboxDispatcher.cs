@@ -5,21 +5,13 @@ using Microsoft.Extensions.Options;
 
 namespace Workplan.Infrastructure.Messaging.Outbox;
 
-internal sealed class OutboxDispatcher : BackgroundService
+internal sealed class OutboxDispatcher(
+    IServiceScopeFactory scopeFactory,
+    IOptions<OutboxOptions> options,
+    ILogger<OutboxDispatcher> logger)
+    : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly OutboxOptions _options;
-    private readonly ILogger<OutboxDispatcher> _logger;
-
-    public OutboxDispatcher(
-        IServiceScopeFactory scopeFactory,
-        IOptions<OutboxOptions> options,
-        ILogger<OutboxDispatcher> logger)
-    {
-        _scopeFactory = scopeFactory;
-        _options = options.Value;
-        _logger = logger;
-    }
+    private readonly OutboxOptions _options = options.Value;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -27,7 +19,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             try
             {
-                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var scope = scopeFactory.CreateAsyncScope();
                 var processor = scope.ServiceProvider.GetRequiredService<OutboxProcessor>();
                 await processor.ProcessBatchAsync(stoppingToken);
             }
@@ -37,7 +29,7 @@ internal sealed class OutboxDispatcher : BackgroundService
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Outbox dispatcher döngüsü başarısız oldu.");
+                logger.LogError(exception, "Outbox dispatcher döngüsü başarısız oldu.");
             }
 
             await Task.Delay(

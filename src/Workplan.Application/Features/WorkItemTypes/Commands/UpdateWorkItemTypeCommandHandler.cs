@@ -5,18 +5,12 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.WorkItemTypes.Commands;
 
-public class UpdateWorkItemTypeCommandHandler : IRequestHandler<UpdateWorkItemTypeCommand, Result>
+public class UpdateWorkItemTypeCommandHandler(IApplicationDbContext db)
+    : IRequestHandler<UpdateWorkItemTypeCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
-
-    public UpdateWorkItemTypeCommandHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result> Handle(UpdateWorkItemTypeCommand request, CancellationToken cancellationToken)
     {
-        var workItemType = await _db.WorkItemTypes.FirstOrDefaultAsync(w => w.Id == request.Id, cancellationToken);
+        var workItemType = await db.WorkItemTypes.FirstOrDefaultAsync(w => w.Id == request.Id, cancellationToken);
         if (workItemType is null)
             return Result.Fail(Error.NotFound("İş tipi bulunamadı."));
 
@@ -26,7 +20,7 @@ public class UpdateWorkItemTypeCommandHandler : IRequestHandler<UpdateWorkItemTy
         var unitResult = workItemType.SetUnit(request.Unit);
         if (unitResult.IsFailure) return unitResult;
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Ok();
     }
 }

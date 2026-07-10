@@ -9,13 +9,11 @@ public enum ThemeMode
     Dark
 }
 
-public class ThemeService
+public class ThemeService(IJSRuntime js)
 {
     private const string GetMethod = "workplanTheme.get";
     private const string SetMethod = "workplanTheme.set";
     private const string ApplyMethod = "workplanTheme.apply";
-
-    private readonly IJSRuntime _js;
 
     public ThemeMode Mode { get; private set; } = ThemeMode.System;
 
@@ -23,14 +21,9 @@ public class ThemeService
 
     public event Action? Changed;
 
-    public ThemeService(IJSRuntime js)
-    {
-        _js = js;
-    }
-
     public async Task InitializeAsync()
     {
-        var stored = await _js.InvokeAsync<string?>(GetMethod);
+        var stored = await js.InvokeAsync<string?>(GetMethod);
         Mode = stored switch
         {
             "dark" => ThemeMode.Dark,
@@ -49,13 +42,13 @@ public class ThemeService
     public async Task SetModeAsync(ThemeMode mode)
     {
         Mode = mode;
-        IsDark = await _js.InvokeAsync<bool>(SetMethod, ToStorageValue(mode));
+        IsDark = await js.InvokeAsync<bool>(SetMethod, ToStorageValue(mode));
         Changed?.Invoke();
     }
 
     private async Task ApplyAsync()
     {
-        IsDark = await _js.InvokeAsync<bool>(ApplyMethod, ToStorageValue(Mode));
+        IsDark = await js.InvokeAsync<bool>(ApplyMethod, ToStorageValue(Mode));
         Changed?.Invoke();
     }
 

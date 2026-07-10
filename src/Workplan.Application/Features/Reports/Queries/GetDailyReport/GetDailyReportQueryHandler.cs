@@ -6,22 +6,14 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.Reports.Queries.GetDailyReport;
 
-public class GetDailyReportQueryHandler : IRequestHandler<GetDailyReportQuery, Result<DailyReportDto>>
+public class GetDailyReportQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
+    : IRequestHandler<GetDailyReportQuery, Result<DailyReportDto>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetDailyReportQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
-    {
-        _db = db;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<DailyReportDto>> Handle(
         GetDailyReportQuery request,
         CancellationToken cancellationToken)
     {
-        var query = _accessScope.ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
+        var query = accessScope.ApplyDailyPlanScope(db.DailyPlans.AsNoTracking())
             .Where(plan => plan.Status == WorkStatus.ApprovedByPM);
 
         if (request.WorkDate is { } workDate)
@@ -35,11 +27,11 @@ public class GetDailyReportQueryHandler : IRequestHandler<GetDailyReportQuery, R
 
         var items = await (
             from plan in query
-            join project in _db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
-            join region in _db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
-            join location in _db.Locations.AsNoTracking() on plan.LocationId equals location.Id
-            join workItemType in _db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
-            join crewType in _db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
+            join project in db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
+            join region in db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
+            join location in db.Locations.AsNoTracking() on plan.LocationId equals location.Id
+            join workItemType in db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
+            join crewType in db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
             from crewType in crewTypeJoin.DefaultIfEmpty()
             orderby plan.WorkDate descending, project.Name, region.Name, location.Name
             select new DailyReportItemDto(

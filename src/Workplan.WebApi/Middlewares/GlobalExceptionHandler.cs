@@ -3,21 +3,14 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.WebApi.Middlewares;
 
-public class GlobalExceptionHandler : IExceptionHandler
+public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
-    private readonly ILogger<GlobalExceptionHandler> _logger;
-
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
-    {
-        _logger = logger;
-    }
-
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
         CancellationToken cancellationToken)
     {
-        _logger.LogError(exception, "Uygulama çalışırken beklenmeyen bir hata oluştu: {Message}", exception.Message);
+        logger.LogError(exception, "Uygulama çalışırken beklenmeyen bir hata oluştu: {Message}", exception.Message);
 
         var (statusCode, code, message) = exception switch
         {

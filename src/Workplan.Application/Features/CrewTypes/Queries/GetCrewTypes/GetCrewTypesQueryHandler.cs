@@ -5,20 +5,14 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.CrewTypes.Queries.GetCrewTypes;
 
-public class GetCrewTypesQueryHandler : IRequestHandler<GetCrewTypesQuery, Result<List<CrewTypeDto>>>
+public class GetCrewTypesQueryHandler(IApplicationDbContext db)
+    : IRequestHandler<GetCrewTypesQuery, Result<List<CrewTypeDto>>>
 {
-    private readonly IApplicationDbContext _db;
-
-    public GetCrewTypesQueryHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result<List<CrewTypeDto>>> Handle(
         GetCrewTypesQuery request,
         CancellationToken cancellationToken)
     {
-        var query = _db.CrewTypes.AsNoTracking();
+        var query = db.CrewTypes.AsNoTracking();
 
         if (!request.IncludeInactive)
             query = query.Where(type => type.IsActive);

@@ -6,46 +6,35 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetPlansAwaitingMyApproval;
 
-public class GetPlansAwaitingMyApprovalQueryHandler
+public class GetPlansAwaitingMyApprovalQueryHandler(
+    IApplicationDbContext db,
+    ICurrentUserService currentUser,
+    IAccessScopeService accessScope)
     : IRequestHandler<GetPlansAwaitingMyApprovalQuery, Result<List<DailyPlanDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetPlansAwaitingMyApprovalQueryHandler(
-        IApplicationDbContext db,
-        ICurrentUserService currentUser,
-        IAccessScopeService accessScope)
-    {
-        _db = db;
-        _currentUser = currentUser;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<List<DailyPlanDto>>> Handle(
         GetPlansAwaitingMyApprovalQuery request, CancellationToken cancellationToken)
     {
-        var roleResult = ApproverRoleMap.Resolve(_currentUser.Roles);
+        var roleResult = ApproverRoleMap.Resolve(currentUser.Roles);
         if (roleResult.IsFailure) return Result<List<DailyPlanDto>>.Fail(roleResult.Error);
 
-        if (_currentUser.UserId is not { } currentUserId)
+        if (currentUser.UserId is not { } currentUserId)
             return Result<List<DailyPlanDto>>.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var query = _db.DailyPlans
+        var query = db.DailyPlans
             .AsNoTracking()
             .AsQueryable();
 
-        query = _accessScope.ApplyDailyPlanScope(query);
+        query = accessScope.ApplyDailyPlanScope(query);
 
         query = roleResult.Value switch
         {
             WorkStatus.ApprovedBySiteChief => query.Where(p =>
                 (p.Status == WorkStatus.Submitted || p.Status == WorkStatus.ApprovedByHoM)
-                && _db.CrewRegions.Any(r => r.Id == p.CrewRegionId && r.SiteChiefUserId == currentUserId)),
+                && db.CrewRegions.Any(r => r.Id == p.CrewRegionId && r.SiteChiefUserId == currentUserId)),
             WorkStatus.ApprovedByPM => query.Where(p =>
                 p.Status == WorkStatus.ApprovedBySiteChief
-                && _db.Projects.Any(project => project.Id == p.ProjectId && project.PmUserId == currentUserId)),
+                && db.Projects.Any(project => project.Id == p.ProjectId && project.PmUserId == currentUserId)),
             _ => query.Where(_ => false)
         };
 

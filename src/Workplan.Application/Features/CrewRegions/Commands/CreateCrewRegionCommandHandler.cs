@@ -6,18 +6,12 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.CrewRegions.Commands;
 
-public class CreateCrewRegionCommandHandler : IRequestHandler<CreateCrewRegionCommand, Result<Guid>>
+public class CreateCrewRegionCommandHandler(IApplicationDbContext db)
+    : IRequestHandler<CreateCrewRegionCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _db;
-
-    public CreateCrewRegionCommandHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result<Guid>> Handle(CreateCrewRegionCommand request, CancellationToken cancellationToken)
     {
-        var projectExists = await _db.Projects.AsNoTracking()
+        var projectExists = await db.Projects.AsNoTracking()
             .AnyAsync(p => p.Id == request.ProjectId, cancellationToken);
         if (!projectExists)
             return Result<Guid>.Fail(Error.NotFound("Proje bulunamadı."));
@@ -37,8 +31,8 @@ public class CreateCrewRegionCommandHandler : IRequestHandler<CreateCrewRegionCo
             if (assignTechOffice.IsFailure) return Result<Guid>.Fail(assignTechOffice.Error);
         }
 
-        _db.CrewRegions.Add(result.Value);
-        await _db.SaveChangesAsync(cancellationToken);
+        db.CrewRegions.Add(result.Value);
+        await db.SaveChangesAsync(cancellationToken);
 
         return result.Value.Id;
     }

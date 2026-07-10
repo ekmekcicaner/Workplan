@@ -5,57 +5,47 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetDailyPlanDetail;
 
-public class GetDailyPlanDetailQueryHandler : IRequestHandler<GetDailyPlanDetailQuery, Result<DailyPlanDetailDto>>
+public class GetDailyPlanDetailQueryHandler(
+    IApplicationDbContext db,
+    IAccessScopeService accessScope,
+    IIdentityService identityService)
+    : IRequestHandler<GetDailyPlanDetailQuery, Result<DailyPlanDetailDto>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-    private readonly IIdentityService _identityService;
-
-    public GetDailyPlanDetailQueryHandler(
-        IApplicationDbContext db,
-        IAccessScopeService accessScope,
-        IIdentityService identityService)
-    {
-        _db = db;
-        _accessScope = accessScope;
-        _identityService = identityService;
-    }
-
     public async ValueTask<Result<DailyPlanDetailDto>> Handle(
         GetDailyPlanDetailQuery request,
         CancellationToken cancellationToken)
     {
-        var exists = await _db.DailyPlans
+        var exists = await db.DailyPlans
             .AsNoTracking()
             .AnyAsync(plan => plan.Id == request.Id, cancellationToken);
         if (!exists)
             return Result<DailyPlanDetailDto>.Fail(Error.NotFound("Günlük plan bulunamadı."));
 
-        var plan = await _accessScope.ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
+        var plan = await accessScope.ApplyDailyPlanScope(db.DailyPlans.AsNoTracking())
             .Include(p => p.History)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
         if (plan is null)
             return Result<DailyPlanDetailDto>.Fail(Error.ScopeMismatch("Bu günlük planı görüntüleme yetkiniz yok."));
 
-        var projectInfo = await _db.Projects.AsNoTracking()
+        var projectInfo = await db.Projects.AsNoTracking()
             .Where(project => project.Id == plan.ProjectId)
             .Select(project => new { project.Name, project.PmUserId })
             .FirstOrDefaultAsync(cancellationToken);
-        var regionInfo = await _db.CrewRegions.AsNoTracking()
+        var regionInfo = await db.CrewRegions.AsNoTracking()
             .Where(region => region.Id == plan.CrewRegionId)
             .Select(region => new { region.Name, region.SiteChiefUserId })
             .FirstOrDefaultAsync(cancellationToken);
-        var locationName = await _db.Locations.AsNoTracking()
+        var locationName = await db.Locations.AsNoTracking()
             .Where(location => location.Id == plan.LocationId)
             .Select(location => location.Name)
             .FirstOrDefaultAsync(cancellationToken) ?? "-";
-        var workItemTypeName = await _db.WorkItemTypes.AsNoTracking()
+        var workItemTypeName = await db.WorkItemTypes.AsNoTracking()
             .Where(workItemType => workItemType.Id == plan.WorkItemTypeId)
             .Select(workItemType => workItemType.Name)
             .FirstOrDefaultAsync(cancellationToken) ?? "-";
 
         var crewTypeName = plan.CrewTypeId is { } crewTypeId
-            ? await _db.CrewTypes.AsNoTracking()
+            ? await db.CrewTypes.AsNoTracking()
                 .Where(crewType => crewType.Id == crewTypeId)
                 .Select(crewType => crewType.Name)
                 .FirstOrDefaultAsync(cancellationToken)
@@ -65,7 +55,7 @@ public class GetDailyPlanDetailQueryHandler : IRequestHandler<GetDailyPlanDetail
             .Concat(new[] { plan.AssignedHoMId, regionInfo?.SiteChiefUserId, projectInfo?.PmUserId }.OfType<Guid>())
             .Distinct()
             .ToList();
-        var displayNames = await _identityService.GetDisplayNamesAsync(userIds, cancellationToken);
+        var displayNames = await identityService.GetDisplayNamesAsync(userIds, cancellationToken);
 
         var history = plan.History
             .OrderBy(h => h.TransitionedAt)

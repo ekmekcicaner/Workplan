@@ -5,41 +5,30 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetMyWorkDailyPlans;
 
-public class GetMyWorkDailyPlansQueryHandler
+public class GetMyWorkDailyPlansQueryHandler(
+    IApplicationDbContext db,
+    ICurrentUserService currentUser,
+    IAccessScopeService accessScope)
     : IRequestHandler<GetMyWorkDailyPlansQuery, Result<List<DailyPlanListItemDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetMyWorkDailyPlansQueryHandler(
-        IApplicationDbContext db,
-        ICurrentUserService currentUser,
-        IAccessScopeService accessScope)
-    {
-        _db = db;
-        _currentUser = currentUser;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<List<DailyPlanListItemDto>>> Handle(
         GetMyWorkDailyPlansQuery request,
         CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId is not { } currentUserId)
+        if (currentUser.UserId is not { } currentUserId)
             return Result<List<DailyPlanListItemDto>>.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var query = _accessScope
-            .ApplyDailyPlanScope(_db.DailyPlans.AsNoTracking())
+        var query = accessScope
+            .ApplyDailyPlanScope(db.DailyPlans.AsNoTracking())
             .Where(plan => plan.AssignedHoMId == currentUserId);
 
         var plans = await (
             from plan in query
-            join project in _db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
-            join region in _db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
-            join location in _db.Locations.AsNoTracking() on plan.LocationId equals location.Id
-            join workItemType in _db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
-            join crewType in _db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
+            join project in db.Projects.AsNoTracking() on plan.ProjectId equals project.Id
+            join region in db.CrewRegions.AsNoTracking() on plan.CrewRegionId equals region.Id
+            join location in db.Locations.AsNoTracking() on plan.LocationId equals location.Id
+            join workItemType in db.WorkItemTypes.AsNoTracking() on plan.WorkItemTypeId equals workItemType.Id
+            join crewType in db.CrewTypes.AsNoTracking() on plan.CrewTypeId equals (Guid?)crewType.Id into crewTypeJoin
             from crewType in crewTypeJoin.DefaultIfEmpty()
             orderby plan.WorkDate descending, plan.Id
             select new DailyPlanListItemDto(

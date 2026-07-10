@@ -5,20 +5,13 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.WorkItemTypes.Queries.GetWorkItemTypeTree;
 
-public class GetWorkItemTypeTreeQueryHandler
+public class GetWorkItemTypeTreeQueryHandler(IApplicationDbContext db)
     : IRequestHandler<GetWorkItemTypeTreeQuery, Result<List<WorkItemTypeDto>>>
 {
-    private readonly IApplicationDbContext _db;
-
-    public GetWorkItemTypeTreeQueryHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result<List<WorkItemTypeDto>>> Handle(
         GetWorkItemTypeTreeQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.WorkItemTypes.AsNoTracking();
+        var query = db.WorkItemTypes.AsNoTracking();
 
         if (!request.IncludeInactive)
             query = query.Where(w => w.IsActive);

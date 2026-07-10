@@ -5,22 +5,15 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.Projects.Commands;
 
-public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand, Result<Guid>>
+public class CreateProjectCommandHandler(IApplicationDbContext db) : IRequestHandler<CreateProjectCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _db;
-
-    public CreateProjectCommandHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result<Guid>> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
     {
         var result = Project.Create(request.Code, request.Name, request.PmUserId);
         if (result.IsFailure) return Result<Guid>.Fail(result.Error);
 
-        _db.Projects.Add(result.Value);
-        await _db.SaveChangesAsync(cancellationToken);
+        db.Projects.Add(result.Value);
+        await db.SaveChangesAsync(cancellationToken);
 
         return result.Value.Id;
     }

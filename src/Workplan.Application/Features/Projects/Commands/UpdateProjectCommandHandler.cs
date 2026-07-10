@@ -5,18 +5,11 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.Projects.Commands;
 
-public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand, Result>
+public class UpdateProjectCommandHandler(IApplicationDbContext db) : IRequestHandler<UpdateProjectCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
-
-    public UpdateProjectCommandHandler(IApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     public async ValueTask<Result> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
     {
-        var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        var project = await db.Projects.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
         if (project is null)
             return Result.Fail(Error.NotFound("Proje bulunamadı."));
 
@@ -29,7 +22,7 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
             if (assignPm.IsFailure) return assignPm;
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Ok();
     }
 }

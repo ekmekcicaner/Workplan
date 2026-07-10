@@ -7,28 +7,21 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Commands;
 
-public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
+public class RejectCommandHandler(
+    IApplicationDbContext db,
+    ICurrentUserService currentUser,
+    IAccessScopeService accessScope)
+    : IRequestHandler<RejectCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IAccessScopeService _accessScope;
-
-    public RejectCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IAccessScopeService accessScope)
-    {
-        _db = db;
-        _currentUser = currentUser;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result> Handle(RejectCommand request, CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId is not { } approverUserId)
+        if (currentUser.UserId is not { } approverUserId)
             return Result.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var roleResult = ApproverRoleMap.Resolve(_currentUser.Roles);
+        var roleResult = ApproverRoleMap.Resolve(currentUser.Roles);
         if (roleResult.IsFailure) return Result.Fail(roleResult.Error);
 
-        var plan = await _db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
+        var plan = await db.DailyPlans.FindAsync([request.DailyPlanId], cancellationToken);
         if (plan is null) return Result.Fail(Error.NotFound("Günlük plan bulunamadı."));
 
         var scopeResult = await ValidateScopeAsync(plan.CrewRegionId, plan.ProjectId, roleResult.Value, cancellationToken);
@@ -50,10 +43,10 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
             transition.Note ?? request.Reason);
         if (notification.IsFailure) return Result.Fail(notification.Error);
 
-        _db.StatusTransitions.Add(transition);
-        _db.Notifications.Add(notification.Value);
+        db.StatusTransitions.Add(transition);
+        db.Notifications.Add(notification.Value);
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Ok();
     }
 
@@ -65,8 +58,8 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
     {
         var scopeValid = approverRole switch
         {
-            WorkStatus.ApprovedBySiteChief => await _accessScope.IsSiteChiefOfCrewRegionAsync(crewRegionId, cancellationToken),
-            WorkStatus.ApprovedByPM => await _accessScope.IsProjectManagerOfProjectAsync(projectId, cancellationToken),
+            WorkStatus.ApprovedBySiteChief => await accessScope.IsSiteChiefOfCrewRegionAsync(crewRegionId, cancellationToken),
+            WorkStatus.ApprovedByPM => await accessScope.IsProjectManagerOfProjectAsync(projectId, cancellationToken),
             _ => false
         };
 
@@ -91,7 +84,7 @@ public class RejectCommandHandler : IRequestHandler<RejectCommand, Result>
 
         if (rejecterRole == WorkStatus.ApprovedByPM && statusBeforeReject == WorkStatus.ApprovedBySiteChief)
         {
-            var siteChiefUserId = await _db.CrewRegions
+            var siteChiefUserId = await db.CrewRegions
                 .AsNoTracking()
                 .Where(region => region.Id == plan.CrewRegionId)
                 .Select(region => region.SiteChiefUserId)

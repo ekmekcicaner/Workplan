@@ -5,17 +5,8 @@ using Roles = Workplan.SharedKernel.Auth.Roles;
 
 namespace Workplan.Application.Common;
 
-public class AccessScopeService : IAccessScopeService
+public class AccessScopeService(IApplicationDbContext db, ICurrentUserService currentUser) : IAccessScopeService
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-
-    public AccessScopeService(IApplicationDbContext db, ICurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
-
     public bool IsSystemAdmin => HasRole(Roles.SystemAdmin);
 
     // Proje yöneticisi ve teknik ofis her şeyi görüntüleyebilir; işlem yetkisi ayrıca
@@ -39,30 +30,30 @@ public class AccessScopeService : IAccessScopeService
             : ApplyDailyPlanOwnershipFilter(query);
 
     public Task<bool> CanAccessProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
-        ApplyProjectOwnershipFilter(_db.Projects.AsNoTracking())
+        ApplyProjectOwnershipFilter(db.Projects.AsNoTracking())
             .AnyAsync(p => p.Id == projectId, cancellationToken);
 
     public Task<bool> CanAccessCrewRegionAsync(Guid crewRegionId, CancellationToken cancellationToken) =>
-        ApplyCrewRegionOwnershipFilter(_db.CrewRegions.AsNoTracking())
+        ApplyCrewRegionOwnershipFilter(db.CrewRegions.AsNoTracking())
             .AnyAsync(r => r.Id == crewRegionId, cancellationToken);
 
     public Task<bool> CanAccessLocationAsync(Guid locationId, CancellationToken cancellationToken) =>
-        ApplyLocationOwnershipFilter(_db.Locations.AsNoTracking())
+        ApplyLocationOwnershipFilter(db.Locations.AsNoTracking())
             .AnyAsync(l => l.Id == locationId, cancellationToken);
 
     public Task<bool> CanAccessDailyPlanAsync(Guid dailyPlanId, CancellationToken cancellationToken) =>
-        ApplyDailyPlanOwnershipFilter(_db.DailyPlans.AsNoTracking())
+        ApplyDailyPlanOwnershipFilter(db.DailyPlans.AsNoTracking())
             .AnyAsync(p => p.Id == dailyPlanId, cancellationToken);
 
     public Task<bool> IsSiteChiefOfCrewRegionAsync(Guid crewRegionId, CancellationToken cancellationToken) =>
-        _currentUser.UserId is { } userId
-            ? _db.CrewRegions.AsNoTracking()
+        currentUser.UserId is { } userId
+            ? db.CrewRegions.AsNoTracking()
                 .AnyAsync(r => r.Id == crewRegionId && r.SiteChiefUserId == userId, cancellationToken)
             : Task.FromResult(false);
 
     public Task<bool> IsProjectManagerOfProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
-        _currentUser.UserId is { } userId
-            ? _db.Projects.AsNoTracking()
+        currentUser.UserId is { } userId
+            ? db.Projects.AsNoTracking()
                 .AnyAsync(p => p.Id == projectId && p.PmUserId == userId, cancellationToken)
             : Task.FromResult(false);
 
@@ -74,7 +65,7 @@ public class AccessScopeService : IAccessScopeService
     private (bool Bypass, OwnershipContext? Context) ResolveOwnership()
     {
         if (IsSystemAdmin) return (true, null);
-        if (_currentUser.UserId is not { } userId) return (false, null);
+        if (currentUser.UserId is not { } userId) return (false, null);
 
         return (false, new OwnershipContext(
             userId,
@@ -92,13 +83,13 @@ public class AccessScopeService : IAccessScopeService
 
         return query.Where(p =>
             (c.IsProjectManager && p.PmUserId == c.UserId)
-            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+            || (c.IsSiteChief && db.CrewRegions.Any(r =>
                 r.ProjectId == p.Id && r.SiteChiefUserId == c.UserId))
-            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+            || (c.IsTechOffice && db.CrewRegions.Any(r =>
                 r.ProjectId == p.Id && r.TechOfficeUserId == c.UserId))
-            || (c.IsHeadOfMaster && _db.Locations.Any(l =>
+            || (c.IsHeadOfMaster && db.Locations.Any(l =>
                 l.ProjectId == p.Id && l.HeadOfMasterUserId == c.UserId))
-            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+            || (c.IsHeadOfMaster && db.DailyPlans.Any(d =>
                 d.ProjectId == p.Id && d.AssignedHoMId == c.UserId)));
     }
 
@@ -109,13 +100,13 @@ public class AccessScopeService : IAccessScopeService
         if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(r =>
-            (c.IsProjectManager && _db.Projects.Any(p =>
+            (c.IsProjectManager && db.Projects.Any(p =>
                 p.Id == r.ProjectId && p.PmUserId == c.UserId))
             || (c.IsSiteChief && r.SiteChiefUserId == c.UserId)
             || (c.IsTechOffice && r.TechOfficeUserId == c.UserId)
-            || (c.IsHeadOfMaster && _db.Locations.Any(l =>
+            || (c.IsHeadOfMaster && db.Locations.Any(l =>
                 l.CrewRegionId == r.Id && l.HeadOfMasterUserId == c.UserId))
-            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+            || (c.IsHeadOfMaster && db.DailyPlans.Any(d =>
                 d.CrewRegionId == r.Id && d.AssignedHoMId == c.UserId)));
     }
 
@@ -126,14 +117,14 @@ public class AccessScopeService : IAccessScopeService
         if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(l =>
-            (c.IsProjectManager && _db.Projects.Any(p =>
+            (c.IsProjectManager && db.Projects.Any(p =>
                 p.Id == l.ProjectId && p.PmUserId == c.UserId))
-            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+            || (c.IsSiteChief && db.CrewRegions.Any(r =>
                 r.Id == l.CrewRegionId && r.SiteChiefUserId == c.UserId))
-            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+            || (c.IsTechOffice && db.CrewRegions.Any(r =>
                 r.Id == l.CrewRegionId && r.TechOfficeUserId == c.UserId))
             || (c.IsHeadOfMaster && l.HeadOfMasterUserId == c.UserId)
-            || (c.IsHeadOfMaster && _db.DailyPlans.Any(d =>
+            || (c.IsHeadOfMaster && db.DailyPlans.Any(d =>
                 d.LocationId == l.Id && d.AssignedHoMId == c.UserId)));
     }
 
@@ -144,16 +135,16 @@ public class AccessScopeService : IAccessScopeService
         if (context is not { } c) return query.Where(_ => false);
 
         return query.Where(p =>
-            (c.IsProjectManager && _db.Projects.Any(project =>
+            (c.IsProjectManager && db.Projects.Any(project =>
                 project.Id == p.ProjectId && project.PmUserId == c.UserId))
-            || (c.IsSiteChief && _db.CrewRegions.Any(r =>
+            || (c.IsSiteChief && db.CrewRegions.Any(r =>
                 r.Id == p.CrewRegionId && r.SiteChiefUserId == c.UserId))
-            || (c.IsTechOffice && _db.CrewRegions.Any(r =>
+            || (c.IsTechOffice && db.CrewRegions.Any(r =>
                 r.Id == p.CrewRegionId && r.TechOfficeUserId == c.UserId))
             || (c.IsHeadOfMaster && p.AssignedHoMId == c.UserId));
     }
 
-    private bool HasRole(string role) => _currentUser.Roles.Contains(role);
+    private bool HasRole(string role) => currentUser.Roles.Contains(role);
 
     private readonly record struct OwnershipContext(
         Guid UserId, bool IsProjectManager, bool IsSiteChief, bool IsTechOffice, bool IsHeadOfMaster);

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -39,6 +40,19 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddOtlpExporter());
 
+builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddTokenBucketLimiter(policyName: "backoffice-token-bucket", tokenOptions =>
+        {
+            tokenOptions.TokenLimit = 20; // Kovanın maksimum alacağı token (ani istek kapasitesi)
+            tokenOptions.TokensPerPeriod = 5; // Her periyotta kovaya eklenecek token sayısı
+            tokenOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(5); // Yenilenme periyodu
+            tokenOptions.QueueLimit = 2;
+        });
+    }
+);
+
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // UseExceptionHandler() bir ExceptionHandler/ExceptionHandlingPath ya da IProblemDetailsService
@@ -50,7 +64,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 const string ClientCorsPolicy = "WorkplanClient";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? throw new InvalidOperationException("'Cors:AllowedOrigins' bulunamadı.");
+                     ?? throw new InvalidOperationException("'Cors:AllowedOrigins' bulunamadı.");
 
 builder.Services.AddCors(options =>
 {
@@ -102,9 +116,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors(ClientCorsPolicy);
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapAuthEndpoints();
 app.MapProjectEndpoints();

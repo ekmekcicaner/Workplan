@@ -5,26 +5,17 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.Notifications.Commands;
 
-public class MarkDailyPlanNotificationsReadCommandHandler
+public class MarkDailyPlanNotificationsReadCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
     : IRequestHandler<MarkDailyPlanNotificationsReadCommand, Result>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
-
-    public MarkDailyPlanNotificationsReadCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
-
     public async ValueTask<Result> Handle(
         MarkDailyPlanNotificationsReadCommand request,
         CancellationToken cancellationToken)
     {
-        if (_currentUser.UserId is not { } userId)
+        if (currentUser.UserId is not { } userId)
             return Result.Fail(Error.Unauthorized("Kimliği doğrulanmış bir kullanıcı gerekli."));
 
-        var notifications = await _db.Notifications
+        var notifications = await db.Notifications
             .Where(n => n.UserId == userId
                         && n.DailyPlanId == request.DailyPlanId
                         && n.ReadAtUtc == null)
@@ -36,7 +27,7 @@ public class MarkDailyPlanNotificationsReadCommandHandler
             if (result.IsFailure) return result;
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Ok();
     }
 }

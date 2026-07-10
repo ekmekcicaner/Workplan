@@ -2,16 +2,10 @@ using Microsoft.JSInterop;
 
 namespace Workplan.Client.Services;
 
-public sealed class ConnectivityService : IAsyncDisposable
+public sealed class ConnectivityService(IJSRuntime js) : IAsyncDisposable
 {
-    private readonly IJSRuntime _js;
     private DotNetObjectReference<ConnectivityService>? _selfReference;
     private bool _initialized;
-
-    public ConnectivityService(IJSRuntime js)
-    {
-        _js = js;
-    }
 
     public bool IsOnline { get; private set; } = true;
     public event Action? Changed;
@@ -23,8 +17,8 @@ public sealed class ConnectivityService : IAsyncDisposable
         _selfReference = DotNetObjectReference.Create(this);
         try
         {
-            IsOnline = await _js.InvokeAsync<bool>("workplanConnectivity.isOnline");
-            await _js.InvokeVoidAsync("workplanConnectivity.register", _selfReference);
+            IsOnline = await js.InvokeAsync<bool>("workplanConnectivity.isOnline");
+            await js.InvokeVoidAsync("workplanConnectivity.register", _selfReference);
             _initialized = true;
         }
         catch (JSException)

@@ -6,32 +6,19 @@ using Workplan.Infrastructure.Persistence;
 
 namespace Workplan.Infrastructure.Messaging.Outbox;
 
-public sealed class OutboxProcessor
+public sealed class OutboxProcessor(
+    AppDbContext dbContext,
+    IIntegrationEventPublisher publisher,
+    IOptions<OutboxOptions> options,
+    TimeProvider timeProvider,
+    ILogger<OutboxProcessor> logger)
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IIntegrationEventPublisher _publisher;
-    private readonly OutboxOptions _options;
-    private readonly TimeProvider _timeProvider;
-    private readonly ILogger<OutboxProcessor> _logger;
-
-    public OutboxProcessor(
-        AppDbContext dbContext,
-        IIntegrationEventPublisher publisher,
-        IOptions<OutboxOptions> options,
-        TimeProvider timeProvider,
-        ILogger<OutboxProcessor> logger)
-    {
-        _dbContext = dbContext;
-        _publisher = publisher;
-        _options = options.Value;
-        _timeProvider = timeProvider;
-        _logger = logger;
-    }
+    private readonly OutboxOptions _options = options.Value;
 
     public async Task<int> ProcessBatchAsync(CancellationToken cancellationToken)
     {
-        var now = _timeProvider.GetUtcNow().UtcDateTime;
-        var messages = await _dbContext.OutboxMessages
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var messages = await dbContext.OutboxMessages
             .Where(message =>
                 message.ProcessedOnUtc == null
                 && message.PoisonedOnUtc == null
@@ -45,8 +32,8 @@ public sealed class OutboxProcessor
             try
             {
                 var integrationEvent = IntegrationEventSerializer.Deserialize(message);
-                await _publisher.PublishAsync(integrationEvent, cancellationToken);
-                message.MarkProcessed(_timeProvider.GetUtcNow().UtcDateTime);
+                await publisher.PublishAsync(integrationEvent, cancellationToken);
+                message.MarkProcessed(timeProvider.GetUtcNow().UtcDateTime);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -54,14 +41,14 @@ public sealed class OutboxProcessor
             }
             catch (Exception exception)
             {
-                var failedOnUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                var failedOnUtc = timeProvider.GetUtcNow().UtcDateTime;
                 message.RecordFailure(
                     failedOnUtc,
                     exception.ToString(),
                     _options.MaxRetryCount,
                     CalculateRetryDelay(message.RetryCount + 1));
 
-                _logger.LogWarning(
+                logger.LogWarning(
                     exception,
                     "Outbox mesajı yayınlanamadı. MessageId: {MessageId}, RetryCount: {RetryCount}, Poisoned: {Poisoned}",
                     message.Id,
@@ -71,7 +58,7 @@ public sealed class OutboxProcessor
 
             // Her mesaj ayrı kalıcılaştırılır. Yayından sonra proses ölürse mesaj yeniden
             // gönderilir; bu bilinçli at-least-once semantiğidir.
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         return messages.Count;

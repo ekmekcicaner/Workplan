@@ -7,14 +7,9 @@ using Workplan.Application.Interfaces;
 
 namespace Workplan.Infrastructure.Identity;
 
-public class JwtTokenService : ITokenService
+public class JwtTokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
 {
-    private readonly JwtOptions _jwtOptions;
-
-    public JwtTokenService(IOptions<JwtOptions> jwtOptions)
-    {
-        _jwtOptions = jwtOptions.Value;
-    }
+    private readonly JwtOptions _jwtOptions = jwtOptions.Value;
 
     public (string Token, DateTime ExpiresAtUtc) CreateAccessToken(AuthenticatedUser user)
     {

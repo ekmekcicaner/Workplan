@@ -6,22 +6,13 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Features.DailyPlans.Queries.GetDailyPlanByHeadMaster;
 
-public class GetDailyPlanByHeadMasterQueryHandler
+public class GetDailyPlanByHeadMasterQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
     : IRequestHandler<GetDailyPlanByHeadMasterQuery, Result<List<DailyPlanDto>>>
 {
-    private readonly IApplicationDbContext _db;
-    private readonly IAccessScopeService _accessScope;
-
-    public GetDailyPlanByHeadMasterQueryHandler(IApplicationDbContext db, IAccessScopeService accessScope)
-    {
-        _db = db;
-        _accessScope = accessScope;
-    }
-
     public async ValueTask<Result<List<DailyPlanDto>>> Handle(
         GetDailyPlanByHeadMasterQuery request, CancellationToken cancellationToken)
     {
-        var plans = await _accessScope.ApplyDailyPlanScope(_db.DailyPlans
+        var plans = await accessScope.ApplyDailyPlanScope(db.DailyPlans
             .AsNoTracking()
             .Where(plan => plan.AssignedHoMId == request.HeadOfMasterUserId))
             .Select(plan => new DailyPlanDto(

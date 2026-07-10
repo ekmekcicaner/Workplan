@@ -4,37 +4,31 @@ using Workplan.SharedKernel.Common;
 
 namespace Workplan.Application.Common;
 
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public sealed class ValidationBehavior<TRequest, TResponse>(
+    IEnumerable<IValidator<TRequest>> validators)
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
     where TResponse : Result, IFailable<TResponse>
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
-    {
-        _validators = validators;
-    }
-
     public async ValueTask<TResponse> Handle(
         TRequest message,
         MessageHandlerDelegate<TRequest, TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (_validators.Any())
-        {
-            var context = new ValidationContext<TRequest>(message);
-            var failures = _validators
-                .Select(v => v.Validate(context))
-                .SelectMany(r => r.Errors)
-                .Where(f => f is not null)
-                .Select(f => f.ErrorMessage)
-                .ToList();
+        if (!validators.Any()) return await next(message, cancellationToken);
+        var context = new ValidationContext<TRequest>(message);
 
-            if (failures.Count != 0)
-            {
-                var error = Error.Validation("Doğrulama hatası.", failures);
-                return TResponse.Fail(error);
-            }
+        var failures = validators
+            .Select(validator => validator.Validate(context))
+            .SelectMany(result => result.Errors)
+            .Where(failure => failure is not null)
+            .Select(failure => failure.ErrorMessage)
+            .ToList();
+
+        if (failures.Count is not 0)
+        {
+            return TResponse.Fail(
+                Error.Validation("Doğrulama hatası.", failures));
         }
 
         return await next(message, cancellationToken);
