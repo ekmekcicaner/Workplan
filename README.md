@@ -1,37 +1,47 @@
 
 
-## Repo’yu Ayağa Kaldırma (.NET 10 SDK ve Docker gereklidir)
+## Repo'yu Ayağa Kaldırma
+
+İki bağımsız, birbiriyle çakışmayan çalışma biçimi var — hangisini kullanacağınız tek ihtiyacınıza göre değişir. İkisi de ilk açılışta migration'ları uygular ve inşaat senaryosuna uygun mock veriyi (proje, bölgeler, ekipler, kullanıcılar, günlük planlar) otomatik seed eder.
+
+### Sadece uygulamayı görmek istiyorsanız (yalnızca Docker gerekir)
+
+.NET SDK veya Node kurulu olmasına gerek yok — tüm build Docker içinde yapılır:
 
 ```bash
-docker compose up -d db
-```
-
-Rider veya VS Code debug için `Workplan.WebApi` ve `Workplan.Client` projelerinde `http` profilini çalıştırın. VS Code tarafında hazır compound config: `Workplan API + Client (http)`.
-
-| Servis | Adres |
-| --- | --- |
-| PostgreSQL | localhost:5433 |
-| Local İstemci (Blazor WASM) | http://localhost:5276 |
-| Local API + Scalar dokümantasyon | http://localhost:5291/scalar |
-
-Tam Docker stack isterseniz IDE portlarıyla çakışmayan app profili:
-
-```bash
-docker compose --profile app up --build
+docker compose up --build
 ```
 
 | Servis | Adres |
 | --- | --- |
-| Docker İstemci | http://localhost:5277 |
-| Docker API + Scalar dokümantasyon | http://localhost:5292/scalar |
+| İstemci | http://localhost:5277 |
+| API + Scalar dokümantasyon | http://localhost:5292/scalar |
+| PostgreSQL (opsiyonel host erişimi, GUI araçları için) | localhost:5433 |
+
+### Aktif geliştirme için (.NET 10 SDK ve Docker gereklidir)
+
+```bash
+dotnet run --project src/Workplan.AppHost/Workplan.AppHost.csproj --launch-profile http
+```
+
+Aspire AppHost kendi PostgreSQL container'ını + WebApi + Blazor istemciyi tek komutla başlatır; servislerin log/trace/metric ve health durumları dashboard'dan izlenir. IDE'de tek başlangıç projesi olarak `Workplan.AppHost` seçilebilir.
+
+| Servis | Adres |
+| --- | --- |
+| Aspire Dashboard | http://localhost:15880 |
+| İstemci (Blazor WASM) | http://localhost:5276 |
+| API + Scalar dokümantasyon | http://localhost:5291/scalar |
+| PostgreSQL | localhost:5434 (AppHost'a özel container + volume) |
+
+Bu iki yol tamamen bağımsızdır (ayrı port, ayrı Docker volume) — çakışma olmadan aynı anda bile çalışabilirler.
+
+VS Code'da tek tek proje debug etmek isterseniz (`Workplan API (http)` / `Workplan Client (http)` launch config'leri), `docker: db up` task'ı Aspire ile aynı port (5434) ve volume'u paylaşan ayrı, hafif bir PostgreSQL container'ı (`workplan-dev-db`) başlatır.
 
 **Mock girişleri:**
 - `admin@workplan.local` / `ChangeMe123!`  -  SystemAdmin
 - `pm1@workplan.local` / `Demo123!` - Project Manager
 - `hom1@workplan.local` / `Demo123!` - Head of Master
 + diğer mock çalışan kullanıcıları (`sc1@...`, `to1@...`, `hom2@...` vb.)
-
-İlk açılışta migration’lar uygulanır ve  inşaat senaryosuna uygun örnek kullanıcılar dahil mock veriler oluşturulur. 
 
 ---
 

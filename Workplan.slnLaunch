@@ -1,29 +1,9 @@
 [
   {
-    "Name": "Run All (https)",
+    "Name": "Workplan Aspire (http)",
     "Projects": [
       {
-        "Path": "src\\Workplan.WebApi\\Workplan.WebApi.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\Workplan.Client\\Workplan.Client.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      }
-    ]
-  },
-  {
-    "Name": "Run All (http)",
-    "Projects": [
-      {
-        "Path": "src\\Workplan.WebApi\\Workplan.WebApi.csproj",
-        "Action": "Start",
-        "DebugTarget": "http"
-      },
-      {
-        "Path": "src\\Workplan.Client\\Workplan.Client.csproj",
+        "Path": "src\\Workplan.AppHost\\Workplan.AppHost.csproj",
         "Action": "Start",
         "DebugTarget": "http"
       }

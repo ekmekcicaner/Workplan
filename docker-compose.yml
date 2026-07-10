@@ -1,21 +1,22 @@
-# Local IDE debug için:
-#   docker compose up -d db
+# Tek komutla tüm stack'i (db + api + client) ayağa kaldırır — sadece Docker gerektirir,
+# .NET SDK veya Node kurulu olması gerekmez:
 #
-# Tam Docker stack için:
-#   docker compose --profile app up --build
+#   docker compose up --build
 #
 # Ardından:
-#   Local Client : http://localhost:5276
-#   Local API    : http://localhost:5291/scalar
-#   Docker Client: http://localhost:5277
-#   Docker API   : http://localhost:5292/scalar
-#   PostgreSQL   : localhost:5433
-#   Giriş  : admin@workplan.local / Demo123! (SystemAdmin)
+#   Client : http://localhost:5277
+#   API    : http://localhost:5292/scalar
+#   Postgres (opsiyonel host erişimi, GUI araçları için): localhost:5433
+#   Giriş  : admin@workplan.local / ChangeMe123! (SystemAdmin)
 #            veya pm1@workplan.local / Demo123! (ProjectManager)
 #            veya hom1@workplan.local / Demo123! (HeadOfMaster) vb. seed edilen kullanıcılar
 #
 # Veritabanı ilk açılışta migration'lar ile kurulur ve elektrik santrali inşaatı
 # senaryosuna uygun mock veri (proje, bölgeler, ekipler, günlük planlar) otomatik eklenir.
+#
+# Aktif geliştirme için (dashboard, hot reload) `docker compose` yerine Aspire AppHost
+# kullanın — bkz. README. Bu iki yol birbirinden bağımsızdır (ayrı port, ayrı volume),
+# çakışma olmadan aynı anda bile çalışabilirler.
 
 services:
   db:
@@ -36,7 +37,6 @@ services:
       retries: 10
 
   api:
-    profiles: ["app"]
     build:
       context: .
       dockerfile: src/Workplan.WebApi/Dockerfile
@@ -52,7 +52,6 @@ services:
         condition: service_healthy
 
   client:
-    profiles: ["app"]
     build:
       context: .
       dockerfile: src/Workplan.Client/Dockerfile

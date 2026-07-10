@@ -19,6 +19,12 @@ RUN dotnet publish src/Workplan.WebApi/Workplan.WebApi.csproj -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+
+# Npgsql probes for Kerberos/GSSAPI support on first connect; without this lib it logs a
+# scary (but harmless) "Cannot load library libgssapi_krb5.so.2" line and falls back fine.
+RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:8080

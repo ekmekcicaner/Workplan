@@ -4,7 +4,7 @@
     {
       "label": "docker: db up",
       "type": "shell",
-      "command": "docker compose up -d db",
+      "command": "docker start workplan-dev-db 2>/dev/null || docker run -d --name workplan-dev-db -p 5434:5432 -e POSTGRES_DB=workplan -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -v workplan-dev-db-data:/var/lib/postgresql/data postgres:16-alpine",
       "problemMatcher": [],
       "presentation": {
         "reveal": "silent",

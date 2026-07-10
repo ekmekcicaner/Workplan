@@ -15,6 +15,11 @@ RUN dotnet restore src/Workplan.Client/Workplan.Client.csproj
 COPY src/Workplan.Client/ src/Workplan.Client/
 COPY --from=assets /src/wwwroot/css/app.css src/Workplan.Client/wwwroot/css/app.css
 
+# Blazor WASM runs in the browser and can't read container env vars, so the
+# API base URL is baked in at build time: swap the dev default for the
+# Docker-network-published one before publishing.
+COPY src/Workplan.Client/wwwroot/appsettings.Docker.json src/Workplan.Client/wwwroot/appsettings.json
+
 RUN dotnet publish src/Workplan.Client/Workplan.Client.csproj -c Release -o /app/publish --no-restore
 
 FROM nginx:alpine AS final

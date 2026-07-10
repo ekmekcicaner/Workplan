@@ -9,19 +9,7 @@
       "applicationUrl": "http://localhost:5291",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__Default": "Host=localhost;Port=5433;Database=workplan;Username=postgres;Password=postgres",
-        "SeedDemoData": "true"
-      }
-    },
-    "https": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": false,
-      "launchUrl": "scalar",
-      "applicationUrl": "https://localhost:7272",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__Default": "Host=localhost;Port=5433;Database=workplan;Username=postgres;Password=postgres",
+        "ConnectionStrings__Default": "Host=localhost;Port=5434;Database=workplan;Username=postgres;Password=postgres",
         "SeedDemoData": "true"
       }
     }
