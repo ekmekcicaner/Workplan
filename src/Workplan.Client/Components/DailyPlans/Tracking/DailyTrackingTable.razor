@@ -1,55 +1,47 @@
-<section class="surface-panel p-3">
+<section class="space-y-3">
     <div class="mb-3 flex items-center justify-between gap-3">
         <h2 class="text-base font-semibold">Günlük İş Listesi</h2>
         <span class="badge">@Items.Count kayıt</span>
     </div>
 
-    <ResponsiveEntityList TItem="DailyTrackingPlanDto"
+    <WpResponsiveDataView TItem="DailyTrackingPlanDto"
                           Items="Items"
+                          ItemKey="@(item => item.Id)"
+                          PageSize="25"
                           EmptyTitle="Bu gün için iş yok"
                           EmptyText="Seçili gün ve filtrelerle listelenecek kayıt bulunamadı.">
-        <HeaderRow>
-            <th>Durum</th>
-            <th>Proje</th>
-            <th>Bölge / Lokasyon</th>
-            <th>İş Kalemi</th>
-            <th>Sorumlular</th>
-            <th>Plan</th>
-            <th>Gerçek</th>
-            <th></th>
-        </HeaderRow>
-        <DesktopRowTemplate Context="item">
-            <td><StatusBadge Status="item.Status" /></td>
-            <td>@item.ProjectName</td>
-            <td>
+        <Columns>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Durum" Context="item"><StatusBadge Status="item.Status" /></TemplateColumn>
+            <PropertyColumn TGridItem="DailyTrackingPlanDto" TProp="string" Property="@(item => item.ProjectName)" Title="Proje" Sortable="true" />
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Bölge / Lokasyon" Context="item">
                 <span class="block">@item.CrewRegionName</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">@item.LocationName</span>
-            </td>
-            <td>
+                <span class="block text-sm text-foreground-muted">@item.LocationName</span>
+            </TemplateColumn>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="İş Kalemi" Context="item">
                 <span class="block">@item.WorkItemTypeName</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">@CrewTypeLabel(item)</span>
-            </td>
-            <td>
+                <span class="block text-sm text-foreground-muted">@CrewTypeLabel(item)</span>
+            </TemplateColumn>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Sorumlular" Context="item">
                 <span class="block text-sm">Usta: @DisplayName(item.AssignedHoMName)</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">Şantiye şefi: @DisplayName(item.SiteChiefName)</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">PM: @DisplayName(item.ProjectManagerName)</span>
-            </td>
-            <td>
+                <span class="block text-sm text-foreground-muted">Şantiye şefi: @DisplayName(item.SiteChiefName)</span>
+                <span class="block text-sm text-foreground-muted">PM: @DisplayName(item.ProjectManagerName)</span>
+            </TemplateColumn>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Plan" Context="item">
                 <span class="block">@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">@NumberDisplay.Format(item.PlannedManDay) AG</span>
-            </td>
-            <td>
+                <span class="block text-sm text-foreground-muted">@NumberDisplay.Format(item.PlannedManDay) AG</span>
+            </TemplateColumn>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Gerçek" Context="item">
                 <span class="block">@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</span>
-                <span class="block text-sm text-neutral-500 dark:text-neutral-400">@NumberDisplay.Format(item.FactManDay) AG · @NumberDisplay.Format(item.Overtime) FM</span>
-            </td>
-            <td class="text-right"><a class="entity-row-action" href="@($"daily-plans/{item.Id}")">Detay</a></td>
-        </DesktopRowTemplate>
-        <MobileCardTemplate Context="item">
+                <span class="block text-sm text-foreground-muted">@NumberDisplay.Format(item.FactManDay) AG · @NumberDisplay.Format(item.Overtime) FM</span>
+            </TemplateColumn>
+            <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="İşlem" Align="Align.End" Context="item"><a class="entity-row-action" href="@($"daily-plans/{item.Id}")">Detay</a></TemplateColumn>
+        </Columns>
+        <MobileTemplate Context="item">
             <article class="entity-card">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <h3 class="truncate font-semibold">@item.WorkItemTypeName</h3>
-                        <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@item.ProjectName · @item.LocationName</p>
+                        <p class="truncate text-sm text-foreground-muted">@item.ProjectName · @item.LocationName</p>
                     </div>
                     <StatusBadge Status="item.Status" />
                 </div>
@@ -81,12 +73,12 @@
                 </dl>
                 @if (!string.IsNullOrWhiteSpace(item.Comment))
                 {
-                    <p class="mt-3 line-clamp-2 rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600 dark:bg-neutral-900/40 dark:text-neutral-300">@item.Comment</p>
+                    <p class="mt-3 line-clamp-2 rounded-md bg-surface-muted px-3 py-2 text-sm text-foreground-muted">@item.Comment</p>
                 }
                 <a class="btn-secondary mt-3 w-full" href="@($"daily-plans/{item.Id}")">Detay</a>
             </article>
-        </MobileCardTemplate>
-    </ResponsiveEntityList>
+        </MobileTemplate>
+    </WpResponsiveDataView>
 </section>
 
 @code {

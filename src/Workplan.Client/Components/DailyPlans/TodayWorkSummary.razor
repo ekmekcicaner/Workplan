@@ -9,7 +9,7 @@
     {
         @if (TodayItems.Count == 0)
         {
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">Bugün için iş görünmüyor.</p>
+            <p class="text-sm text-foreground-muted">Bugün için iş görünmüyor.</p>
         }
         else
         {
@@ -17,11 +17,11 @@
                 @foreach (var plan in TodayItems)
                 {
                     <li>
-                        <a class="flex min-w-0 items-center justify-between gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/50"
+                        <a class="flex min-w-0 items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-muted"
                            href="@($"daily-plans/{plan.Id}")">
                             <span class="min-w-0">
                                 <span class="block truncate font-medium">@plan.LocationName</span>
-                                <span class="block truncate text-neutral-500 dark:text-neutral-400">@plan.WorkItemTypeName</span>
+                                <span class="block truncate text-foreground-muted">@plan.WorkItemTypeName</span>
                             </span>
                             <StatusBadge Status="plan.Status" />
                         </a>

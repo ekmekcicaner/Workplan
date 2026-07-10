@@ -1,27 +1,9 @@
-<header class="page-header">
-    <div class="min-w-0">
-        @if (!string.IsNullOrWhiteSpace(BackHref))
-        {
-            <a class="page-back-link" href="@BackHref">
-                <Icon Name="chevron-left" CssClass="h-4 w-4" />@BackText
-            </a>
-        }
-        <div class="flex flex-wrap items-center gap-2">
-            <h1 class="page-title">@Title</h1>
-            @Metadata
-        </div>
-        @if (!string.IsNullOrWhiteSpace(Subtitle))
-        {
-            <p class="page-subtitle">@Subtitle</p>
-        }
-    </div>
-    @if (Actions is not null)
-    {
-        <div class="page-actions">
-            @Actions
-        </div>
-    }
-</header>
+<WpPageHeader Title="@Title"
+              Subtitle="@Subtitle"
+              BackHref="@BackHref"
+              BackText="@BackText"
+              Actions="@Actions"
+              Metadata="@Metadata" />
 
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = "";

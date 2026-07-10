@@ -6,7 +6,7 @@
 
 <PageTitle>Raporlamalar | Workplan</PageTitle>
 <section class="space-y-4">
-<PageHeader Title="Daily Report"
+<PageHeader Title="Günlük Rapor"
             Subtitle="PM onayı tamamlanan işlerde plan, gerçekleşen ve fazla mesai özetini takip et.">
     <Actions>
         <button class="btn-secondary" @onclick="LoadReportAsync">
@@ -15,7 +15,7 @@
     </Actions>
 </PageHeader>
 
-<div class="surface-panel p-3">
+<WpFilterPanel Title="Rapor filtreleri" Description="Tarih, proje ve saha bölgesi kapsamını belirleyin.">
     <div class="grid grid-cols-1 gap-3 lg:grid-cols-[12rem_1fr_1fr_auto] lg:items-end">
         <div>
             <label class="field-label">İş tarihi</label>
@@ -47,7 +47,7 @@
             </button>
         </div>
     </div>
-</div>
+</WpFilterPanel>
 
 <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
 
@@ -55,43 +55,34 @@
 {
     <ReportKpiSummary Report="_report" />
 
-    <div class="surface-panel p-3">
+    <section class="space-y-3">
         <div class="mb-3 flex items-center justify-between gap-3">
             <h2 class="text-base font-semibold">Onaylanmış İşler</h2>
             <span class="badge">@_report.Items.Count</span>
         </div>
-        <ResponsiveEntityList TItem="DailyReportItemDto"
+        <WpResponsiveDataView TItem="DailyReportItemDto"
                               Items="_report.Items"
+                              ItemKey="@(item => item.Id)"
+                              PageSize="25"
                               EmptyTitle="Onaylanmış kayıt yok"
                               EmptyText="Bu filtrelerle rapora dahil edilmiş kayıt bulunamadı.">
-            <HeaderRow>
-                <th>Tarih</th>
-                <th>Proje</th>
-                <th>Lokasyon</th>
-                <th>İş Kalemi</th>
-                <th>Plan</th>
-                <th>Gerçek</th>
-                <th>AG</th>
-                <th>FM</th>
-                <th></th>
-            </HeaderRow>
-            <DesktopRowTemplate Context="item">
-                <td>@item.WorkDate.ToString("dd.MM.yyyy")</td>
-                <td>@item.ProjectName</td>
-                <td>@item.LocationName</td>
-                <td>@item.WorkItemTypeName</td>
-                <td>@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</td>
-                <td>@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</td>
-                <td>@NumberDisplay.Format(item.FactManDay) / @NumberDisplay.Format(item.PlannedManDay)</td>
-                <td>@NumberDisplay.Format(item.Overtime)</td>
-                <td class="text-right"><a class="entity-row-action" href="@($"daily-plans/{item.Id}")">Detay</a></td>
-            </DesktopRowTemplate>
-            <MobileCardTemplate Context="item">
+            <Columns>
+                <PropertyColumn TGridItem="DailyReportItemDto" TProp="DateOnly" Property="@(item => item.WorkDate)" Title="Tarih" Sortable="true" Format="dd.MM.yyyy" />
+                <PropertyColumn TGridItem="DailyReportItemDto" TProp="string" Property="@(item => item.ProjectName)" Title="Proje" Sortable="true" />
+                <PropertyColumn TGridItem="DailyReportItemDto" TProp="string" Property="@(item => item.LocationName)" Title="Lokasyon" Sortable="true" />
+                <PropertyColumn TGridItem="DailyReportItemDto" TProp="string" Property="@(item => item.WorkItemTypeName)" Title="İş Kalemi" Sortable="true" />
+                <TemplateColumn TGridItem="DailyReportItemDto" Title="Plan" Context="item">@NumberDisplay.Format(item.PlannedQuantity) @UnitLabel(item.Unit)</TemplateColumn>
+                <TemplateColumn TGridItem="DailyReportItemDto" Title="Gerçek" Context="item">@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</TemplateColumn>
+                <TemplateColumn TGridItem="DailyReportItemDto" Title="AG" Context="item">@NumberDisplay.Format(item.FactManDay) / @NumberDisplay.Format(item.PlannedManDay)</TemplateColumn>
+                <PropertyColumn TGridItem="DailyReportItemDto" TProp="decimal" Property="@(item => item.Overtime)" Title="FM" Sortable="true" />
+                <TemplateColumn TGridItem="DailyReportItemDto" Title="İşlem" Align="Align.End" Context="item"><a class="entity-row-action" href="@($"daily-plans/{item.Id}")">Detay</a></TemplateColumn>
+            </Columns>
+            <MobileTemplate Context="item">
                 <article class="entity-card">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <h3 class="truncate font-semibold">@item.WorkItemTypeName</h3>
-                            <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@item.ProjectName · @item.LocationName</p>
+                            <p class="truncate text-sm text-foreground-muted">@item.ProjectName · @item.LocationName</p>
                         </div>
                         <span class="badge">@item.WorkDate.ToString("dd.MM")</span>
                     </div>
@@ -115,9 +106,9 @@
                     </dl>
                     <a class="btn-secondary mt-3 w-full" href="@($"daily-plans/{item.Id}")">Detay</a>
                 </article>
-            </MobileCardTemplate>
-        </ResponsiveEntityList>
-    </div>
+            </MobileTemplate>
+        </WpResponsiveDataView>
+    </section>
 }
 </section>
 

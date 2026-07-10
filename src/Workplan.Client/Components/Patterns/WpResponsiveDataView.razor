@@ -1,0 +1,75 @@
+@typeparam TItem
+
+<div class="wp-data-view @CssClass">
+    <WpLoadingState Loading="Loading" ErrorText="@ErrorText" />
+    @if (!Loading && string.IsNullOrWhiteSpace(ErrorText))
+    {
+        @if (Items.Count == 0)
+        {
+            <div class="p-3 sm:p-4">
+                <WpEmptyState Title="@EmptyTitle" Text="@EmptyText" />
+            </div>
+        }
+        else
+        {
+            <div class="wp-grid-scroll">
+                <QuickGrid TGridItem="TItem"
+                           Items="@Items.AsQueryable()"
+                           ItemKey="@ItemKey"
+                           Pagination="@GridPagination"
+                           Theme="workplan"
+                           Class="wp-quickgrid">
+                    @Columns
+                </QuickGrid>
+            </div>
+            <div class="wp-data-mobile">
+                @foreach (var item in MobileItems)
+                {
+                    <div @key="ItemKey(item)">@MobileTemplate(item)</div>
+                }
+            </div>
+            @if (Items.Count > PageSize)
+            {
+                <WpDataPager State="@_pagination" TotalItems="@Items.Count" />
+            }
+        }
+    }
+</div>
+
+@code {
+    private readonly PaginationState _pagination = new();
+    private IReadOnlyList<TItem>? _previousItems;
+
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "Kayıt bulunamadı";
+    [Parameter] public string? EmptyText { get; set; }
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter, EditorRequired] public Func<TItem, object> ItemKey { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment Columns { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<TItem> MobileTemplate { get; set; } = default!;
+
+    private IReadOnlyList<TItem> MobileItems => Items
+        .Skip(_pagination.CurrentPageIndex * _pagination.ItemsPerPage)
+        .Take(_pagination.ItemsPerPage)
+        .ToList();
+
+    // QuickGrid pads the page with empty rows up to ItemsPerPage whenever Pagination is bound.
+    // Only bind it once there's actually more than one page, so short lists don't render phantom rows.
+    private PaginationState? GridPagination => Items.Count > PageSize ? _pagination : null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pagination.ItemsPerPage = Math.Max(1, PageSize);
+        if (!ReferenceEquals(_previousItems, Items))
+        {
+            _previousItems = Items;
+            if (_pagination.CurrentPageIndex != 0)
+            {
+                await _pagination.SetCurrentPageIndexAsync(0);
+            }
+        }
+    }
+}

@@ -1,21 +1,8 @@
-@if (Show)
-{
-    <div class="modal-backdrop" @onclick="OnBackdropClick">
-        <div class="modal-panel" @onclick:stopPropagation="true">
-            @if (!string.IsNullOrWhiteSpace(Title))
-            {
-                <h2 class="mb-3 text-lg font-semibold">@Title</h2>
-            }
-            @ChildContent
-        </div>
-    </div>
-}
+<WpModal Show="Show" Title="@Title" OnClose="OnClose">@ChildContent</WpModal>
 
 @code {
     [Parameter] public bool Show { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-
-    private Task OnBackdropClick() => OnClose.InvokeAsync();
 }

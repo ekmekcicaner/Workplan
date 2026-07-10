@@ -2,23 +2,23 @@
     <h2 class="mb-3 text-base font-semibold">Durum Geçmişi</h2>
     @if (History.Count == 0)
     {
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Geçmiş kaydı yok.</p>
+        <p class="text-sm text-foreground-muted">Geçmiş kaydı yok.</p>
     }
     else
     {
         <ul class="flex flex-col gap-3 text-sm">
             @foreach (var entry in History.OrderBy(item => item.TransitionedAt))
             {
-                <li class="border-b border-neutral-100 pb-3 last:border-0 last:pb-0 dark:border-neutral-700/60">
+                <li class="border-b border-border pb-3 last:border-0 last:pb-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <StatusBadge Status="entry.FromStatus" />
-                        <span class="text-neutral-400">→</span>
+                        <span class="text-foreground-muted">→</span>
                         <StatusBadge Status="entry.ToStatus" />
-                        <span class="text-neutral-500 dark:text-neutral-400">@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
+                        <span class="text-foreground-muted">@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(entry.Note))
                     {
-                        <p class="mt-1 whitespace-pre-wrap text-neutral-600 dark:text-neutral-300">@entry.Note</p>
+                        <p class="mt-1 whitespace-pre-wrap text-foreground-muted">@entry.Note</p>
                     }
                 </li>
             }

@@ -1,0 +1,108 @@
+@inject WorkItemTypesApiService WorkItemTypesApi
+@inject ToastService Toast
+
+<WpModal Show="_show" Title="@ModalTitle" OnClose="Close">
+    @if (_show)
+    {
+        <div class="space-y-3">
+            <WpField Label="Ad">
+                <input class="input" @bind="_name" @bind:event="oninput" @onkeyup="OnKeyUpAsync" />
+            </WpField>
+            @if (RequireUnit)
+            {
+                <WpField Label="Birim">
+                    <select class="input" @bind="_unit">
+                        <option value="@WorkUnit.None" disabled>Birim seçin</option>
+                        <option value="@WorkUnit.Ton">Ton</option>
+                        <option value="@WorkUnit.M3">m³</option>
+                        <option value="@WorkUnit.M2">m²</option>
+                    </select>
+                </WpField>
+            }
+            <button type="button" class="btn-primary w-full" disabled="@(!CanSave || _saving)" @onclick="SaveAsync">
+                <Icon Name="check" CssClass="h-4 w-4" />Kaydet
+            </button>
+        </div>
+    }
+</WpModal>
+
+@code {
+    [Parameter] public string EntityLabel { get; set; } = "";
+    [Parameter] public bool RequireUnit { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _show;
+    private Guid? _editingId;
+    private Guid? _parentId;
+    private string _name = "";
+    private WorkUnit _unit = WorkUnit.None;
+    private bool _saving;
+
+    private string ModalTitle => _editingId is null ? $"{EntityLabel} Ekle" : $"{EntityLabel} Düzenle";
+    private bool CanSave => !string.IsNullOrWhiteSpace(_name) && (!RequireUnit || _unit != WorkUnit.None);
+
+    public void OpenCreate(Guid? parentId)
+    {
+        _editingId = null;
+        _parentId = parentId;
+        _name = "";
+        _unit = WorkUnit.None;
+        _show = true;
+        StateHasChanged();
+    }
+
+    public void OpenEdit(WorkItemTypeDto item)
+    {
+        _editingId = item.Id;
+        _parentId = item.ParentId;
+        _name = item.Name;
+        _unit = item.Unit;
+        _show = true;
+        StateHasChanged();
+    }
+
+    private void Close() => _show = false;
+
+    private async Task OnKeyUpAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && CanSave && !_saving)
+        {
+            await SaveAsync();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!CanSave || _saving) return;
+        _saving = true;
+        var name = _name.Trim();
+
+        bool success;
+        string? error;
+        if (_editingId is null)
+        {
+            var result = await WorkItemTypesApi.CreateAsync(new CreateWorkItemTypeRequest(name, _parentId, _unit));
+            success = result.Success;
+            error = result.ErrorMessage;
+        }
+        else
+        {
+            var result = await WorkItemTypesApi.UpdateAsync(_editingId.Value, new UpdateWorkItemTypeRequest(name, _unit));
+            success = result.Success;
+            error = result.ErrorMessage;
+        }
+
+        if (success)
+        {
+            Toast.Success(_editingId is null ? $"{EntityLabel} eklendi." : $"{EntityLabel} güncellendi.");
+            _show = false;
+            await OnSaved.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(error ?? "İşlem başarısız oldu.");
+        }
+
+        _saving = false;
+    }
+}

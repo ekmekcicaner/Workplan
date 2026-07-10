@@ -1,12 +1,8 @@
 @if (!string.IsNullOrWhiteSpace(Plan.LatestRejectionReason))
 {
-    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
-        <div class="mb-1 flex items-center justify-between gap-2">
-            <span class="font-semibold">Reddedildi</span>
-            <span class="text-xs font-medium uppercase tracking-wide text-red-700 dark:text-red-300">Tekrar kontrol et</span>
-        </div>
-        <p class="line-clamp-2">@Plan.LatestRejectionReason</p>
-    </div>
+    <WpNotice Tone="WpTone.Danger" Title="Reddedildi" Text="@Plan.LatestRejectionReason">
+        <span class="text-xs font-medium uppercase tracking-wide text-danger">Tekrar kontrol et</span>
+    </WpNotice>
 }
 
 @code {

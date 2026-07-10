@@ -1,9 +1,9 @@
 <div class="inline-notice @ToneClass" role="@Role">
-    <Icon Name="@IconName" CssClass="h-4 w-4 shrink-0" />
+    <Icon Name="@Icon" CssClass="mt-0.5 h-5 w-5 shrink-0" />
     <div class="min-w-0">
         @if (!string.IsNullOrWhiteSpace(Title))
         {
-            <p class="font-semibold">@Title</p>
+            <p class="font-bold">@Title</p>
         }
         @if (!string.IsNullOrWhiteSpace(Text))
         {
@@ -14,26 +14,25 @@
 </div>
 
 @code {
+    [Parameter] public WpTone Tone { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Text { get; set; }
-    [Parameter] public string Tone { get; set; } = "neutral";
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private string Role => Tone == "danger" ? "alert" : "status";
-
-    private string IconName => Tone switch
+    private string Role => Tone is WpTone.Danger ? "alert" : "status";
+    private string Icon => Tone switch
     {
-        "success" => "check",
-        "warning" => "alert",
-        "danger" => "alert",
+        WpTone.Success => "check-circle",
+        WpTone.Warning => "alert-triangle",
+        WpTone.Danger => "alert-triangle",
+        WpTone.Info => "info",
         _ => "info"
     };
-
     private string ToneClass => Tone switch
     {
-        "success" => "inline-notice-success",
-        "warning" => "inline-notice-warning",
-        "danger" => "inline-notice-danger",
+        WpTone.Success => "inline-notice-success",
+        WpTone.Warning => "inline-notice-warning",
+        WpTone.Danger => "inline-notice-danger",
         _ => "inline-notice-neutral"
     };
 }

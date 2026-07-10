@@ -2,7 +2,7 @@
     <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
             <p class="truncate text-sm font-semibold">@Plan.LocationName</p>
-            <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@Plan.WorkItemTypeName</p>
+            <p class="truncate text-sm text-foreground-muted">@Plan.WorkItemTypeName</p>
         </div>
         <StatusBadge Status="Plan.Status" />
     </div>
@@ -28,7 +28,7 @@
 
     @if (!string.IsNullOrWhiteSpace(Plan.Comment))
     {
-        <p class="line-clamp-2 rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600 dark:bg-neutral-900/40 dark:text-neutral-300">@Plan.Comment</p>
+        <p class="line-clamp-2 rounded-md bg-surface-muted px-3 py-2 text-sm text-foreground-muted">@Plan.Comment</p>
     }
 
     <RejectionNotice Plan="Plan" />

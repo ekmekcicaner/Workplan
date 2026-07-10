@@ -9,13 +9,13 @@
             <span class="h-2 w-2 rounded-full bg-current"></span>
         }
     </div>
-    <div class="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950/50">
+    <div class="min-w-0 flex-1 rounded-lg border border-border bg-surface-muted p-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-sm font-semibold text-neutral-950 dark:text-neutral-50">@Title</p>
+            <p class="text-sm font-semibold text-foreground">@Title</p>
             <span class="@BadgeClass">@StateLabel</span>
         </div>
-        <p class="mt-1 truncate text-sm font-medium text-neutral-700 dark:text-neutral-200">@Name</p>
-        <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">@Description</p>
+        <p class="mt-1 truncate text-sm font-medium text-foreground">@Name</p>
+        <p class="mt-1 text-xs text-foreground-muted">@Description</p>
     </div>
 </li>
 
@@ -27,14 +27,14 @@
 
     private string MarkerClass => State switch
     {
-        "done" => "mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300",
+        "done" => "mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-soft text-success",
         "active" => "mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 ring-4 ring-brand-500/10 dark:bg-brand-950 dark:text-brand-300",
-        _ => "mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
+        _ => "mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground-muted"
     };
 
     private string BadgeClass => State switch
     {
-        "done" => "badge bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300",
+        "done" => "badge bg-success-soft text-success",
         "active" => "badge bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-300",
         _ => "badge"
     };

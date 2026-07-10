@@ -1,0 +1,17 @@
+<span class="badge @ToneClass @CssClass">@ChildContent</span>
+
+@code {
+    [Parameter] public WpTone Tone { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ToneClass => Tone switch
+    {
+        WpTone.Brand => "bg-brand-100 text-brand-800 dark:bg-brand-950/60 dark:text-brand-300",
+        WpTone.Success => "bg-success-soft text-success",
+        WpTone.Warning => "bg-warning-soft text-warning",
+        WpTone.Danger => "bg-danger-soft text-danger",
+        WpTone.Info => "bg-info-soft text-info",
+        _ => ""
+    };
+}

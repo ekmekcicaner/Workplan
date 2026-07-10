@@ -11,8 +11,8 @@
 
     @if (Plan.CrewTypeId is not null)
     {
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">
-            Bu iş <span class="font-medium text-neutral-700 dark:text-neutral-200">@Plan.CrewTypeName</span> ekip tipiyle başlatıldı.
+        <p class="text-sm text-foreground-muted">
+            Bu iş <span class="font-medium text-foreground">@Plan.CrewTypeName</span> ekip tipiyle başlatıldı.
         </p>
     }
     else if (Plan.Status == WorkStatus.Assigned)
@@ -23,7 +23,7 @@
         {
             @if (_crewTypes.Count == 0)
             {
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Aktif ekip tipi yok.</p>
+                <p class="text-sm text-foreground-muted">Aktif ekip tipi yok.</p>
             }
             else
             {
@@ -33,7 +33,7 @@
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             @foreach (var crewType in _crewTypes)
                             {
-                                <label @key="crewType.Id" class="flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700">
+                                <label @key="crewType.Id" class="flex min-h-11 items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
                                     <input type="radio"
                                            name="crew-type"
                                            checked="@(SelectedCrewTypeId == crewType.Id)"
@@ -50,7 +50,7 @@
     }
     else
     {
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Bu aşamada ekip tipi seçimi değiştirilemez.</p>
+        <p class="text-sm text-foreground-muted">Bu aşamada ekip tipi seçimi değiştirilemez.</p>
     }
 </div>
 

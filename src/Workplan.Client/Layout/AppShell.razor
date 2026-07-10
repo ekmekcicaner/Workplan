@@ -1,0 +1,27 @@
+<div class="app-shell">
+    <TopBar IsOnline="IsOnline" />
+    <div class="app-frame">
+        <AuthorizeView>
+            <Authorized><SideNavigation /></Authorized>
+        </AuthorizeView>
+        <main class="app-main">
+            @if (!IsOnline)
+            {
+                <div class="mb-5">
+                    <WpNotice Tone="WpTone.Warning"
+                              Title="Bağlantı yok"
+                              Text="Uygulama kabuğu açık kalır; kayıt gönderme ve onay işlemleri çevrimiçi olana kadar kapalıdır." />
+                </div>
+            }
+            @Body
+        </main>
+    </div>
+    <AuthorizeView>
+        <Authorized><MobileNavigation /></Authorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    [Parameter] public bool IsOnline { get; set; } = true;
+    [Parameter, EditorRequired] public RenderFragment Body { get; set; } = default!;
+}

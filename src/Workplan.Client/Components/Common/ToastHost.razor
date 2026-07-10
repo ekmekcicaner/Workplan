@@ -18,10 +18,10 @@
 
     private static string SeverityClass(ToastSeverity severity) => severity switch
     {
-        ToastSeverity.Success => "bg-green-600",
-        ToastSeverity.Error => "bg-red-600",
-        ToastSeverity.Warning => "bg-amber-500",
-        _ => "bg-neutral-800"
+        ToastSeverity.Success => "bg-success",
+        ToastSeverity.Error => "bg-danger",
+        ToastSeverity.Warning => "bg-warning",
+        _ => "bg-foreground"
     };
 
     public void Dispose()

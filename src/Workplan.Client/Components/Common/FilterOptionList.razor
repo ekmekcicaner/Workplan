@@ -1,30 +1,33 @@
-<div class="rounded-md border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900">
-    <div class="mb-2 flex items-center justify-between gap-2">
-        <label class="field-label mb-0">@Label</label>
-        @if (SelectedIds.Count > 0)
-        {
-            <button type="button" class="text-xs font-semibold text-brand-600 dark:text-brand-400" @onclick="ClearAsync">
-                Temizle
-            </button>
-        }
-    </div>
+<div class="w-64 p-1">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <div class="mb-1.5 flex items-center justify-between gap-2 px-2 pt-1">
+            <span class="text-xs font-bold uppercase tracking-wide text-foreground-subtle">@Label</span>
+            @if (SelectedIds.Count > 0)
+            {
+                <button type="button" class="text-xs font-semibold text-brand-600 dark:text-brand-400" @onclick="ClearAsync">
+                    Temizle
+                </button>
+            }
+        </div>
+    }
 
     @if (Options.Count > SearchThreshold)
     {
-        <input class="input mb-2" placeholder="Ara..." value="@_query" @oninput="OnSearch" />
+        <input class="input mb-1.5" placeholder="Ara..." value="@_query" @oninput="OnSearch" />
     }
 
-    <div class="max-h-44 space-y-1 overflow-y-auto pr-1">
+    <div class="max-h-52 space-y-0.5 overflow-y-auto pr-1">
         @if (FilteredOptions.Count == 0)
         {
-            <p class="py-2 text-sm text-neutral-500 dark:text-neutral-400">Seçenek yok.</p>
+            <p class="px-2 py-2 text-sm text-foreground-muted">Seçenek yok.</p>
         }
         else
         {
             @foreach (var option in FilteredOptions)
             {
                 var selected = SelectedIds.Contains(option.Id);
-                <label @key="option.Id" class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                <label @key="option.Id" class="menu-item cursor-pointer">
                     <input type="checkbox"
                            class="size-4"
                            checked="@selected"
@@ -37,7 +40,7 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? Label { get; set; }
     [Parameter, EditorRequired] public IReadOnlyList<TrackingFilterOptionDto> Options { get; set; } = [];
     [Parameter, EditorRequired] public HashSet<Guid> SelectedIds { get; set; } = [];
     [Parameter] public EventCallback<HashSet<Guid>> SelectedIdsChanged { get; set; }

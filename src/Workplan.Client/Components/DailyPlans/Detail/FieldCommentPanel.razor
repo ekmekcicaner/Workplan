@@ -1,17 +1,17 @@
 <section class="card">
     <div class="mb-3 flex items-center gap-2">
-        <div class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <div class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-warning-soft text-warning">
             <Icon Name="info" CssClass="h-5 w-5" />
         </div>
         <div>
             <h2 class="text-base font-semibold">Saha Açıklamaları</h2>
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">Gün sonu notları ve red gerekçeleri.</p>
+            <p class="text-sm text-foreground-muted">Gün sonu notları ve red gerekçeleri.</p>
         </div>
     </div>
 
     @if (Comments.Count == 0)
     {
-        <p class="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950/50 dark:text-neutral-400">
+        <p class="rounded-lg border border-dashed border-border bg-surface-muted p-3 text-sm text-foreground-muted">
             Açıklama girilmemiş.
         </p>
     }
@@ -20,13 +20,13 @@
         <ol class="space-y-3">
             @foreach (var comment in Comments.OrderByDescending(item => item.CreatedAt))
             {
-                <li @key="comment" class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950/50">
+                <li @key="comment" class="rounded-lg border border-border bg-surface-muted p-3">
                     <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span class="@KindBadgeClass(comment.Kind)">@KindLabel(comment.Kind)</span>
-                        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">@ActorLabel(comment)</span>
-                        <span class="text-sm text-neutral-500 dark:text-neutral-400">@comment.CreatedAt.ToLocalTime().ToString("g")</span>
+                        <span class="text-sm font-medium text-foreground">@ActorLabel(comment)</span>
+                        <span class="text-sm text-foreground-muted">@comment.CreatedAt.ToLocalTime().ToString("g")</span>
                     </div>
-                    <p class="whitespace-pre-wrap text-sm leading-6 text-neutral-800 dark:text-neutral-100">@comment.Text</p>
+                    <p class="whitespace-pre-wrap text-sm leading-6 text-foreground">@comment.Text</p>
                 </li>
             }
         </ol>
@@ -47,7 +47,7 @@
 
     private static string KindBadgeClass(DailyPlanCommentKind kind) => kind switch
     {
-        DailyPlanCommentKind.Rejection => "badge border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300",
-        _ => "badge border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300"
+        DailyPlanCommentKind.Rejection => "badge border border-danger/25 bg-danger-soft text-danger",
+        _ => "badge border border-success/25 bg-success-soft text-success"
     };
 }

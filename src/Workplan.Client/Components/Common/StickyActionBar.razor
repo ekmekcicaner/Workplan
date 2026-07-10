@@ -1,12 +1,4 @@
-<div class="sticky-action-bar">
-    @if (!string.IsNullOrWhiteSpace(StatusText))
-    {
-        <p class="min-w-0 flex-1 text-sm text-neutral-500 dark:text-neutral-400">@StatusText</p>
-    }
-    <div class="flex flex-wrap items-center gap-2">
-        @ChildContent
-    </div>
-</div>
+<WpStickyActionBar StatusText="@StatusText">@ChildContent</WpStickyActionBar>
 
 @code {
     [Parameter] public string? StatusText { get; set; }

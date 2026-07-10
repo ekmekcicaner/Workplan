@@ -1,72 +1,72 @@
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
     <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createContext">
         <Authorized>
-            <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="daily-plans/new">
+            <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="daily-plans/new">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
                     <Icon Name="clipboard" />
                 </span>
                 <h2 class="font-semibold">Günlük Plan Oluştur</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">T-1 planı oluştur ve ustabaşına ata.</p>
+                <p class="text-sm text-foreground-muted">T-1 planı oluştur ve ustabaşına ata.</p>
             </a>
 
-            <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="crews">
-                <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+            <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="crews">
+                <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-foreground">
                     <Icon Name="hard-hat" />
                 </span>
                 <h2 class="font-semibold">Ekip Tipleri</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">İş başlatmada kullanılacak ekip tiplerini yönet.</p>
+                <p class="text-sm text-foreground-muted">İş başlatmada kullanılacak ekip tiplerini yönet.</p>
             </a>
         </Authorized>
     </AuthorizeView>
 
     <AuthorizeView Roles="HeadOfMaster" Context="myWorkContext">
         <Authorized>
-            <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="my-work">
+            <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="my-work">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
                     <Icon Name="clipboard" />
                 </span>
                 <h2 class="font-semibold">Bana Atanan İşler</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Ekip tipi seç, başlat ve gün sonu beyanını gönder.</p>
+                <p class="text-sm text-foreground-muted">Ekip tipi seç, başlat ve gün sonu beyanını gönder.</p>
             </a>
         </Authorized>
     </AuthorizeView>
 
     <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalsContext">
         <Authorized>
-            <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="approvals">
+            <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="approvals">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
                     <Icon Name="check-circle" />
                 </span>
                 <h2 class="font-semibold">Beklenen Onaylar</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Kendi aşamandaki işleri onayla veya gerekçeyle reddet.</p>
+                <p class="text-sm text-foreground-muted">Kendi aşamandaki işleri onayla veya gerekçeyle reddet.</p>
             </a>
         </Authorized>
     </AuthorizeView>
 
-    <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="projects">
-        <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+    <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="projects">
+        <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-foreground">
             <Icon Name="folder" />
         </span>
         <h2 class="font-semibold">Projeler</h2>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Proje, bölge ve lokasyon verisini yönet.</p>
+        <p class="text-sm text-foreground-muted">Proje, bölge ve lokasyon verisini yönet.</p>
     </a>
 
-    <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="work-item-types">
-        <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+    <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="work-item-types">
+        <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-foreground">
             <Icon Name="layers" />
         </span>
         <h2 class="font-semibold">İş Kalemleri</h2>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">ToW → SToW → SSToW ağacını düzenle.</p>
+        <p class="text-sm text-foreground-muted">ToW → SToW → SSToW ağacını düzenle.</p>
     </a>
 
     <AuthorizeView Roles="SystemAdmin" Context="adminContext">
         <Authorized>
-            <a class="card hover:border-neutral-400 dark:hover:border-neutral-500" href="user-management">
-                <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+            <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="user-management">
+                <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-foreground">
                     <Icon Name="users" />
                 </span>
                 <h2 class="font-semibold">Kullanıcı Yönetimi</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Kullanıcı, rol ve aktiflik yönetimi.</p>
+                <p class="text-sm text-foreground-muted">Kullanıcı, rol ve aktiflik yönetimi.</p>
             </a>
         </Authorized>
     </AuthorizeView>

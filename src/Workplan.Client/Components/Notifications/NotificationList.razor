@@ -9,7 +9,7 @@
     {
         @if (Items.Count == 0)
         {
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">Okunmamış bildirim yok.</p>
+            <p class="text-sm text-foreground-muted">Okunmamış bildirim yok.</p>
         }
         else
         {
@@ -17,10 +17,10 @@
                 @foreach (var notification in Items)
                 {
                     <li>
-                        <a class="block rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/50"
+                        <a class="block rounded-md border border-border px-3 py-2 text-sm hover:bg-surface-muted"
                            href="@(notification.Link ?? "#")">
                             <span class="block truncate font-medium">@notification.Title</span>
-                            <span class="block truncate text-neutral-500 dark:text-neutral-400">@notification.Message</span>
+                            <span class="block truncate text-foreground-muted">@notification.Message</span>
                         </a>
                     </li>
                 }

@@ -2,67 +2,103 @@
 @attribute [Authorize]
 @inject WorkItemTypesApiService WorkItemTypesApi
 <PageTitle>İş Kalemi Tipleri | Workplan</PageTitle>
-<h1 class="mb-1 text-2xl font-semibold">İş Kalemi Tipleri</h1>
-<p class="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
-    Hiyerarşi: Tip &rarr; Alt Tip &rarr; Alt-Alt Tip (en fazla 3 seviye). Bir sonraki seviyeyi görmek için soldaki
-    listeden bir kayıt seçin.
-</p>
 
-<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-    <label class="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync"/>
-        Pasif tipleri de göster
-    </label>
+<section class="space-y-4">
+    <PageHeader Title="İş Kalemi Tipleri"
+                Subtitle="Hiyerarşi: Tip → Alt Tip → Alt-Alt Tip (en fazla 3 seviye). Bir sonraki seviyeyi görmek için soldaki listeden bir kayıt seçin.">
+        <Metadata>
+            <label class="flex items-center gap-2 text-sm text-foreground-muted">
+                <input type="checkbox" @bind="_includeInactive" @bind:after="LoadAsync" />
+                Pasif tipleri de göster
+            </label>
+        </Metadata>
+    </PageHeader>
 
-    @if (SelectedTip is not null)
+    <LoadingBlock Loading="_loading" ErrorText="@_loadError" />
+
+    @if (!_loading && _loadError is null)
     {
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">
-            <span class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedTip.Name</span>
-            @if (SelectedAltTip is not null)
+        <div class="segmented-filter md:hidden">
+            <button type="button" class="segment-item @(_mobileLevel == 0 ? "segment-item-active" : "")" @onclick="() => _mobileLevel = 0">
+                Tip
+            </button>
+            <button type="button" class="segment-item disabled:pointer-events-none disabled:opacity-40 @(_mobileLevel == 1 ? "segment-item-active" : "")"
+                    disabled="@(SelectedTip is null)" @onclick="() => _mobileLevel = 1">
+                Alt Tip
+            </button>
+            <button type="button" class="segment-item disabled:pointer-events-none disabled:opacity-40 @(_mobileLevel == 2 ? "segment-item-active" : "")"
+                    disabled="@(SelectedAltTip is null)" @onclick="() => _mobileLevel = 2">
+                Alt-Alt Tip
+            </button>
+        </div>
+
+        <div class="hidden grid-cols-1 gap-4 md:grid md:grid-cols-3">
+            <WorkItemTypeColumn Title="Tip"
+                                Items="Tips"
+                                SelectedId="_selectedTipId"
+                                OnSelect="SelectTip"
+                                OnChanged="LoadAsync" />
+
+            <WorkItemTypeColumn Title="Alt Tip"
+                                Items="AltTips"
+                                SelectedId="_selectedAltTipId"
+                                OnSelect="SelectAltTip"
+                                Locked="SelectedTip is null"
+                                LockedMessage="Devam etmek için soldan bir Tip seçin."
+                                ParentId="_selectedTipId"
+                                OnChanged="LoadAsync" />
+
+            <WorkItemTypeColumn Title="Alt-Alt Tip"
+                                Items="AltAltTips"
+                                Selectable="false"
+                                Locked="SelectedAltTip is null"
+                                LockedMessage="Devam etmek için bir Alt Tip seçin."
+                                ParentId="_selectedAltTipId"
+                                RequireUnit="true"
+                                OnChanged="LoadAsync" />
+        </div>
+
+        <div class="md:hidden">
+            @if (_mobileLevel == 0)
             {
-                <text>&rarr; <span
-                        class="font-medium text-neutral-700 dark:text-neutral-200">@SelectedAltTip.Name</span></text>
+                <WorkItemTypeColumn Title="Tip"
+                                    Items="Tips"
+                                    SelectedId="_selectedTipId"
+                                    OnSelect="SelectTip"
+                                    OnChanged="LoadAsync" />
             }
-        </p>
+            else if (_mobileLevel == 1)
+            {
+                <WorkItemTypeColumn Title="Alt Tip"
+                                    Items="AltTips"
+                                    SelectedId="_selectedAltTipId"
+                                    OnSelect="SelectAltTip"
+                                    Locked="SelectedTip is null"
+                                    LockedMessage="Devam etmek için soldan bir Tip seçin."
+                                    ParentId="_selectedTipId"
+                                    OnChanged="LoadAsync" />
+            }
+            else
+            {
+                <WorkItemTypeColumn Title="Alt-Alt Tip"
+                                    Items="AltAltTips"
+                                    Selectable="false"
+                                    Locked="SelectedAltTip is null"
+                                    LockedMessage="Devam etmek için bir Alt Tip seçin."
+                                    ParentId="_selectedAltTipId"
+                                    RequireUnit="true"
+                                    OnChanged="LoadAsync" />
+            }
+        </div>
     }
-</div>
-
-<LoadingBlock Loading="_loading" ErrorText="@_loadError"/>
-
-@if (!_loading && _loadError is null)
-{
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <WorkItemTypeColumn Title="Tip"
-                            Items="Tips"
-                            SelectedId="_selectedTipId"
-                            OnSelect="SelectTip"
-                            OnChanged="LoadAsync"/>
-
-        <WorkItemTypeColumn Title="Alt Tip"
-                            Items="AltTips"
-                            SelectedId="_selectedAltTipId"
-                            OnSelect="SelectAltTip"
-                            Locked="SelectedTip is null"
-                            LockedMessage="Devam etmek için soldan bir Tip seçin."
-                            ParentId="_selectedTipId"
-                            OnChanged="LoadAsync"/>
-
-        <WorkItemTypeColumn Title="Alt-Alt Tip"
-                            Items="AltAltTips"
-                            Selectable="false"
-                            Locked="SelectedAltTip is null"
-                            LockedMessage="Devam etmek için bir Alt Tip seçin."
-                            ParentId="_selectedAltTipId"
-                            RequireUnit="true"
-                            OnChanged="LoadAsync"/>
-    </div>
-}
+</section>
 
 @code {
     private List<WorkItemTypeDto> _tree = [];
     private bool _loading = true;
     private string? _loadError;
     private bool _includeInactive;
+    private int _mobileLevel;
 
     private Guid? _selectedTipId;
     private Guid? _selectedAltTipId;
@@ -98,11 +134,13 @@
     {
         _selectedTipId = _selectedTipId == id ? null : id;
         _selectedAltTipId = null;
+        _mobileLevel = _selectedTipId is null ? 0 : 1;
     }
 
     private void SelectAltTip(Guid id)
     {
         _selectedAltTipId = _selectedAltTipId == id ? null : id;
+        _mobileLevel = _selectedAltTipId is null ? 1 : 2;
     }
 
     private static List<WorkItemTypeDto> Sort(IReadOnlyCollection<WorkItemTypeDto> items) =>

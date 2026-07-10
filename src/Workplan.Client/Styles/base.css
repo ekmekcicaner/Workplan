@@ -1,0 +1,137 @@
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background: var(--wp-canvas);
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-canvas font-sans text-foreground antialiased;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-brand-500) 28%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+.validation-message {
+  @apply mt-1 text-xs font-medium text-danger;
+}
+
+.loading-progress {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 7rem;
+  height: 7rem;
+  margin-top: -3.5rem;
+  margin-left: -3.5rem;
+  animation: loading-progress-spin 1.2s linear infinite;
+}
+
+.loading-progress circle {
+  fill: none;
+  stroke: var(--wp-border);
+  stroke-width: 0.55rem;
+  stroke-linecap: round;
+}
+
+.loading-progress circle:last-child {
+  stroke: var(--color-brand-500);
+  stroke-dasharray: 62.8 251.2;
+}
+
+.loading-progress-text {
+  position: fixed;
+  top: calc(50% + 4.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  color: var(--wp-foreground-muted);
+}
+
+.loading-progress-text::after {
+  content: "Yükleniyor...";
+}
+
+@keyframes loading-progress-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+body:has(.modal-backdrop, .detail-panel-backdrop, .account-sheet-backdrop) {
+  overflow: hidden;
+}
+
+#blazor-error-ui {
+  display: none;
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 1000;
+  padding: 0.75rem 1rem;
+  background: var(--wp-danger);
+  color: white;
+  font-size: 0.875rem;
+  box-shadow: 0 -2px 12px rgb(0 0 0 / 0.18);
+}
+
+#blazor-error-ui .reload {
+  margin-left: 0.5rem;
+  color: white;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+#blazor-error-ui .dismiss {
+  float: right;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

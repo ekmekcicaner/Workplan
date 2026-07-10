@@ -1,0 +1,47 @@
+@inject NavigationManager Navigation
+@inject Workplan.Client.Auth.LocalStorageService LocalStorage
+@inject Workplan.Client.Auth.JwtAuthenticationStateProvider AuthStateProvider
+@inject AuthApiService AuthApi
+
+@if (Show)
+{
+    <div class="account-sheet-backdrop" @onclick="CloseFromPointerAsync"></div>
+    <section class="account-sheet-panel" role="dialog" aria-modal="true" aria-label="Hesap" @onclick:stopPropagation="true">
+        <div class="mb-5 flex items-center gap-3 rounded-panel border border-border bg-surface-muted p-3">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-bold text-surface">
+                @UserPresentation.Initials(User)
+            </span>
+            <div class="min-w-0">
+                <p class="truncate text-sm font-bold text-foreground">@UserPresentation.DisplayName(User)</p>
+                <p class="truncate text-sm text-foreground-muted">@UserPresentation.Title(User)</p>
+                <p class="mt-0.5 truncate text-xs text-foreground-subtle">@User.FindFirst(ClaimTypes.Email)?.Value</p>
+            </div>
+        </div>
+        <WpButton Variant="WpButtonVariant.Secondary" Icon="log-out" CssClass="w-full" OnClick="LogoutAsync">
+            Çıkış yap
+        </WpButton>
+    </section>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter, EditorRequired] public ClaimsPrincipal User { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task CloseFromPointerAsync(MouseEventArgs _) => OnClose.InvokeAsync();
+
+    private async Task LogoutAsync(MouseEventArgs _)
+    {
+        await OnClose.InvokeAsync();
+        var refreshToken = await LocalStorage.GetAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey);
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await AuthApi.RevokeAsync(new RevokeRequest(refreshToken));
+        }
+
+        await LocalStorage.RemoveAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.AccessTokenKey);
+        await LocalStorage.RemoveAsync(Workplan.Client.Auth.JwtAuthenticationStateProvider.RefreshTokenKey);
+        AuthStateProvider.NotifyUserLogout();
+        Navigation.NavigateTo("/login");
+    }
+}

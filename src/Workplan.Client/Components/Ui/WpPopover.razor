@@ -1,0 +1,33 @@
+@if (Open)
+{
+    <div class="fixed inset-0 z-20" @onclick="CloseAsync"></div>
+}
+
+<div class="relative inline-block @WrapperCssClass">
+    <div @onclick="ToggleAsync" @onclick:stopPropagation="true">
+        @Trigger
+    </div>
+
+    @if (Open)
+    {
+        <div class="popover-panel @(Align == WpPopoverAlign.End ? "right-0 origin-top-right" : "left-0 origin-top-left") @PanelCssClass"
+             role="menu"
+             @onclick:stopPropagation="true">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public WpPopoverAlign Align { get; set; } = WpPopoverAlign.End;
+    [Parameter] public string? PanelCssClass { get; set; }
+    [Parameter] public string? WrapperCssClass { get; set; }
+    [Parameter, EditorRequired] public RenderFragment Trigger { get; set; } = default!;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private Task ToggleAsync() => OpenChanged.InvokeAsync(!Open);
+
+    private Task CloseAsync() => OpenChanged.InvokeAsync(false);
+}

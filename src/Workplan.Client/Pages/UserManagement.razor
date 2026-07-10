@@ -21,22 +21,25 @@
             <DataAnnotationsValidator />
             <div>
                 <label class="field-label">E-posta</label>
-                <input class="input" @bind="_newUser.Email" @bind:event="oninput" />
+                <InputText class="input" @bind-Value="_newUser.Email" />
+                <ValidationMessage For="() => _newUser.Email" />
             </div>
             <div>
                 <label class="field-label">Ad Soyad</label>
-                <input class="input" @bind="_newUser.FullName" @bind:event="oninput" />
+                <InputText class="input" @bind-Value="_newUser.FullName" />
+                <ValidationMessage For="() => _newUser.FullName" />
             </div>
             <div>
                 <label class="field-label">Şifre</label>
-                <input class="input" type="password" @bind="_newUser.Password" @bind:event="oninput" />
+                <InputText class="input" type="password" @bind-Value="_newUser.Password" />
+                <ValidationMessage For="() => _newUser.Password" />
             </div>
             <div>
                 <label class="field-label">Roller</label>
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     @foreach (var role in AllRoles)
                     {
-                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 px-3 text-sm dark:border-neutral-800">
+                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm">
                             <input type="checkbox" class="size-4" checked="@_newUser.Roles.Contains(role)" @onchange="e => ToggleRole(_newUser.Roles, role, e.Value)" />
                             @RoleLabel(role)
                         </label>
@@ -44,47 +47,39 @@
                 </div>
             </div>
             <div class="lg:col-span-2">
-                <button class="btn-primary w-full sm:w-auto" type="submit" disabled="@(!CanCreateUser)">
-                    <Icon Name="plus" CssClass="h-4 w-4" />Kullanıcı Oluştur
-                </button>
+                <WpButton Type="submit" Icon="plus" CssClass="w-full sm:w-auto" Disabled="@(!CanCreateUser)" Loading="_creating">Kullanıcı Oluştur</WpButton>
             </div>
         </EditForm>
     </div>
 
-    <ResponsiveEntityList TItem="UserDto"
+    <WpResponsiveDataView TItem="UserDto"
                           Items="_users"
                           Loading="_loading"
-                          LoadError="@_loadError"
+                          ErrorText="@_loadError"
+                          ItemKey="@(user => user.Id)"
                           EmptyTitle="Henüz kullanıcı yok"
                           EmptyText="Sistem rolleri için kullanıcı oluşturun.">
-        <HeaderRow>
-            <th>E-posta</th>
-            <th>Ad Soyad</th>
-            <th>Roller</th>
-            <th>Durum</th>
-            <th class="w-28 text-right">İşlem</th>
-        </HeaderRow>
-        <DesktopRowTemplate Context="user">
-            <td>@user.Email</td>
-            <td>@user.FullName</td>
-            <td>@string.Join(", ", user.Roles.Select(RoleLabel))</td>
-            <td>@StatusPill(user.IsActive)</td>
-            <td class="text-right"><button class="entity-row-action" @onclick="() => OpenDetail(user)">Yönet</button></td>
-        </DesktopRowTemplate>
-        <MobileCardTemplate Context="user">
+        <Columns>
+            <PropertyColumn TGridItem="UserDto" TProp="string" Property="@(user => user.Email)" Title="E-posta" Sortable="true" />
+            <PropertyColumn TGridItem="UserDto" TProp="string" Property="@(user => user.FullName)" Title="Ad Soyad" Sortable="true" />
+            <TemplateColumn TGridItem="UserDto" Title="Roller" Context="user">@string.Join(", ", user.Roles.Select(RoleLabel))</TemplateColumn>
+            <TemplateColumn TGridItem="UserDto" Title="Durum" Context="user">@StatusPill(user.IsActive)</TemplateColumn>
+            <TemplateColumn TGridItem="UserDto" Title="İşlem" Align="Align.End" Context="user"><button class="entity-row-action" @onclick="() => OpenDetail(user)">Yönet</button></TemplateColumn>
+        </Columns>
+        <MobileTemplate Context="user">
             <article class="entity-card">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <h2 class="truncate font-semibold">@user.FullName</h2>
-                        <p class="truncate text-sm text-neutral-500 dark:text-neutral-400">@user.Email</p>
-                        <p class="mt-1 line-clamp-2 text-sm text-neutral-500 dark:text-neutral-400">@string.Join(", ", user.Roles.Select(RoleLabel))</p>
+                        <p class="truncate text-sm text-foreground-muted">@user.Email</p>
+                        <p class="mt-1 line-clamp-2 text-sm text-foreground-muted">@string.Join(", ", user.Roles.Select(RoleLabel))</p>
                     </div>
                     @StatusPill(user.IsActive)
                 </div>
                 <button class="btn-secondary mt-3 w-full" @onclick="() => OpenDetail(user)">Yönet</button>
             </article>
-        </MobileCardTemplate>
-    </ResponsiveEntityList>
+        </MobileTemplate>
+    </WpResponsiveDataView>
 </section>
 
 <DetailPanel Show="_selectedUser is not null"
@@ -94,12 +89,12 @@
     @if (_selectedUser is not null)
     {
         <div class="space-y-4">
-            <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+            <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
                 <h3 class="text-sm font-semibold">Roller</h3>
                 <div class="grid grid-cols-1 gap-2">
                     @foreach (var role in AllRoles)
                     {
-                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm dark:border-neutral-800 dark:bg-neutral-900">
+                        <label class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 text-sm">
                             <input type="checkbox" class="size-4" checked="@_editRoles.Contains(role)" @onchange="e => ToggleRole(_editRoles, role, e.Value)" />
                             @RoleLabel(role)
                         </label>
@@ -110,7 +105,7 @@
                 </button>
             </div>
 
-            <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+            <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
                 <h3 class="text-sm font-semibold">Şifre sıfırla</h3>
                 <input class="input" type="password" placeholder="Yeni şifre" @bind="_newPassword" @bind:event="oninput" />
                 <button class="btn-secondary w-full" disabled="@(!CanResetPassword)" @onclick="ConfirmResetPasswordAsync">
@@ -118,7 +113,7 @@
                 </button>
             </div>
 
-            <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
+            <div class="rounded-lg border border-border bg-surface-muted p-3">
                 <p class="field-label">Durum</p>
                 <div class="flex items-center justify-between gap-3">
                     @StatusPill(_selectedUser.IsActive)
@@ -300,9 +295,8 @@
         }
     }
 
-    private static RenderFragment StatusPill(bool isActive) => @<span class="badge @(isActive ? "" : "!bg-red-100 !text-red-700 dark:!bg-red-900/40 dark:!text-red-300")">
-        @(isActive ? "Aktif" : "Pasif")
-    </span>;
+    private static RenderFragment StatusPill(bool isActive) =>
+        @<WpBadge Tone="@(isActive ? WpTone.Success : WpTone.Danger)">@(isActive ? "Aktif" : "Pasif")</WpBadge>;
 
     private static string RoleLabel(string role) => role switch
     {

@@ -1,0 +1,84 @@
+@theme {
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffead5;
+  --color-brand-200: #ffd0a8;
+  --color-brand-300: #ffad70;
+  --color-brand-400: #f98a3c;
+  --color-brand-500: #ed6f1c;
+  --color-brand-600: #d65312;
+  --color-brand-700: #b03d12;
+  --color-brand-800: #8c3216;
+  --color-brand-900: #712b16;
+  --color-brand-950: #3d1208;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius-control: 0.625rem;
+  --radius-panel: 0.875rem;
+  --radius-dialog: 1.125rem;
+  --shadow-panel: 0 1px 2px rgb(32 27 22 / 0.04), 0 10px 30px rgb(32 27 22 / 0.05);
+  --shadow-float: 0 18px 50px rgb(20 17 14 / 0.18);
+  --ease-workplan: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root {
+  --wp-canvas: #f5f2ec;
+  --wp-canvas-subtle: #efebe3;
+  --wp-surface: #fffdf9;
+  --wp-surface-raised: #ffffff;
+  --wp-surface-muted: #f7f3ec;
+  --wp-border: #ded7cc;
+  --wp-border-strong: #c9bfb2;
+  --wp-foreground: #29241f;
+  --wp-foreground-muted: #70685f;
+  --wp-foreground-subtle: #91877b;
+  --wp-success: #18794e;
+  --wp-success-soft: #e7f5ed;
+  --wp-warning: #9a6700;
+  --wp-warning-soft: #fff4d6;
+  --wp-danger: #b42318;
+  --wp-danger-soft: #fff0ee;
+  --wp-info: #175cd3;
+  --wp-info-soft: #edf4ff;
+}
+
+.dark {
+  --wp-canvas: #171512;
+  --wp-canvas-subtle: #201d19;
+  --wp-surface: #211e1a;
+  --wp-surface-raised: #29251f;
+  --wp-surface-muted: #1c1916;
+  --wp-border: #3b352d;
+  --wp-border-strong: #51493f;
+  --wp-foreground: #f5f0e8;
+  --wp-foreground-muted: #b8aea1;
+  --wp-foreground-subtle: #8f8579;
+  --wp-success: #6fcea0;
+  --wp-success-soft: #173c2d;
+  --wp-warning: #f3c96b;
+  --wp-warning-soft: #45340f;
+  --wp-danger: #ff938a;
+  --wp-danger-soft: #4b201d;
+  --wp-info: #8bb7ff;
+  --wp-info-soft: #182f55;
+}
+
+@theme inline {
+  --color-canvas: var(--wp-canvas);
+  --color-canvas-subtle: var(--wp-canvas-subtle);
+  --color-surface: var(--wp-surface);
+  --color-surface-raised: var(--wp-surface-raised);
+  --color-surface-muted: var(--wp-surface-muted);
+  --color-border: var(--wp-border);
+  --color-border-strong: var(--wp-border-strong);
+  --color-foreground: var(--wp-foreground);
+  --color-foreground-muted: var(--wp-foreground-muted);
+  --color-foreground-subtle: var(--wp-foreground-subtle);
+  --color-success: var(--wp-success);
+  --color-success-soft: var(--wp-success-soft);
+  --color-warning: var(--wp-warning);
+  --color-warning-soft: var(--wp-warning-soft);
+  --color-danger: var(--wp-danger);
+  --color-danger-soft: var(--wp-danger-soft);
+  --color-info: var(--wp-info);
+  --color-info-soft: var(--wp-info-soft);
+}

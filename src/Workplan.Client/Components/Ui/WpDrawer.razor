@@ -1,0 +1,33 @@
+@if (Show)
+{
+    <div class="detail-panel-backdrop" @onclick="CloseFromPointerAsync">
+        <aside class="detail-panel" role="dialog" aria-modal="true" aria-label="@Title" @onclick:stopPropagation="true">
+            <header class="detail-panel-header">
+                <div class="min-w-0">
+                    <h2 class="truncate text-lg font-bold text-foreground">@Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Subtitle))
+                    {
+                        <p class="mt-1 truncate text-sm text-foreground-muted">@Subtitle</p>
+                    }
+                </div>
+                <WpIconButton Icon="x" Label="Kapat" OnClick="CloseFromPointerAsync" />
+            </header>
+            <div class="detail-panel-body">@ChildContent</div>
+            @if (Footer is not null)
+            {
+                <footer class="detail-panel-footer">@Footer</footer>
+            }
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+
+    private Task CloseFromPointerAsync(MouseEventArgs _) => OnClose.InvokeAsync();
+}

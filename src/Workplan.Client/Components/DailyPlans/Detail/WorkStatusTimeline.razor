@@ -4,34 +4,34 @@
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
             <h2 class="text-base font-semibold">Durum Geçmişi</h2>
-            <p class="text-sm text-neutral-500 dark:text-neutral-400">İşlem sırası ve kaydı güncelleyen kişi.</p>
+            <p class="text-sm text-foreground-muted">İşlem sırası ve kaydı güncelleyen kişi.</p>
         </div>
-        <Icon Name="clock" CssClass="h-5 w-5 text-neutral-400" />
+        <Icon Name="clock" CssClass="h-5 w-5 text-foreground-muted" />
     </div>
 
     @if (History.Count == 0)
     {
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Geçmiş kaydı yok.</p>
+        <p class="text-sm text-foreground-muted">Geçmiş kaydı yok.</p>
     }
     else
     {
-        <ol class="relative border-s border-neutral-200 ps-5 dark:border-neutral-800">
+        <ol class="relative border-s border-border ps-5">
             @foreach (var entry in History.OrderByDescending(item => item.TransitionedAt))
             {
                 <li class="relative pb-5 last:pb-0">
-                    <span class="absolute -start-[1.65rem] top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-4 border-white bg-brand-500 dark:border-neutral-900"></span>
+                    <span class="absolute -start-[1.65rem] top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-4 border-surface bg-brand-500"></span>
                     <div class="flex flex-wrap items-center gap-2">
                         <StatusBadge Status="entry.FromStatus" />
-                        <Icon Name="arrow-right" CssClass="h-4 w-4 text-neutral-400" />
+                        <Icon Name="arrow-right" CssClass="h-4 w-4 text-foreground-muted" />
                         <StatusBadge Status="entry.ToStatus" />
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        <span class="font-medium text-neutral-700 dark:text-neutral-200">@ActorLabel(entry)</span>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-foreground-muted">
+                        <span class="font-medium text-foreground">@ActorLabel(entry)</span>
                         <span>@entry.TransitionedAt.ToLocalTime().ToString("g")</span>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(entry.Note))
                     {
-                        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700 dark:text-neutral-300">@CleanNote(entry.Note)</p>
+                        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">@CleanNote(entry.Note)</p>
                     }
                 </li>
             }

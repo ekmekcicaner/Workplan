@@ -1,0 +1,31 @@
+<section class="surface-panel @CssClass">
+    @if (!string.IsNullOrWhiteSpace(Title) || Actions is not null)
+    {
+        <header class="flex items-start justify-between gap-4 border-b border-border px-4 py-3.5 sm:px-5">
+            <div class="min-w-0">
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <h2 class="text-base font-bold text-foreground">@Title</h2>
+                }
+                @if (!string.IsNullOrWhiteSpace(Description))
+                {
+                    <p class="mt-0.5 text-sm text-foreground-muted">@Description</p>
+                }
+            </div>
+            @if (Actions is not null)
+            {
+                <div class="flex shrink-0 items-center gap-2">@Actions</div>
+            }
+        </header>
+    }
+    <div class="@BodyClass">@ChildContent</div>
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string BodyClass { get; set; } = "p-4 sm:p-5";
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

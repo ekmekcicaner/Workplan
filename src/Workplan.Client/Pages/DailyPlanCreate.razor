@@ -40,7 +40,7 @@
                 <p class="field-label">Proje Yöneticisi</p>
                 @if (SelectedProject is null)
                 {
-                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
+                    <p class="text-sm text-foreground-muted">-</p>
                 }
                 else if (SelectedProject.PmUserId is { } pmId)
                 {
@@ -48,14 +48,14 @@
                 }
                 else
                 {
-                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu projeye proje yöneticisi atanmamış.</p>
+                    <p class="text-sm text-warning">Bu projeye proje yöneticisi atanmamış.</p>
                 }
             </div>
             <div>
                 <p class="field-label">Head of Master</p>
                 @if (SelectedLocation is null)
                 {
-                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
+                    <p class="text-sm text-foreground-muted">-</p>
                 }
                 else if (SelectedLocation.HeadOfMasterUserId is { } homId)
                 {
@@ -63,14 +63,14 @@
                 }
                 else
                 {
-                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu lokasyona Head of Master atanmamış.</p>
+                    <p class="text-sm text-warning">Bu lokasyona Head of Master atanmamış.</p>
                 }
             </div>
             <div>
                 <p class="field-label">Şantiye Şefi</p>
                 @if (SelectedRegion is null)
                 {
-                    <p class="text-sm text-neutral-500 dark:text-neutral-400">-</p>
+                    <p class="text-sm text-foreground-muted">-</p>
                 }
                 else if (SelectedRegion.SiteChiefUserId is { } siteChiefId)
                 {
@@ -78,7 +78,7 @@
                 }
                 else
                 {
-                    <p class="text-sm text-amber-700 dark:text-amber-300">Bu saha bölgesine Şantiye Şefi atanmamış.</p>
+                    <p class="text-sm text-warning">Bu saha bölgesine Şantiye Şefi atanmamış.</p>
                 }
             </div>
         </div>

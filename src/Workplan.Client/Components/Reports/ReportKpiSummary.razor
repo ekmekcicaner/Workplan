@@ -1,24 +1,8 @@
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="card">
-        <p class="field-label">Onaylı kayıt</p>
-        <p class="text-2xl font-semibold">@Report.Summary.ApprovedWorkCount</p>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">PM onayı tamamlandı</p>
-    </div>
-    <div class="card">
-        <p class="field-label">Gerçekleşen adam-gün</p>
-        <p class="text-2xl font-semibold">@NumberDisplay.Format(Report.Summary.FactManDay)</p>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Planlanan: @NumberDisplay.Format(Report.Summary.PlannedManDay)</p>
-    </div>
-    <div class="card">
-        <p class="field-label">Beyan edilen fazla mesai</p>
-        <p class="text-2xl font-semibold">@NumberDisplay.Format(Report.Summary.Overtime)</p>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Adam-günden ayrı takip edilir</p>
-    </div>
-    <div class="card">
-        <p class="field-label">Adam-gün gerçekleşme</p>
-        <p class="text-2xl font-semibold">@RatioLabel</p>
-        <p class="text-sm text-neutral-500 dark:text-neutral-400">Gerçekleşen / planlanan</p>
-    </div>
+    <WpStatCard Label="Onaylı kayıt" Value="@Report.Summary.ApprovedWorkCount.ToString()" Description="PM onayı tamamlandı" Icon="check-circle" />
+    <WpStatCard Label="Gerçekleşen adam-gün" Value="@NumberDisplay.Format(Report.Summary.FactManDay)" Description="@($"Planlanan: {NumberDisplay.Format(Report.Summary.PlannedManDay)}")" Icon="users" />
+    <WpStatCard Label="Fazla mesai" Value="@NumberDisplay.Format(Report.Summary.Overtime)" Description="Adam-günden ayrı takip edilir" Icon="clock" />
+    <WpStatCard Label="Adam-gün gerçekleşme" Value="@RatioLabel" Description="Gerçekleşen / planlanan" Icon="bar-chart" />
 </div>
 
 @if (Report.QuantityByWorkItem.Count > 0)
@@ -27,14 +11,14 @@
         <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <div>
                 <h2 class="text-base font-semibold">İş Kalemi Miktarları</h2>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">Miktar KPI iş kalemi bazında okunur; birim toplamları aşağıda özetlenir.</p>
+                <p class="text-sm text-foreground-muted">Miktar KPI iş kalemi bazında okunur; birim toplamları aşağıda özetlenir.</p>
             </div>
         </div>
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             @foreach (var item in Report.QuantityByWorkItem)
             {
-                <div class="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
+                <div class="rounded-md border border-border p-3">
                     <p class="mb-2 min-h-10 font-semibold">@item.WorkItemTypeName</p>
                     <div class="grid grid-cols-2 gap-3 text-sm">
                         <div>
@@ -46,14 +30,14 @@
                             <p class="font-semibold">@NumberDisplay.Format(item.FactQuantity) @UnitLabel(item.Unit)</p>
                         </div>
                     </div>
-                    <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">@QuantityDeltaLabel(item)</p>
+                    <p class="mt-2 text-sm text-foreground-muted">@QuantityDeltaLabel(item)</p>
                 </div>
             }
         </div>
 
         @if (Report.QuantityByUnit.Count > 0)
         {
-            <div class="mt-4 border-t border-neutral-200 pt-3 dark:border-neutral-700">
+            <div class="mt-4 border-t border-border pt-3">
                 <p class="field-label">Birim bazlı toplam</p>
                 <div class="flex flex-wrap gap-2">
                     @foreach (var item in Report.QuantityByUnit)

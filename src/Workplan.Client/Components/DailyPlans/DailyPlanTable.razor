@@ -1,23 +1,36 @@
-<DataTable TItem="DailyPlanDto" Items="Items" Loading="Loading" LoadError="@LoadError" EmptyText="Kayıt bulunamadı.">
-    <HeaderRow>
-        <th>Tarih</th>
-        <th>Durum</th>
-        <th>Planlanan Miktar</th>
-        <th>Planlanan Adam-Gün</th>
-        <th>Gerçekleşen Miktar</th>
-        <th></th>
-    </HeaderRow>
-    <RowTemplate Context="plan">
-        <td data-label="Tarih">@plan.WorkDate.ToString("dd.MM.yyyy")</td>
-        <td data-label="Durum"><StatusBadge Status="plan.Status" /></td>
-        <td data-label="Planlanan Miktar">@NumberDisplay.Format(plan.PlannedQuantity) @UnitLabel(plan.Unit)</td>
-        <td data-label="Planlanan Adam-Gün">@NumberDisplay.Format(plan.PlannedManDay)</td>
-        <td data-label="Gerçekleşen Miktar">@NumberDisplay.Format(plan.FactQuantity)</td>
-        <td data-label="">
-            <a class="btn-secondary" href="@($"daily-plans/{plan.Id}")">Detay</a>
-        </td>
-    </RowTemplate>
-</DataTable>
+<WpResponsiveDataView TItem="DailyPlanDto"
+                      Items="Items"
+                      Loading="Loading"
+                      ErrorText="@LoadError"
+                      ItemKey="@(plan => plan.Id)"
+                      EmptyTitle="Kayıt bulunamadı"
+                      EmptyText="Seçili kapsam için günlük plan kaydı yok.">
+    <Columns>
+        <PropertyColumn TGridItem="DailyPlanDto" TProp="DateOnly" Property="@(plan => plan.WorkDate)" Title="Tarih" Sortable="true" Format="dd.MM.yyyy" />
+        <TemplateColumn TGridItem="DailyPlanDto" Title="Durum" Context="plan"><StatusBadge Status="plan.Status" /></TemplateColumn>
+        <TemplateColumn TGridItem="DailyPlanDto" Title="Planlanan" Context="plan">@NumberDisplay.Format(plan.PlannedQuantity) @UnitLabel(plan.Unit)</TemplateColumn>
+        <PropertyColumn TGridItem="DailyPlanDto" TProp="decimal" Property="@(plan => plan.PlannedManDay)" Title="Planlanan AG" Sortable="true" />
+        <PropertyColumn TGridItem="DailyPlanDto" TProp="decimal?" Property="@(plan => plan.FactQuantity)" Title="Gerçekleşen" Sortable="true" />
+        <TemplateColumn TGridItem="DailyPlanDto" Title="İşlem" Align="Align.End" Context="plan"><a class="entity-row-action" href="@($"daily-plans/{plan.Id}")">Detay</a></TemplateColumn>
+    </Columns>
+    <MobileTemplate Context="plan">
+        <article class="entity-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wide text-foreground-muted">İş tarihi</p>
+                    <h3 class="mt-1 font-bold text-foreground">@plan.WorkDate.ToString("dd.MM.yyyy")</h3>
+                </div>
+                <StatusBadge Status="plan.Status" />
+            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div><dt class="field-label">Plan</dt><dd>@NumberDisplay.Format(plan.PlannedQuantity) @UnitLabel(plan.Unit)</dd></div>
+                <div><dt class="field-label">Adam-gün</dt><dd>@NumberDisplay.Format(plan.PlannedManDay)</dd></div>
+                <div><dt class="field-label">Gerçek</dt><dd>@NumberDisplay.Format(plan.FactQuantity) @UnitLabel(plan.Unit)</dd></div>
+            </dl>
+            <a class="btn-secondary mt-4 w-full" href="@($"daily-plans/{plan.Id}")">Detay</a>
+        </article>
+    </MobileTemplate>
+</WpResponsiveDataView>
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<DailyPlanDto> Items { get; set; } = [];

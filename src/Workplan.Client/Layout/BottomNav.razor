@@ -1,12 +1,12 @@
 <nav class="tab-bar">
     <NavLink class="tab-item" href="" Match="NavLinkMatch.All">
-        <Icon Name="home" CssClass="h-6 w-6" />
+        <span class="tab-icon"><Icon Name="home" CssClass="h-5 w-5" /></span>
         <span>Ana Sayfa</span>
     </NavLink>
     <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
         <Authorized>
             <NavLink class="tab-item" href="daily-plans/new">
-                <Icon Name="clipboard" CssClass="h-6 w-6" />
+                <span class="tab-icon"><Icon Name="clipboard" CssClass="h-5 w-5" /></span>
                 <span>Planlar</span>
             </NavLink>
         </Authorized>
@@ -14,7 +14,7 @@
     <AuthorizeView Roles="HeadOfMaster">
         <Authorized>
             <NavLink class="tab-item" href="my-work">
-                <Icon Name="clipboard" CssClass="h-6 w-6" />
+                <span class="tab-icon"><Icon Name="clipboard" CssClass="h-5 w-5" /></span>
                 <span>İşlerim</span>
             </NavLink>
         </Authorized>
@@ -22,13 +22,13 @@
     <AuthorizeView Roles="SiteChief,ProjectManager">
         <Authorized>
             <NavLink class="tab-item" href="approvals">
-                <Icon Name="check-circle" CssClass="h-6 w-6" />
+                <span class="tab-icon"><Icon Name="check-circle" CssClass="h-5 w-5" /></span>
                 <span>Onaylar</span>
             </NavLink>
         </Authorized>
     </AuthorizeView>
     <button type="button" class="tab-item" @onclick="() => _showMore = true">
-        <Icon Name="more-horizontal" CssClass="h-6 w-6" />
+        <span class="tab-icon"><Icon Name="more-horizontal" CssClass="h-5 w-5" /></span>
         <span>Diğer</span>
     </button>
 </nav>

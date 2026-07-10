@@ -1,0 +1,13 @@
+<div class="flex flex-col gap-3 rounded-panel border border-border bg-surface p-3 shadow-panel sm:flex-row sm:items-center sm:justify-between @CssClass">
+    <div class="min-w-0 flex-1">@ChildContent</div>
+    @if (Actions is not null)
+    {
+        <div class="flex shrink-0 flex-wrap items-center gap-2">@Actions</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

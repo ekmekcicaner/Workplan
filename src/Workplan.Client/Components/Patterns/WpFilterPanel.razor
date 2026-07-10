@@ -1,0 +1,19 @@
+@if (Actions is null)
+{
+    <WpSurface Title="@Title" Description="@Description" CssClass="@CssClass">@ChildContent</WpSurface>
+}
+else
+{
+    <WpSurface Title="@Title" Description="@Description" CssClass="@CssClass">
+        <Actions>@Actions</Actions>
+        <ChildContent>@ChildContent</ChildContent>
+    </WpSurface>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Filtreler";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

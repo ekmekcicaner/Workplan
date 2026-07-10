@@ -1,0 +1,18 @@
+<div class="@CssClass">
+    <label class="field-label" for="@For">@Label</label>
+    @ChildContent
+    @if (!string.IsNullOrWhiteSpace(HelpText))
+    {
+        <p class="field-help">@HelpText</p>
+    }
+    @Validation
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? For { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Validation { get; set; }
+}

@@ -1,0 +1,51 @@
+<header class="app-topbar">
+    <div class="app-topbar-inner">
+        <a href="/" class="flex min-w-0 items-center gap-3" aria-label="Workplan ana sayfa">
+            <span class="brand-mark">W</span>
+            <span class="min-w-0">
+                <span class="block truncate text-base font-extrabold tracking-[-0.02em] text-foreground">Workplan</span>
+                <span class="hidden text-[10px] font-bold uppercase tracking-[0.14em] text-foreground-subtle sm:block">Saha Operasyonları</span>
+            </span>
+        </a>
+
+        <div class="flex items-center gap-2">
+            <span class="hidden min-h-9 items-center gap-2 rounded-full border border-border bg-surface-muted px-3 text-xs font-bold text-foreground-muted sm:inline-flex">
+                <span class="h-2 w-2 rounded-full @(IsOnline ? "bg-success" : "bg-warning")"></span>
+                @(IsOnline ? "Çevrimiçi" : "Çevrimdışı")
+            </span>
+            <ThemeModeSelector />
+            <AuthorizeView Context="authContext">
+                <Authorized>
+                    <button class="flex min-h-11 min-w-0 items-center gap-2 rounded-control border border-border bg-surface-raised py-1.5 pr-3 pl-1.5 text-left shadow-sm transition-colors hover:bg-surface-muted"
+                            @onclick="() => _showAccountMenu = true"
+                            aria-label="Hesap menüsü">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-surface">
+                            @UserPresentation.Initials(authContext.User)
+                        </span>
+                        <span class="hidden min-w-0 flex-col lg:flex">
+                            <span class="max-w-40 truncate text-sm font-bold leading-4 text-foreground">@UserPresentation.DisplayName(authContext.User)</span>
+                            <span class="max-w-40 truncate text-[11px] leading-4 text-foreground-muted">@UserPresentation.Title(authContext.User)</span>
+                        </span>
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <WpButton Href="/login" Size="WpSize.Small">Giriş yap</WpButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</header>
+
+@* Rendered outside <header> so the fixed overlay isn't clipped by the topbar's backdrop-filter containing block. *@
+<AuthorizeView Context="menuContext">
+    <Authorized>
+        <AccountMenu Show="_showAccountMenu"
+                     User="menuContext.User"
+                     OnClose="() => _showAccountMenu = false" />
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public bool IsOnline { get; set; } = true;
+    private bool _showAccountMenu;
+}

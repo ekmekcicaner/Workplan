@@ -1,0 +1,26 @@
+<WpToolbar>
+    <ChildContent>
+        <label class="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-foreground-muted">
+            <input type="checkbox" class="size-4 accent-brand-600" checked="@IncludeInactive" @onchange="ChangeAsync" />
+            @Label
+        </label>
+    </ChildContent>
+    <Actions>
+        <WpBadge>@Count kayıt</WpBadge>
+    </Actions>
+</WpToolbar>
+
+@code {
+    [Parameter] public bool IncludeInactive { get; set; }
+    [Parameter] public EventCallback<bool> IncludeInactiveChanged { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = "Pasif kayıtları da göster";
+    [Parameter] public int Count { get; set; }
+
+    private async Task ChangeAsync(ChangeEventArgs args)
+    {
+        var value = args.Value is bool enabled && enabled;
+        await IncludeInactiveChanged.InvokeAsync(value);
+        await OnChanged.InvokeAsync();
+    }
+}
