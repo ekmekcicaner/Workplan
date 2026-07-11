@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Workplan.Client.Auth;
 
 namespace Workplan.Client.Layout;
 
@@ -12,7 +13,7 @@ internal static class UserPresentation
     public static string Title(ClaimsPrincipal user)
     {
         var titles = user.FindAll(ClaimTypes.Role)
-            .Select(claim => RoleLabel(claim.Value))
+            .Select(claim => Roles.DisplayName(claim.Value))
             .Distinct()
             .ToList();
 
@@ -34,13 +35,4 @@ internal static class UserPresentation
         return name.Length >= 2 ? name[..2].ToUpperInvariant() : name.ToUpperInvariant();
     }
 
-    private static string RoleLabel(string role) => role switch
-    {
-        "SystemAdmin" => "Sistem Admin",
-        "TechnicalOfficeEngineer" => "Teknik Ofis",
-        "HeadOfMaster" => "Ustabaşı",
-        "SiteChief" => "Şantiye Şefi",
-        "ProjectManager" => "Proje Yöneticisi",
-        _ => role
-    };
 }

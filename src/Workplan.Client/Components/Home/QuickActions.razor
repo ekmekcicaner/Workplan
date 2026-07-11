@@ -1,5 +1,5 @@
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createContext">
+    <AuthorizeView Roles="@Roles.Administration" Context="createContext">
         <Authorized>
             <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="daily-plans/new">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
@@ -19,7 +19,7 @@
         </Authorized>
     </AuthorizeView>
 
-    <AuthorizeView Roles="HeadOfMaster" Context="myWorkContext">
+    <AuthorizeView Roles="@Roles.HeadOfMaster" Context="myWorkContext">
         <Authorized>
             <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="my-work">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
@@ -31,7 +31,7 @@
         </Authorized>
     </AuthorizeView>
 
-    <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalsContext">
+    <AuthorizeView Roles="@Roles.Approval" Context="approvalsContext">
         <Authorized>
             <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="approvals">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-brand-500/15 text-brand-700 dark:text-brand-400">
@@ -59,7 +59,7 @@
         <p class="text-sm text-foreground-muted">ToW → SToW → SSToW ağacını düzenle.</p>
     </a>
 
-    <AuthorizeView Roles="SystemAdmin" Context="adminContext">
+    <AuthorizeView Roles="@Roles.SystemAdmin" Context="adminContext">
         <Authorized>
             <a class="card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md" href="user-management">
                 <span class="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-md bg-surface-muted text-foreground">

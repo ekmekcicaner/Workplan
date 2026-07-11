@@ -1,5 +1,5 @@
 @page "/daily-plans/new"
-@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer")]
+@attribute [Authorize(Roles = Roles.Administration)]
 @inject DailyPlansApiService DailyPlansApi
 @inject ProjectsApiService ProjectsApi
 @inject CrewRegionsApiService CrewRegionsApi
@@ -13,7 +13,7 @@
 
 <section class="space-y-4">
     <PageHeader Title="Günlük Plan Oluştur"
-                Subtitle="T-1 planlama: kapsam, SSToW, metrikler ve Head of Master ataması." />
+                Subtitle="@($"T-1 planlama: kapsam, SSToW, metrikler ve {Roles.DisplayName(Roles.HeadOfMaster)} ataması.")" />
 
     <PlanScopeSelector Projects="_projects"
                        Regions="_regions"
@@ -52,7 +52,7 @@
                 }
             </div>
             <div>
-                <p class="field-label">Head of Master</p>
+                <p class="field-label">@Roles.DisplayName(Roles.HeadOfMaster)</p>
                 @if (SelectedLocation is null)
                 {
                     <p class="text-sm text-foreground-muted">-</p>
@@ -63,11 +63,11 @@
                 }
                 else
                 {
-                    <p class="text-sm text-warning">Bu lokasyona Head of Master atanmamış.</p>
+                    <p class="text-sm text-warning">Bu lokasyona @Roles.DisplayName(Roles.HeadOfMaster) atanmamış.</p>
                 }
             </div>
             <div>
-                <p class="field-label">Şantiye Şefi</p>
+                <p class="field-label">@Roles.DisplayName(Roles.SiteChief)</p>
                 @if (SelectedRegion is null)
                 {
                     <p class="text-sm text-foreground-muted">-</p>
@@ -78,7 +78,7 @@
                 }
                 else
                 {
-                    <p class="text-sm text-warning">Bu saha bölgesine Şantiye Şefi atanmamış.</p>
+                    <p class="text-sm text-warning">Bu saha bölgesine @Roles.DisplayName(Roles.SiteChief) atanmamış.</p>
                 }
             </div>
         </div>
@@ -189,11 +189,11 @@
             _newPlan.PlannedQuantity is not { } plannedQuantity ||
             _newPlan.PlannedManDay is not { } plannedManDay)
         {
-            Toast.Error("Lütfen proje, bölge, lokasyon, SSToW, HoM ve planlanan metrikleri tamamlayın.");
+            Toast.Error($"Lütfen proje, bölge, lokasyon, SSToW, {Roles.DisplayName(Roles.HeadOfMaster)} ve planlanan metrikleri tamamlayın.");
             return;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("Günlük plan oluştur", "Bu günlük planı Head of Master'a atamak istediğinize emin misiniz?");
+        var confirmed = await Confirm.ConfirmAsync("Günlük plan oluştur", $"Bu günlük planı {Roles.DisplayName(Roles.HeadOfMaster)}'na atamak istediğinize emin misiniz?");
         if (!confirmed) return;
 
         _creating = true;
@@ -211,7 +211,7 @@
         var result = await DailyPlansApi.CreateAsync(request);
         if (result.Success)
         {
-            Toast.Success("Günlük plan oluşturuldu ve HoM'a bildirildi.");
+            Toast.Success($"Günlük plan oluşturuldu ve {Roles.DisplayName(Roles.HeadOfMaster)}'na bildirildi.");
             ResetForm();
         }
         else

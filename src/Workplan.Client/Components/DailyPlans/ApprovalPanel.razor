@@ -1,6 +1,6 @@
 <div class="card mb-6">
     <h2 class="mb-1 font-semibold">Onay</h2>
-    <AccessNote Roles="SiteChief,ProjectManager" />
+    <AccessNote Roles="@Roles.Approval" />
     <div class="flex flex-wrap items-center gap-2">
         <button class="btn-primary" @onclick="OnApprove">Onayla</button>
         @if (_rejecting)

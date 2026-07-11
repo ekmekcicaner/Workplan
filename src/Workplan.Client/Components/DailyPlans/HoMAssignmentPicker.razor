@@ -1,7 +1,7 @@
 <div class="card">
     <h2 class="mb-3 text-base font-semibold">Saha Sorumlusu</h2>
-    <label class="field-label">Head of Master</label>
-    <UserPicker Role="HeadOfMaster" Value="Value" ValueChanged="ValueChanged" Placeholder="Ustabaşı ara..." />
+    <label class="field-label">@Roles.DisplayName(Roles.HeadOfMaster)</label>
+    <UserPicker Role="@Roles.HeadOfMaster" Value="Value" ValueChanged="ValueChanged" Placeholder="@($"{Roles.DisplayName(Roles.HeadOfMaster)} ara...")" />
 </div>
 
 @code {

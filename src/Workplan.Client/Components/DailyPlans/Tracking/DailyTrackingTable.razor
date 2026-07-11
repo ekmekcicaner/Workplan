@@ -22,8 +22,8 @@
                 <span class="block text-sm text-foreground-muted">@CrewTypeLabel(item)</span>
             </TemplateColumn>
             <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Sorumlular" Context="item">
-                <span class="block text-sm">Usta: @DisplayName(item.AssignedHoMName)</span>
-                <span class="block text-sm text-foreground-muted">Şantiye şefi: @DisplayName(item.SiteChiefName)</span>
+                <span class="block text-sm">@Roles.DisplayName(Roles.HeadOfMaster): @DisplayName(item.AssignedHoMName)</span>
+                <span class="block text-sm text-foreground-muted">@Roles.DisplayName(Roles.SiteChief): @DisplayName(item.SiteChiefName)</span>
                 <span class="block text-sm text-foreground-muted">PM: @DisplayName(item.ProjectManagerName)</span>
             </TemplateColumn>
             <TemplateColumn TGridItem="DailyTrackingPlanDto" Title="Plan" Context="item">
@@ -47,11 +47,11 @@
                 </div>
                 <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="field-label">Ustabaşı</dt>
+                        <dt class="field-label">@Roles.DisplayName(Roles.HeadOfMaster)</dt>
                         <dd class="truncate">@DisplayName(item.AssignedHoMName)</dd>
                     </div>
                     <div>
-                        <dt class="field-label">Şantiye şefi</dt>
+                        <dt class="field-label">@Roles.DisplayName(Roles.SiteChief)</dt>
                         <dd class="truncate">@DisplayName(item.SiteChiefName)</dd>
                     </div>
                     <div>

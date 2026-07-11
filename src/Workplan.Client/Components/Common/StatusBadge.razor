@@ -8,9 +8,9 @@
         WorkStatus.Draft => "Taslak",
         WorkStatus.Assigned => "Atandı",
         WorkStatus.InProgress => "Devam Ediyor",
-        WorkStatus.Submitted => "Şantiye Şefi Onayında",
-        WorkStatus.ApprovedByHoM => "HoM Onayı",
-        WorkStatus.ApprovedBySiteChief => "Şantiye Şefi Onayladı",
+        WorkStatus.Submitted => $"{Roles.DisplayName(Roles.SiteChief)} Onayında",
+        WorkStatus.ApprovedByHoM => $"{Roles.DisplayName(Roles.HeadOfMaster)} Onayı",
+        WorkStatus.ApprovedBySiteChief => $"{Roles.DisplayName(Roles.SiteChief)} Onayladı",
         WorkStatus.ApprovedByPM => "Tamamlandı",
         WorkStatus.Reported => "Raporlandı",
         _ => Status.ToString()

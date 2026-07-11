@@ -1,5 +1,5 @@
 @page "/my-work"
-@attribute [Authorize(Roles = "HeadOfMaster")]
+@attribute [Authorize(Roles = Roles.HeadOfMaster)]
 @inject DailyPlansApiService DailyPlansApi
 <PageTitle>İşlerim | Workplan</PageTitle>
 

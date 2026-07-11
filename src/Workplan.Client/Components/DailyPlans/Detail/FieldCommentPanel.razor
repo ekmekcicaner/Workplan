@@ -42,7 +42,7 @@
     private static string KindLabel(DailyPlanCommentKind kind) => kind switch
     {
         DailyPlanCommentKind.Rejection => "Red Gerekçesi",
-        _ => "HoM Yorumu"
+        _ => $"{Roles.DisplayName(Roles.HeadOfMaster)} Yorumu"
     };
 
     private static string KindBadgeClass(DailyPlanCommentKind kind) => kind switch

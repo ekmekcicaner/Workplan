@@ -29,7 +29,7 @@ var api = builder.AddProject<Projects.Workplan_WebApi>("api", launchProfileName:
     .WithHttpHealthCheck("/health/ready")
     .WithExternalHttpEndpoints();
 
-builder.AddProject<Projects.Workplan_Client>("client", launchProfileName: "http")
+builder.AddProject<Projects.Workplan_Client>("client", launchProfileName: "aspire")
     .WithReference(api)
     .WaitFor(api)
     .WithExternalHttpEndpoints();

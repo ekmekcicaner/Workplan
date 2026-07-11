@@ -1,5 +1,5 @@
 @page "/user-management"
-@attribute [Authorize(Roles = "SystemAdmin")]
+@attribute [Authorize(Roles = Roles.SystemAdmin)]
 @inject UsersApiService UsersApi
 @inject ConfirmService Confirm
 @inject ToastService Toast
@@ -128,10 +128,7 @@
 </DetailPanel>
 
 @code {
-    private static readonly string[] AllRoles =
-    [
-        "SystemAdmin", "TechnicalOfficeEngineer", "HeadOfMaster", "SiteChief", "ProjectManager"
-    ];
+    private static readonly IReadOnlyList<string> AllRoles = Roles.All;
 
     private List<UserDto> _users = [];
     private bool _loading = true;
@@ -300,11 +297,11 @@
 
     private static string RoleLabel(string role) => role switch
     {
-        "SystemAdmin" => "Sistem Admin",
-        "TechnicalOfficeEngineer" => "Teknik Ofis",
-        "HeadOfMaster" => "Ustabaşı",
-        "SiteChief" => "Şantiye Şefi",
-        "ProjectManager" => "Proje Müdürü",
+        Roles.SystemAdmin => Roles.DisplayName(Roles.SystemAdmin),
+        Roles.TechnicalOfficeEngineer => Roles.DisplayName(Roles.TechnicalOfficeEngineer),
+        Roles.HeadOfMaster => Roles.DisplayName(Roles.HeadOfMaster),
+        Roles.SiteChief => Roles.DisplayName(Roles.SiteChief),
+        Roles.ProjectManager => Roles.DisplayName(Roles.ProjectManager),
         _ => role
     };
 

@@ -30,7 +30,7 @@
             </main>
 
             <aside class="order-1 flex flex-col gap-4 lg:sticky lg:top-4 lg:order-2 lg:col-span-4">
-                <AuthorizeView Roles="HeadOfMaster" Context="homContext">
+                <AuthorizeView Roles="@Roles.HeadOfMaster" Context="homContext">
                     <Authorized>
                         @if (_plan.Status == WorkStatus.Assigned || _plan.CrewTypeId is not null)
                         {
@@ -52,7 +52,7 @@
                     </Authorized>
                 </AuthorizeView>
 
-                <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalContext">
+                <AuthorizeView Roles="@Roles.Approval" Context="approvalContext">
                     <Authorized>
                         @if (CanApproveCurrentStage(approvalContext.User))
                         {
@@ -121,16 +121,16 @@
     private bool CanApproveCurrentStage(ClaimsPrincipal user)
     {
         if (_plan is null) return false;
-        return (user.IsInRole("SiteChief") && _plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
-               || (user.IsInRole("ProjectManager") && _plan.Status == WorkStatus.ApprovedBySiteChief);
+        return (user.IsInRole(Roles.SiteChief) && _plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
+               || (user.IsInRole(Roles.ProjectManager) && _plan.Status == WorkStatus.ApprovedBySiteChief);
     }
 
     private string ApprovalHelpText(ClaimsPrincipal user)
     {
-        if (user.IsInRole("SiteChief"))
-            return "Şantiye Şefi onayı sonrası kayıt Proje Yöneticisi aşamasına geçer.";
-        if (user.IsInRole("ProjectManager"))
-            return "Project Manager son onayı sonrası kayıt Daily Report'a dahil edilir.";
+        if (user.IsInRole(Roles.SiteChief))
+            return $"{Roles.DisplayName(Roles.SiteChief)} onayı sonrası kayıt {Roles.DisplayName(Roles.ProjectManager)} aşamasına geçer.";
+        if (user.IsInRole(Roles.ProjectManager))
+            return $"{Roles.DisplayName(Roles.ProjectManager)} son onayı sonrası kayıt günlük rapora dahil edilir.";
         return "Bu kayıt yalnızca sizin onay aşamanızdaysa işlenir.";
     }
 
@@ -166,7 +166,7 @@
             return;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("Gün sonu beyanını gönder", "Bu beyan HoM onayı kabul edilip Şantiye Şefi onayına gönderilecek. Emin misiniz?");
+        var confirmed = await Confirm.ConfirmAsync("Gün sonu beyanını gönder", $"Bu beyan {Roles.DisplayName(Roles.HeadOfMaster)} onayı kabul edilip {Roles.DisplayName(Roles.SiteChief)} onayına gönderilecek. Emin misiniz?");
         if (!confirmed) return;
 
         _busy = true;
@@ -176,7 +176,7 @@
             _submitProgress.Overtime,
             _submitProgress.Comment);
         var result = await DailyPlansApi.SubmitProgressAsync(Id, request);
-        await HandleResultAsync(result, "Beyan kaydedildi ve Şantiye Şefi onayına gönderildi.");
+        await HandleResultAsync(result, $"Beyan kaydedildi ve {Roles.DisplayName(Roles.SiteChief)} onayına gönderildi.");
         _busy = false;
     }
 
@@ -223,7 +223,9 @@
     }
 
     private string RejectTargetLabel() =>
-        _plan?.Status == WorkStatus.ApprovedBySiteChief ? "Şantiye Şefi'ne" : "Ustabaşı'na";
+        _plan?.Status == WorkStatus.ApprovedBySiteChief
+            ? $"{Roles.DisplayName(Roles.SiteChief)}'ne"
+            : $"{Roles.DisplayName(Roles.HeadOfMaster)}'na";
 
     private async Task HandleResultAsync(ApiResult<bool> result, string successMessage)
     {

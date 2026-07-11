@@ -1,8 +1,8 @@
-@inject NavigationManager Navigation
+@inject NavigationManager NavManager
 
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo("/login", replace: true);
+        NavManager.NavigateTo("/login", replace: true);
     }
 }

@@ -1,5 +1,5 @@
 @page "/crews"
-@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer")]
+@attribute [Authorize(Roles = Roles.Administration)]
 @inject CrewTypesApiService CrewTypesApi
 @inject ConfirmService Confirm
 @inject ToastService Toast
@@ -16,7 +16,7 @@
         </Actions>
     </PageHeader>
 
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createContext">
+    <AuthorizeView Roles="@Roles.Administration" Context="createContext">
         <Authorized>
             <div class="surface-panel p-3">
                 <EditForm Model="_newCrewType" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">

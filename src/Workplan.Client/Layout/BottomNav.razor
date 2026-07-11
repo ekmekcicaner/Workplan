@@ -3,7 +3,7 @@
         <span class="tab-icon"><Icon Name="home" CssClass="h-5 w-5" /></span>
         <span>Ana Sayfa</span>
     </NavLink>
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+    <AuthorizeView Roles="@Roles.Administration">
         <Authorized>
             <NavLink class="tab-item" href="daily-plans/new">
                 <span class="tab-icon"><Icon Name="clipboard" CssClass="h-5 w-5" /></span>
@@ -11,7 +11,7 @@
             </NavLink>
         </Authorized>
     </AuthorizeView>
-    <AuthorizeView Roles="HeadOfMaster">
+    <AuthorizeView Roles="@Roles.HeadOfMaster">
         <Authorized>
             <NavLink class="tab-item" href="my-work">
                 <span class="tab-icon"><Icon Name="clipboard" CssClass="h-5 w-5" /></span>
@@ -19,7 +19,7 @@
             </NavLink>
         </Authorized>
     </AuthorizeView>
-    <AuthorizeView Roles="SiteChief,ProjectManager">
+    <AuthorizeView Roles="@Roles.Approval">
         <Authorized>
             <NavLink class="tab-item" href="approvals">
                 <span class="tab-icon"><Icon Name="check-circle" CssClass="h-5 w-5" /></span>

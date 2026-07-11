@@ -1,13 +1,13 @@
 <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-    <ResponsibilityCard Title="Ustabaşı"
+    <ResponsibilityCard Title="@Roles.DisplayName(Roles.HeadOfMaster)"
                         Name="@DisplayName(Plan.AssignedHoMName)"
                         Detail="Saha beyanından sorumlu"
                         IconName="hard-hat" />
-    <ResponsibilityCard Title="Şantiye Şefi"
+    <ResponsibilityCard Title="@Roles.DisplayName(Roles.SiteChief)"
                         Name="@DisplayName(Plan.SiteChiefName)"
                         Detail="İlk onay ve saha kontrolü"
                         IconName="user" />
-    <ResponsibilityCard Title="Proje Yöneticisi"
+    <ResponsibilityCard Title="@Roles.DisplayName(Roles.ProjectManager)"
                         Name="@DisplayName(Plan.ProjectManagerName)"
                         Detail="Final onay"
                         IconName="users" />

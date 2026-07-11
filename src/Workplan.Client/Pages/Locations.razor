@@ -19,7 +19,7 @@
         </Actions>
     </PageHeader>
 
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+    <AuthorizeView Roles="@Roles.Administration" Context="formAuth">
         <Authorized>
             <div class="surface-panel p-3">
                 <EditForm Model="_newLocation" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_18rem_auto] lg:items-end">
@@ -56,7 +56,7 @@
                           EmptyText="Bu saha bölgesi için lokasyon oluşturarak plan kapsamını tamamlayın.">
         <Columns>
             <PropertyColumn TGridItem="LocationDto" TProp="string" Property="@(location => location.Name)" Title="İsim" Sortable="true" />
-            <TemplateColumn TGridItem="LocationDto" Title="Ustabaşı" Context="location">@(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</TemplateColumn>
+            <TemplateColumn TGridItem="LocationDto" Title="@Roles.DisplayName(Roles.HeadOfMaster)" Context="location">@(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</TemplateColumn>
             <TemplateColumn TGridItem="LocationDto" Title="Durum" Context="location">@StatusPill(location.IsActive)</TemplateColumn>
             <TemplateColumn TGridItem="LocationDto" Title="İşlem" Align="Align.End" Context="location"><button class="entity-row-action" @onclick="() => OpenDetail(location)">Yönet</button></TemplateColumn>
         </Columns>
@@ -65,7 +65,7 @@
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <h2 class="truncate font-semibold">@location.Name</h2>
-                        <p class="mt-1 truncate text-sm text-foreground-muted">Ustabaşı: @(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</p>
+                        <p class="mt-1 truncate text-sm text-foreground-muted">@Roles.DisplayName(Roles.HeadOfMaster): @(location.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")</p>
                     </div>
                     @StatusPill(location.IsActive)
                 </div>
@@ -82,22 +82,22 @@
     @if (_selectedLocation is not null)
     {
         <div class="space-y-4">
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,SiteChief" Context="assignAuth">
+            <AuthorizeView Roles="@($"{Roles.SystemAdmin},{Roles.TechnicalOfficeEngineer},{Roles.SiteChief}")" Context="assignAuth">
                 <Authorized>
                     <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
-                        <h3 class="text-sm font-semibold">Ustabaşı ataması</h3>
+                        <h3 class="text-sm font-semibold">@Roles.DisplayName(Roles.HeadOfMaster) ataması</h3>
                         <p class="text-sm text-foreground-muted">
                             Mevcut: @(_selectedLocation.HeadOfMasterUserId is { } homId ? DisplayNameFor(homId) : "-")
                         </p>
-                        <UserPicker Role="HeadOfMaster" @bind-Value="_assignHeadOfMasterUserId" Placeholder="Ustabaşı ara..." />
+                        <UserPicker Role="@Roles.HeadOfMaster" @bind-Value="_assignHeadOfMasterUserId" Placeholder="@($"{Roles.DisplayName(Roles.HeadOfMaster)} ara...")" />
                         <button class="btn-primary w-full" disabled="@(_assignHeadOfMasterUserId is null)" @onclick="ConfirmAssignAsync">
-                            <Icon Name="check" CssClass="h-4 w-4" />Ustabaşı Ata
+                            <Icon Name="check" CssClass="h-4 w-4" />@Roles.DisplayName(Roles.HeadOfMaster) Ata
                         </button>
                     </div>
                 </Authorized>
             </AuthorizeView>
 
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="editAuth">
+            <AuthorizeView Roles="@($"{Roles.SystemAdmin},{Roles.TechnicalOfficeEngineer}")" Context="editAuth">
                 <Authorized>
                     <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
                         <h3 class="text-sm font-semibold">Lokasyon bilgileri</h3>
@@ -146,7 +146,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var usersResult = await UsersApi.GetUsersAsync("HeadOfMaster");
+        var usersResult = await UsersApi.GetUsersAsync(Roles.HeadOfMaster);
         _headOfMasterNames = (usersResult.Data ?? []).ToDictionary(u => u.Id, u => u.FullName);
         await LoadAsync();
     }
@@ -232,17 +232,17 @@
         if (_selectedLocation is null) return;
         if (_assignHeadOfMasterUserId is not { } userId)
         {
-            Toast.Error("Lütfen listeden bir ustabaşı seçin.");
+            Toast.Error($"Lütfen listeden bir {Roles.DisplayName(Roles.HeadOfMaster)} seçin.");
             return;
         }
 
-        var confirmed = await Confirm.ConfirmAsync("Ustabaşı ata", "Bu lokasyona ustabaşı atamak istediğinize emin misiniz?");
+        var confirmed = await Confirm.ConfirmAsync($"{Roles.DisplayName(Roles.HeadOfMaster)} ata", $"Bu lokasyona {Roles.DisplayName(Roles.HeadOfMaster)} atamak istediğinize emin misiniz?");
         if (!confirmed) return;
 
         var result = await LocationsApi.AssignHeadOfMasterAsync(_selectedLocation.Id, new AssignHeadOfMasterRequest(userId));
         if (result.Success)
         {
-            Toast.Success("Ustabaşı atandı.");
+            Toast.Success($"{Roles.DisplayName(Roles.HeadOfMaster)} atandı.");
             CloseDetail();
             await LoadAsync();
         }

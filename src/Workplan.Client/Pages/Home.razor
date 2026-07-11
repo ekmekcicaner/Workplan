@@ -13,13 +13,13 @@
     <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <NotificationList Items="_notifications" Loading="_notificationsLoading" LoadError="@_notificationsLoadError" />
 
-        <AuthorizeView Roles="HeadOfMaster" Context="homContext">
+        <AuthorizeView Roles="@Roles.HeadOfMaster" Context="homContext">
             <Authorized>
                 <TodayWorkSummary Items="_myWork" Loading="_myWorkLoading" LoadError="@_myWorkLoadError" />
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SiteChief,ProjectManager" Context="approvalContext">
+        <AuthorizeView Roles="@Roles.Approval" Context="approvalContext">
             <Authorized>
                 <ApprovalQueuePreview Items="_approvalQueue" Loading="_approvalQueueLoading" LoadError="@_approvalQueueLoadError" />
             </Authorized>
@@ -48,13 +48,13 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
         Task myWorkTask = Task.CompletedTask;
-        if (authState.User.IsInRole("HeadOfMaster"))
+        if (authState.User.IsInRole(Roles.HeadOfMaster))
         {
             myWorkTask = LoadMyWorkAsync();
         }
 
         Task approvalTask = Task.CompletedTask;
-        if (authState.User.IsInRole("SiteChief") || authState.User.IsInRole("ProjectManager"))
+        if (authState.User.IsInRole(Roles.SiteChief) || authState.User.IsInRole(Roles.ProjectManager))
         {
             approvalTask = LoadApprovalQueueAsync();
         }

@@ -20,7 +20,7 @@
         </Actions>
     </PageHeader>
 
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+    <AuthorizeView Roles="@Roles.Administration" Context="formAuth">
         <Authorized>
             <div class="surface-panel p-3">
                 <EditForm Model="_newRegion" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 xl:grid-cols-[8rem_1fr_16rem_16rem_auto] xl:items-end">
@@ -36,12 +36,12 @@
                         <ValidationMessage For="() => _newRegion.Name" />
                     </div>
                     <div>
-                        <label class="field-label">Şantiye Şefi</label>
-                        <UserPicker Role="SiteChief" @bind-Value="_newRegion.SiteChiefUserId" Placeholder="Şantiye şefi ara..." />
+                        <label class="field-label">@Roles.DisplayName(Roles.SiteChief)</label>
+                        <UserPicker Role="@Roles.SiteChief" @bind-Value="_newRegion.SiteChiefUserId" Placeholder="@($"{Roles.DisplayName(Roles.SiteChief)} ara...")" />
                     </div>
                     <div>
-                        <label class="field-label">Tech Office</label>
-                        <UserPicker Role="TechnicalOfficeEngineer" @bind-Value="_newRegion.TechOfficeUserId" Placeholder="Tech office ara..." />
+                        <label class="field-label">@Roles.DisplayName(Roles.TechnicalOfficeEngineer)</label>
+                        <UserPicker Role="@Roles.TechnicalOfficeEngineer" @bind-Value="_newRegion.TechOfficeUserId" Placeholder="Teknik Ofis ara..." />
                     </div>
                     <WpButton Type="submit" Icon="plus" Disabled="@(!CanCreateRegion)" Loading="_creating">Oluştur</WpButton>
                 </EditForm>
@@ -61,8 +61,8 @@
         <Columns>
             <PropertyColumn TGridItem="CrewRegionDto" TProp="string" Property="@(region => region.Code)" Title="Kod" Sortable="true" />
             <PropertyColumn TGridItem="CrewRegionDto" TProp="string" Property="@(region => region.Name)" Title="İsim" Sortable="true" />
-            <TemplateColumn TGridItem="CrewRegionDto" Title="Şantiye Şefi" Context="region">@SiteChiefName(region.SiteChiefUserId)</TemplateColumn>
-            <TemplateColumn TGridItem="CrewRegionDto" Title="Teknik Ofis" Context="region">@TechOfficeName(region.TechOfficeUserId)</TemplateColumn>
+            <TemplateColumn TGridItem="CrewRegionDto" Title="@Roles.DisplayName(Roles.SiteChief)" Context="region">@SiteChiefName(region.SiteChiefUserId)</TemplateColumn>
+            <TemplateColumn TGridItem="CrewRegionDto" Title="@Roles.DisplayName(Roles.TechnicalOfficeEngineer)" Context="region">@TechOfficeName(region.TechOfficeUserId)</TemplateColumn>
             <TemplateColumn TGridItem="CrewRegionDto" Title="Durum" Context="region">@StatusPill(region.IsActive)</TemplateColumn>
             <TemplateColumn TGridItem="CrewRegionDto" Title="İşlem" Align="Align.End" Context="region"><button class="entity-row-action" @onclick="() => OpenDetail(region)">Yönet</button></TemplateColumn>
         </Columns>
@@ -93,7 +93,7 @@
                 <Icon Name="map-pin" CssClass="h-4 w-4" />Lokasyonlar
             </a>
 
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="editAuth">
+            <AuthorizeView Roles="@Roles.Administration" Context="editAuth">
                 <Authorized>
                     <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
                         <h3 class="text-sm font-semibold">Bölge bilgileri</h3>
@@ -106,12 +106,12 @@
                             <input class="input" @bind="_editModel.Name" @bind:event="oninput" />
                         </div>
                         <div>
-                            <label class="field-label">Şantiye Şefi</label>
-                            <UserPicker Role="SiteChief" @bind-Value="_editModel.SiteChiefUserId" Placeholder="Şantiye şefi ara..." />
+                            <label class="field-label">@Roles.DisplayName(Roles.SiteChief)</label>
+                            <UserPicker Role="@Roles.SiteChief" @bind-Value="_editModel.SiteChiefUserId" Placeholder="@($"{Roles.DisplayName(Roles.SiteChief)} ara...")" />
                         </div>
                         <div>
-                            <label class="field-label">Tech Office</label>
-                            <UserPicker Role="TechnicalOfficeEngineer" @bind-Value="_editModel.TechOfficeUserId" Placeholder="Tech office ara..." />
+                            <label class="field-label">@Roles.DisplayName(Roles.TechnicalOfficeEngineer)</label>
+                            <UserPicker Role="@Roles.TechnicalOfficeEngineer" @bind-Value="_editModel.TechOfficeUserId" Placeholder="Teknik Ofis ara..." />
                         </div>
                         <button class="btn-primary w-full" disabled="@(!CanUpdateRegion)" @onclick="ConfirmUpdateAsync">
                             <Icon Name="check" CssClass="h-4 w-4" />Kaydet
@@ -161,9 +161,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var siteChiefResult = await UsersApi.GetUsersAsync("SiteChief");
+        var siteChiefResult = await UsersApi.GetUsersAsync(Roles.SiteChief);
         _siteChiefs = siteChiefResult.Data ?? [];
-        var techOfficeResult = await UsersApi.GetUsersAsync("TechnicalOfficeEngineer");
+        var techOfficeResult = await UsersApi.GetUsersAsync(Roles.TechnicalOfficeEngineer);
         _techOffices = techOfficeResult.Data ?? [];
         await LoadAsync();
     }

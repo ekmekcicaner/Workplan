@@ -7,15 +7,5 @@
 
     private IEnumerable<string> RoleLabels =>
         Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(RoleLabel);
-
-    private static string RoleLabel(string role) => role switch
-    {
-        "SystemAdmin" => "Sistem Admin",
-        "TechnicalOfficeEngineer" => "Teknik Ofis",
-        "HeadOfMaster" => "Ustabaşı",
-        "SiteChief" => "Şantiye Şefi",
-        "ProjectManager" => "Proje Yöneticisi",
-        _ => role
-    };
+            .Select(Workplan.Client.Auth.Roles.DisplayName);
 }

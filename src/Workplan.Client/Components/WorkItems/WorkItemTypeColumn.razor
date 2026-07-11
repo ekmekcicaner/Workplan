@@ -45,7 +45,7 @@
                                 {
                                     <span class="text-xs">&rarr;</span>
                                 }
-                                <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="rowAuth">
+                                <AuthorizeView Roles="@Roles.Administration" Context="rowAuth">
                                     <Authorized>
                                         <WpPopover Open="_openMenuId == item.Id" OpenChanged="v => SetMenuOpen(item.Id, v)">
                                             <Trigger>
@@ -82,7 +82,7 @@
             </ul>
         }
 
-        <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="createAuth">
+        <AuthorizeView Roles="@Roles.Administration" Context="createAuth">
             <Authorized>
                 <button type="button" class="btn-ghost mt-auto w-full justify-center border-t border-border pt-3" @onclick="() => _formModal?.OpenCreate(ParentId)">
                     <Icon Name="plus" CssClass="h-4 w-4" />@Title ekle

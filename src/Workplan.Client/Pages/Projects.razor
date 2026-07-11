@@ -17,7 +17,7 @@
         </Actions>
     </PageHeader>
 
-    <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="formAuth">
+    <AuthorizeView Roles="@Roles.Administration" Context="formAuth">
         <Authorized>
             <div class="surface-panel p-3">
                 <EditForm Model="_newProject" OnValidSubmit="CreateAsync" class="grid grid-cols-1 gap-3 lg:grid-cols-[8rem_1fr_18rem_auto] lg:items-end">
@@ -33,8 +33,8 @@
                         <ValidationMessage For="() => _newProject.Name" />
                     </div>
                     <div>
-                        <label class="field-label">Proje Yöneticisi</label>
-                        <UserPicker Role="ProjectManager" @bind-Value="_newProject.PmUserId" Placeholder="PM ara..." />
+                        <label class="field-label">@Roles.DisplayName(Roles.ProjectManager)</label>
+                        <UserPicker Role="@Roles.ProjectManager" @bind-Value="_newProject.PmUserId" Placeholder="PM ara..." />
                     </div>
                     <WpButton Type="submit" Icon="plus" Disabled="@(!CanCreateProject)" Loading="_creating">Oluştur</WpButton>
                 </EditForm>
@@ -87,7 +87,7 @@
                 <Icon Name="map-pin" CssClass="h-4 w-4" />Saha bölgeleri
             </a>
 
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer" Context="editAuth">
+            <AuthorizeView Roles="@Roles.Administration" Context="editAuth">
                 <Authorized>
                     <div class="space-y-3 rounded-lg border border-border bg-surface-muted p-3">
                         <h3 class="text-sm font-semibold">Proje bilgileri</h3>
@@ -100,8 +100,8 @@
                             <input class="input" @bind="_editModel.Name" @bind:event="oninput" />
                         </div>
                         <div>
-                            <label class="field-label">Proje Yöneticisi</label>
-                            <UserPicker Role="ProjectManager" @bind-Value="_editModel.PmUserId" Placeholder="PM ara..." />
+                            <label class="field-label">@Roles.DisplayName(Roles.ProjectManager)</label>
+                            <UserPicker Role="@Roles.ProjectManager" @bind-Value="_editModel.PmUserId" Placeholder="PM ara..." />
                         </div>
                         <button class="btn-primary w-full" disabled="@(!CanUpdateProject)" @onclick="ConfirmUpdateAsync">
                             <Icon Name="check" CssClass="h-4 w-4" />Kaydet
@@ -147,7 +147,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var pmResult = await UsersApi.GetUsersAsync("ProjectManager");
+        var pmResult = await UsersApi.GetUsersAsync(Roles.ProjectManager);
         _projectManagers = pmResult.Data ?? [];
         await LoadAsync();
     }

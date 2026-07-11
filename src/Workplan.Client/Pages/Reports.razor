@@ -1,5 +1,5 @@
 @page "/reports"
-@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,ProjectManager")]
+@attribute [Authorize(Roles = Roles.Reporting)]
 @inject ReportsApiService ReportsApi
 @inject ProjectsApiService ProjectsApi
 @inject CrewRegionsApiService CrewRegionsApi

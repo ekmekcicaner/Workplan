@@ -1,6 +1,6 @@
 <div class="card">
     <h2 class="mb-1 text-base font-semibold">Gün Sonu Beyanı</h2>
-    <p class="mb-3 text-sm text-foreground-muted">HoM gönderimi, HoM onayı kabul edilir ve kayıt Şantiye Şefi onayına düşer.</p>
+    <p class="mb-3 text-sm text-foreground-muted">@Roles.DisplayName(Roles.HeadOfMaster) gönderimi, onay kabul edilir ve kayıt @Roles.DisplayName(Roles.SiteChief) onayına düşer.</p>
     <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <div>
             <label class="field-label">Gerçek miktar</label>
@@ -38,7 +38,7 @@
     }
 
     <button class="btn-primary mt-3" disabled="@(!CanSubmit || Busy || !IsOnline)" @onclick="OnSubmit">
-        Kaydet ve Şantiye Şefi Onayına Gönder
+        Kaydet ve @Roles.DisplayName(Roles.SiteChief) Onayına Gönder
     </button>
 </div>
 

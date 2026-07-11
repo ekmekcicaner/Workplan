@@ -5,15 +5,15 @@
     </div>
 
     <ol class="flex flex-col gap-3">
-        <ApprovalStepItem Title="Ustabaşı"
+        <ApprovalStepItem Title="@Roles.DisplayName(Roles.HeadOfMaster)"
                           Name="@DisplayName(Plan.AssignedHoMName)"
                           State="@StepState(0)"
                           Description="Gün sonu saha beyanı" />
-        <ApprovalStepItem Title="Şantiye Şefi"
+        <ApprovalStepItem Title="@Roles.DisplayName(Roles.SiteChief)"
                           Name="@DisplayName(Plan.SiteChiefName)"
                           State="@StepState(1)"
                           Description="Saha kontrolü ve ilk onay" />
-        <ApprovalStepItem Title="Proje Yöneticisi"
+        <ApprovalStepItem Title="@Roles.DisplayName(Roles.ProjectManager)"
                           Name="@DisplayName(Plan.ProjectManagerName)"
                           State="@StepState(2)"
                           Description="Final onay ve rapora aktarım" />

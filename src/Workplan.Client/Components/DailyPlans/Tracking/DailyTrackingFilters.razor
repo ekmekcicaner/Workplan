@@ -83,8 +83,8 @@
                 </Trigger>
                 <ChildContent>
                     <div class="flex max-h-[24rem] flex-col divide-y divide-border overflow-y-auto">
-                        <FilterOptionList Label="Ustabaşı" Options="Options?.HeadOfMasters ?? []" SelectedIds="SelectedHeadOfMasterIds" SelectedIdsChanged="SelectedHeadOfMasterIdsChanged" />
-                        <FilterOptionList Label="Şantiye şefi" Options="Options?.SiteChiefs ?? []" SelectedIds="SelectedSiteChiefIds" SelectedIdsChanged="SelectedSiteChiefIdsChanged" />
+                        <FilterOptionList Label="@Roles.DisplayName(Roles.HeadOfMaster)" Options="Options?.HeadOfMasters ?? []" SelectedIds="SelectedHeadOfMasterIds" SelectedIdsChanged="SelectedHeadOfMasterIdsChanged" />
+                        <FilterOptionList Label="@Roles.DisplayName(Roles.SiteChief)" Options="Options?.SiteChiefs ?? []" SelectedIds="SelectedSiteChiefIds" SelectedIdsChanged="SelectedSiteChiefIdsChanged" />
                         <FilterOptionList Label="PM" Options="Options?.ProjectManagers ?? []" SelectedIds="SelectedProjectManagerIds" SelectedIdsChanged="SelectedProjectManagerIdsChanged" />
                     </div>
                 </ChildContent>
@@ -205,8 +205,8 @@
         <details class="rounded-md border border-border">
             <summary class="cursor-pointer px-3 py-2 text-sm font-semibold">Sorumlu filtreleri</summary>
             <div class="space-y-2 p-2">
-                <FilterOptionList Label="Ustabaşı" Options="Options?.HeadOfMasters ?? []" SelectedIds="SelectedHeadOfMasterIds" SelectedIdsChanged="SelectedHeadOfMasterIdsChanged" />
-                <FilterOptionList Label="Şantiye şefi" Options="Options?.SiteChiefs ?? []" SelectedIds="SelectedSiteChiefIds" SelectedIdsChanged="SelectedSiteChiefIdsChanged" />
+                <FilterOptionList Label="@Roles.DisplayName(Roles.HeadOfMaster)" Options="Options?.HeadOfMasters ?? []" SelectedIds="SelectedHeadOfMasterIds" SelectedIdsChanged="SelectedHeadOfMasterIdsChanged" />
+                <FilterOptionList Label="@Roles.DisplayName(Roles.SiteChief)" Options="Options?.SiteChiefs ?? []" SelectedIds="SelectedSiteChiefIds" SelectedIdsChanged="SelectedSiteChiefIdsChanged" />
                 <FilterOptionList Label="PM" Options="Options?.ProjectManagers ?? []" SelectedIds="SelectedProjectManagerIds" SelectedIdsChanged="SelectedProjectManagerIdsChanged" />
             </div>
         </details>
@@ -318,9 +318,9 @@
         WorkStatus.Draft => "Taslak",
         WorkStatus.Assigned => "Atandı",
         WorkStatus.InProgress => "Devam Ediyor",
-        WorkStatus.Submitted => "Şantiye Şefi Onayında",
-        WorkStatus.ApprovedByHoM => "HoM Onayı",
-        WorkStatus.ApprovedBySiteChief => "Şantiye Şefi Onayladı",
+        WorkStatus.Submitted => $"{Roles.DisplayName(Roles.SiteChief)} Onayında",
+        WorkStatus.ApprovedByHoM => $"{Roles.DisplayName(Roles.HeadOfMaster)} Onayı",
+        WorkStatus.ApprovedBySiteChief => $"{Roles.DisplayName(Roles.SiteChief)} Onayladı",
         WorkStatus.ApprovedByPM => "Tamamlandı",
         WorkStatus.Reported => "Raporlandı",
         _ => status.ToString()

@@ -8,35 +8,35 @@
     <div>
         <p class="nav-section-label">Operasyon</p>
         <div class="flex flex-col gap-1">
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+            <AuthorizeView Roles="@Roles.Administration">
                 <Authorized>
                     <NavLink class="nav-link" href="daily-plans/new" @onclick="Navigated">
                         <Icon Name="clipboard" />Günlük Plan Oluştur
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,ProjectManager,SiteChief,HeadOfMaster">
+            <AuthorizeView Roles="@Roles.Tracking">
                 <Authorized>
                     <NavLink class="nav-link" href="daily-tracking" @onclick="Navigated">
                         <Icon Name="calendar" />Günlük İş Takibi
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
-            <AuthorizeView Roles="HeadOfMaster">
+            <AuthorizeView Roles="@Roles.HeadOfMaster">
                 <Authorized>
                     <NavLink class="nav-link" href="my-work" @onclick="Navigated">
                         <Icon Name="clipboard" />Bana Atanan İşler
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
-            <AuthorizeView Roles="SiteChief,ProjectManager">
+            <AuthorizeView Roles="@Roles.Approval">
                 <Authorized>
                     <NavLink class="nav-link" href="approvals" @onclick="Navigated">
                         <Icon Name="check-circle" />Beklenen Onaylar
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer,ProjectManager">
+            <AuthorizeView Roles="@Roles.Reporting">
                 <Authorized>
                     <NavLink class="nav-link" href="reports" @onclick="Navigated">
                         <Icon Name="bar-chart" />Raporlar
@@ -52,7 +52,7 @@
             <NavLink class="nav-link" href="projects" @onclick="Navigated">
                 <Icon Name="folder" />Projeler
             </NavLink>
-            <AuthorizeView Roles="SystemAdmin,TechnicalOfficeEngineer">
+            <AuthorizeView Roles="@Roles.Administration">
                 <Authorized>
                     <NavLink class="nav-link" href="crews" @onclick="Navigated">
                         <Icon Name="hard-hat" />Ekip Tipleri
@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    <AuthorizeView Roles="SystemAdmin">
+    <AuthorizeView Roles="@Roles.SystemAdmin">
         <Authorized>
             <div>
                 <p class="nav-section-label">Yönetim</p>

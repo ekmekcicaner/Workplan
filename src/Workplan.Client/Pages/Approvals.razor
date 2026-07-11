@@ -1,5 +1,5 @@
 @page "/approvals"
-@attribute [Authorize(Roles = "SiteChief,ProjectManager")]
+@attribute [Authorize(Roles = Roles.Approval)]
 @inject DailyPlansApiService DailyPlansApi
 
 <PageTitle>Bekleyen Onaylar | Workplan  </PageTitle>

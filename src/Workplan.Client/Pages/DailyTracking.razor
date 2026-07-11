@@ -1,5 +1,5 @@
 @page "/daily-tracking"
-@attribute [Authorize(Roles = "SystemAdmin,TechnicalOfficeEngineer,ProjectManager,SiteChief,HeadOfMaster")]
+@attribute [Authorize(Roles = Roles.Tracking)]
 @inject DailyPlansApiService DailyPlansApi
 
 <PageTitle>Günlük İş Takibi | Workplan</PageTitle>
