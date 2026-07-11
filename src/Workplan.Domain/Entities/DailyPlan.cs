@@ -130,11 +130,10 @@ public class DailyPlan : AggregateRoot<Guid>
         return Result.Ok();
     }
 
-    // Site Chief -> Project Manager onay motoru. ApprovedByHoM yalnızca legacy kayıtlar için desteklenir.
+    // Site Chief -> Project Manager onay motoru.
     public Result Approve(WorkStatus currentApproverRole, Guid userScopeId, Guid approverUserId)
     {
-        if ((Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
-            && currentApproverRole == WorkStatus.ApprovedBySiteChief)
+        if (Status == WorkStatus.Submitted && currentApproverRole == WorkStatus.ApprovedBySiteChief)
         {
             ApplyTransition(WorkStatus.ApprovedBySiteChief, approverUserId, "Site Chief onayladı.");
         }
@@ -159,7 +158,7 @@ public class DailyPlan : AggregateRoot<Guid>
 
         var targetStatus = (rejecterRole, Status) switch
         {
-            (WorkStatus.ApprovedBySiteChief, WorkStatus.Submitted or WorkStatus.ApprovedByHoM) => WorkStatus.InProgress,
+            (WorkStatus.ApprovedBySiteChief, WorkStatus.Submitted) => WorkStatus.InProgress,
             (WorkStatus.ApprovedByPM, WorkStatus.ApprovedBySiteChief) => WorkStatus.Submitted,
             _ => (WorkStatus?)null
         };

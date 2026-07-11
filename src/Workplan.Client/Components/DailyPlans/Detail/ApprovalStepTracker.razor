@@ -30,11 +30,11 @@
     {
         return index switch
         {
-            0 when Plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
+            0 when Plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM => "done",
             0 => "active",
-            1 when Plan.Status is WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
-            1 when Plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM => "active",
-            2 when Plan.Status is WorkStatus.ApprovedByPM or WorkStatus.Reported => "done",
+            1 when Plan.Status is WorkStatus.ApprovedBySiteChief or WorkStatus.ApprovedByPM => "done",
+            1 when Plan.Status == WorkStatus.Submitted => "active",
+            2 when Plan.Status == WorkStatus.ApprovedByPM => "done",
             2 when Plan.Status == WorkStatus.ApprovedBySiteChief => "active",
             _ => "pending"
         };

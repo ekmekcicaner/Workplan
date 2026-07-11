@@ -2,14 +2,12 @@ namespace Workplan.Client.Models;
 
 public enum WorkStatus
 {
-    Draft,
-    Assigned,
-    InProgress,
-    Submitted,
-    ApprovedByHoM,
-    ApprovedBySiteChief,
-    ApprovedByPM,
-    Reported
+    Draft = 1,
+    Assigned = 2,
+    InProgress = 3,
+    Submitted = 4,
+    ApprovedBySiteChief = 6,
+    ApprovedByPM = 7
 }
 
 public enum Unit

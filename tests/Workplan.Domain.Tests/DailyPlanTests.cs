@@ -11,6 +11,21 @@ public class DailyPlanTests
 {
     [Fact]
     [Trait("Category", "Unit")]
+    public void WorkStatus_contains_only_active_workflow_values_without_renumbering_persisted_states()
+    {
+        Enum.GetValues<WorkStatus>().Should().Equal(
+            WorkStatus.Draft,
+            WorkStatus.Assigned,
+            WorkStatus.InProgress,
+            WorkStatus.Submitted,
+            WorkStatus.ApprovedBySiteChief,
+            WorkStatus.ApprovedByPM);
+        ((int)WorkStatus.ApprovedBySiteChief).Should().Be(6);
+        ((int)WorkStatus.ApprovedByPM).Should().Be(7);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void CreateFromPlan_creates_assigned_plan_and_initial_history()
     {
         var plannedById = Guid.NewGuid();

@@ -9,10 +9,8 @@
         WorkStatus.Assigned => "Atandı",
         WorkStatus.InProgress => "Devam Ediyor",
         WorkStatus.Submitted => $"{Roles.DisplayName(Roles.SiteChief)} Onayında",
-        WorkStatus.ApprovedByHoM => $"{Roles.DisplayName(Roles.HeadOfMaster)} Onayı",
         WorkStatus.ApprovedBySiteChief => $"{Roles.DisplayName(Roles.SiteChief)} Onayladı",
         WorkStatus.ApprovedByPM => "Tamamlandı",
-        WorkStatus.Reported => "Raporlandı",
         _ => Status.ToString()
     };
 
@@ -20,8 +18,8 @@
     {
         WorkStatus.Assigned or WorkStatus.InProgress => WpTone.Warning,
         WorkStatus.Submitted => WpTone.Info,
-        WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief => WpTone.Brand,
-        WorkStatus.ApprovedByPM or WorkStatus.Reported => WpTone.Success,
+        WorkStatus.ApprovedBySiteChief => WpTone.Brand,
+        WorkStatus.ApprovedByPM => WpTone.Success,
         _ => WpTone.Neutral
     };
 }

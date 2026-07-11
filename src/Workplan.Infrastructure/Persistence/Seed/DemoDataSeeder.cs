@@ -7,6 +7,7 @@ using Workplan.Domain.Enums;
 using Workplan.Domain.ValueObjects;
 using Workplan.Infrastructure.Identity;
 using Workplan.SharedKernel.Auth;
+using Workplan.SharedKernel.Common;
 
 namespace Workplan.Infrastructure.Persistence.Seed;
 
@@ -24,7 +25,7 @@ namespace Workplan.Infrastructure.Persistence.Seed;
 /// - Ekip tipleri
 /// - Bugün, dün, önceki gün ve yarına bağlı çeşitli durumlarda günlük planlar
 /// - Aggregate davranışları üzerinden status transition kayıtları
-/// - Atama bildirimleri
+/// - Atama ve red bildirimleri
 ///
 /// Refresh token, external login ve user token tabloları bilinçli olarak seed edilmez.
 /// Bunlar gerçek authentication akışı sırasında üretilmesi gereken operasyonel verilerdir.
@@ -239,8 +240,7 @@ public static class DemoDataSeeder
             crews.MechanicalAssemblyCrew,
             plannedQuantity: 8.40m,
             plannedManDay: 10.00m,
-            state: DemoPlanState.InProgress,
-            createNotification: true);
+            state: DemoPlanState.InProgress);
 
         AddPlan(
             project,
@@ -253,8 +253,8 @@ public static class DemoDataSeeder
             crews.CertifiedWelderCrew,
             plannedQuantity: 6.20m,
             plannedManDay: 12.00m,
-            state: DemoPlanState.Planned,
-            createNotification: true);
+            state: DemoPlanState.Assigned,
+            notification: DemoNotification.Assignment);
 
         AddPlan(
             project,
@@ -305,8 +305,7 @@ public static class DemoDataSeeder
             factQuantity: 4.35m,
             factManDay: 8.00m,
             overtime: 0.00m,
-            comment: "Güvenlik sınıfı kablo tavaları B koridorunda tamamlandı.",
-            createNotification: true);
+            comment: "Güvenlik sınıfı kablo tavaları B koridorunda tamamlandı.");
 
         AddPlan(
             project,
@@ -336,8 +335,8 @@ public static class DemoDataSeeder
             crews.FormworkCrew,
             plannedQuantity: 145.00m,
             plannedManDay: 11.00m,
-            state: DemoPlanState.Planned,
-            createNotification: true);
+            state: DemoPlanState.Assigned,
+            notification: DemoNotification.Assignment);
 
         AddPlan(
             project,
@@ -384,8 +383,13 @@ public static class DemoDataSeeder
             crews.HeavyLiftingCrew,
             plannedQuantity: 24.00m,
             plannedManDay: 20.00m,
-            state: DemoPlanState.InProgress,
-            createNotification: true);
+            state: DemoPlanState.RejectedByPm,
+            factQuantity: 21.50m,
+            factManDay: 20.00m,
+            overtime: 1.00m,
+            comment: "Ana ekipman ankraj kontrolleri tamamlandı ve ilk onaya sunuldu.",
+            rejectionReason: "Survey tolerans raporu eklenmeden nihai onay verilemez.",
+            notification: DemoNotification.Rejection);
 
         AddPlan(
             project,
@@ -415,12 +419,13 @@ public static class DemoDataSeeder
             crews.SteelAssemblyCrew,
             plannedQuantity: 5.50m,
             plannedManDay: 7.00m,
-            state: DemoPlanState.Submitted,
+            state: DemoPlanState.RejectedBySiteChief,
             factQuantity: 0.00m,
-            factManDay: 2.50m,
+            factManDay: 0.00m,
             overtime: 0.00m,
             comment: "Kaldırma planı saha izin sürecinde onaylanmadığı için fiziksel montaj başlatılamadı.",
-            createNotification: true);
+            rejectionReason: "Saha izin numarası ve revize kaldırma planı eklenmelidir.",
+            notification: DemoNotification.Rejection);
 
         AddPlan(
             project,
@@ -467,8 +472,7 @@ public static class DemoDataSeeder
             crews.InsulationCrew,
             plannedQuantity: 185.00m,
             plannedManDay: 9.00m,
-            state: DemoPlanState.InProgress,
-            createNotification: true);
+            state: DemoPlanState.InProgress);
 
         AddPlan(
             project,
@@ -498,8 +502,8 @@ public static class DemoDataSeeder
             crews.ScaffoldingCrew,
             plannedQuantity: 260.00m,
             plannedManDay: 12.00m,
-            state: DemoPlanState.Planned,
-            createNotification: true);
+            state: DemoPlanState.Assigned,
+            notification: DemoNotification.Assignment);
 
         AddPlan(
             project,
@@ -550,8 +554,7 @@ public static class DemoDataSeeder
             factQuantity: 5.70m,
             factManDay: 8.00m,
             overtime: 0.50m,
-            comment: "Izgara kılavuz plakalarının montajı tamamlandı; iki plaka survey revizyonuna bırakıldı.",
-            createNotification: true);
+            comment: "Izgara kılavuz plakalarının montajı tamamlandı; iki plaka survey revizyonuna bırakıldı.");
 
         AddPlan(
             project,
@@ -581,8 +584,7 @@ public static class DemoDataSeeder
             crews.PipingCrew,
             plannedQuantity: 17.50m,
             plannedManDay: 15.00m,
-            state: DemoPlanState.InProgress,
-            createNotification: true);
+            state: DemoPlanState.InProgress);
 
         AddPlan(
             project,
@@ -595,8 +597,8 @@ public static class DemoDataSeeder
             crews.HeavyLiftingCrew,
             plannedQuantity: 32.00m,
             plannedManDay: 18.00m,
-            state: DemoPlanState.Planned,
-            createNotification: true);
+            state: DemoPlanState.Assigned,
+            notification: DemoNotification.Assignment);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -674,7 +676,8 @@ public static class DemoDataSeeder
             decimal? factManDay = null,
             decimal overtime = 0,
             string? comment = null,
-            bool createNotification = false)
+            string? rejectionReason = null,
+            DemoNotification notification = DemoNotification.None)
         {
             var plan = DailyPlan.CreateFromPlan(
                 targetProject.Id,
@@ -690,53 +693,85 @@ public static class DemoDataSeeder
 
             switch (state)
             {
-                case DemoPlanState.Planned:
+                case DemoPlanState.Assigned:
                     break;
 
                 case DemoPlanState.InProgress:
-                    plan.StartWork(headOfMasterId, crewType.Id);
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
                     break;
 
                 case DemoPlanState.Submitted:
-                    plan.StartWork(headOfMasterId, crewType.Id);
-                    plan.SubmitProgress(
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
+                    EnsureSucceeded(plan.SubmitProgress(
                         factQuantity ?? plannedQuantity,
                         factManDay ?? plannedManDay,
                         overtime,
                         comment,
-                        headOfMasterId);
+                        headOfMasterId), "Gerçekleşme gönderme");
                     break;
 
                 case DemoPlanState.ApprovedBySiteChief:
-                    plan.StartWork(headOfMasterId, crewType.Id);
-                    plan.SubmitProgress(
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
+                    EnsureSucceeded(plan.SubmitProgress(
                         factQuantity ?? plannedQuantity,
                         factManDay ?? plannedManDay,
                         overtime,
                         comment,
-                        headOfMasterId);
-                    plan.Approve(
+                        headOfMasterId), "Gerçekleşme gönderme");
+                    EnsureSucceeded(plan.Approve(
                         WorkStatus.ApprovedBySiteChief,
                         region.SiteChiefUserId!.Value,
-                        region.SiteChiefUserId.Value);
+                        region.SiteChiefUserId.Value), "Şantiye şefi onayı");
                     break;
 
                 case DemoPlanState.ApprovedByPm:
-                    plan.StartWork(headOfMasterId, crewType.Id);
-                    plan.SubmitProgress(
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
+                    EnsureSucceeded(plan.SubmitProgress(
                         factQuantity ?? plannedQuantity,
                         factManDay ?? plannedManDay,
                         overtime,
                         comment,
-                        headOfMasterId);
-                    plan.Approve(
+                        headOfMasterId), "Gerçekleşme gönderme");
+                    EnsureSucceeded(plan.Approve(
                         WorkStatus.ApprovedBySiteChief,
                         region.SiteChiefUserId!.Value,
-                        region.SiteChiefUserId.Value);
-                    plan.Approve(
+                        region.SiteChiefUserId.Value), "Şantiye şefi onayı");
+                    EnsureSucceeded(plan.Approve(
                         WorkStatus.ApprovedByPM,
                         targetProject.PmUserId!.Value,
-                        targetProject.PmUserId.Value);
+                        targetProject.PmUserId.Value), "Proje müdürü onayı");
+                    break;
+
+                case DemoPlanState.RejectedBySiteChief:
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
+                    EnsureSucceeded(plan.SubmitProgress(
+                        factQuantity ?? plannedQuantity,
+                        factManDay ?? plannedManDay,
+                        overtime,
+                        comment,
+                        headOfMasterId), "Gerçekleşme gönderme");
+                    EnsureSucceeded(plan.Reject(
+                        WorkStatus.ApprovedBySiteChief,
+                        region.SiteChiefUserId!.Value,
+                        RequiredRejectionReason()), "Şantiye şefi reddi");
+                    break;
+
+                case DemoPlanState.RejectedByPm:
+                    EnsureSucceeded(plan.StartWork(headOfMasterId, crewType.Id), "İşi başlatma");
+                    EnsureSucceeded(plan.SubmitProgress(
+                        factQuantity ?? plannedQuantity,
+                        factManDay ?? plannedManDay,
+                        overtime,
+                        comment,
+                        headOfMasterId), "Gerçekleşme gönderme");
+                    EnsureSucceeded(plan.Approve(
+                        WorkStatus.ApprovedBySiteChief,
+                        region.SiteChiefUserId!.Value,
+                        region.SiteChiefUserId.Value), "Şantiye şefi onayı");
+                    EnsureSucceeded(plan.Reject(
+                        WorkStatus.ApprovedByPM,
+                        targetProject.PmUserId!.Value,
+                        RequiredRejectionReason()), "Proje müdürü reddi");
                     break;
 
                 default:
@@ -748,17 +783,47 @@ public static class DemoDataSeeder
 
             db.DailyPlans.Add(plan);
 
-            if (createNotification)
+            if (notification == DemoNotification.Assignment)
             {
-                var notification = Notification.CreateDailyPlanAssigned(
+                var assignment = Notification.CreateDailyPlanAssigned(
                     headOfMasterId,
                     plan.Id,
                     plan.WorkDate).Value;
 
-                db.Notifications.Add(notification);
+                db.Notifications.Add(assignment);
+            }
+            else if (notification == DemoNotification.Rejection)
+            {
+                var (recipientId, rejectedByLabel) = state switch
+                {
+                    DemoPlanState.RejectedBySiteChief => (headOfMasterId, "Şantiye Şefi"),
+                    DemoPlanState.RejectedByPm => (region.SiteChiefUserId!.Value, "Project Manager"),
+                    _ => throw new InvalidOperationException(
+                        "Red bildirimi yalnızca reddedilmiş demo planları için oluşturulabilir.")
+                };
+
+                var rejection = Notification.CreateDailyPlanRejected(
+                    recipientId,
+                    plan.Id,
+                    plan.WorkDate,
+                    rejectedByLabel,
+                    RequiredRejectionReason()).Value;
+
+                db.Notifications.Add(rejection);
             }
 
             return plan;
+
+            string RequiredRejectionReason() =>
+                !string.IsNullOrWhiteSpace(rejectionReason)
+                    ? rejectionReason
+                    : throw new InvalidOperationException("Reddedilmiş demo planı için red gerekçesi zorunludur.");
+        }
+
+        static void EnsureSucceeded(Result result, string operation)
+        {
+            if (result.IsFailure)
+                throw new InvalidOperationException($"Demo seed adımı başarısız: {operation} - {result.Error.Message}");
         }
     }
 
@@ -1278,11 +1343,20 @@ public static class DemoDataSeeder
 
     private enum DemoPlanState
     {
-        Planned,
+        Assigned,
         InProgress,
         Submitted,
         ApprovedBySiteChief,
-        ApprovedByPm
+        ApprovedByPm,
+        RejectedBySiteChief,
+        RejectedByPm
+    }
+
+    private enum DemoNotification
+    {
+        None,
+        Assignment,
+        Rejection
     }
 
     private sealed record DemoUsers(

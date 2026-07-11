@@ -1,4 +1,7 @@
+using System.Globalization;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +17,7 @@ using Workplan.Infrastructure.Identity;
 using Workplan.Infrastructure.Persistence;
 using Workplan.Infrastructure.Persistence.Seed;
 using Workplan.SharedKernel.Common;
+using Workplan.WebApi.Configuration;
 using Workplan.WebApi.Endpoints;
 using Workplan.WebApi.Middlewares;
 using Workplan.WebApi.Services;
@@ -40,15 +44,53 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddOtlpExporter());
 
+builder.Services.AddOptions<ApiRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(ApiRateLimitOptions.SectionName))
+    .Validate(settings => settings.TokenLimit > 0,
+        "RateLimiting:TokenLimit sıfırdan büyük olmalıdır.")
+    .Validate(settings => settings.TokensPerPeriod > 0,
+        "RateLimiting:TokensPerPeriod sıfırdan büyük olmalıdır.")
+    .Validate(settings => settings.ReplenishmentPeriodSeconds > 0,
+        "RateLimiting:ReplenishmentPeriodSeconds sıfırdan büyük olmalıdır.")
+    .Validate(settings => settings.QueueLimit >= 0,
+        "RateLimiting:QueueLimit negatif olamaz.")
+    .ValidateOnStart();
+
 builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-        options.AddTokenBucketLimiter(policyName: "backoffice-token-bucket", tokenOptions =>
+        options.OnRejected = async (context, cancellationToken) =>
         {
-            tokenOptions.TokenLimit = 20; // Kovanın maksimum alacağı token (ani istek kapasitesi)
-            tokenOptions.TokensPerPeriod = 5; // Her periyotta kovaya eklenecek token sayısı
-            tokenOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(5); // Yenilenme periyodu
-            tokenOptions.QueueLimit = 2;
+            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            {
+                context.HttpContext.Response.Headers.RetryAfter =
+                    Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+            }
+
+            var response = ApiResponse<object?>.CreateFailure(
+                new ApiError("rate_limited", "Çok fazla istek gönderdiniz. Lütfen kısa bir süre sonra tekrar deneyin."));
+            await context.HttpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        };
+
+        options.AddPolicy(ApiRateLimitOptions.PolicyName, httpContext =>
+        {
+            var settings = httpContext.RequestServices
+                .GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiRateLimitOptions>>()
+                .Value;
+            var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var clientKey = userId is not null
+                ? $"user:{userId}"
+                : $"ip:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+            return RateLimitPartition.GetTokenBucketLimiter(clientKey, _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = settings.TokenLimit,
+                TokensPerPeriod = settings.TokensPerPeriod,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(settings.ReplenishmentPeriodSeconds),
+                QueueLimit = settings.QueueLimit,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
         });
     }
 );
@@ -116,22 +158,23 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseCors(ClientCorsPolicy);
-app.UseRateLimiter();
-
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
+var api = app.MapGroup("/api")
+    .RequireRateLimiting(ApiRateLimitOptions.PolicyName);
 
-app.MapAuthEndpoints();
-app.MapProjectEndpoints();
-app.MapCrewRegionEndpoints();
-app.MapLocationEndpoints();
-app.MapWorkItemTypeEndpoints();
-app.MapCrewTypeEndpoints();
-app.MapDailyPlanEndpoints();
-app.MapReportEndpoints();
-app.MapNotificationEndpoints();
-app.MapUserEndpoints();
+api.MapAuthEndpoints();
+api.MapProjectEndpoints();
+api.MapCrewRegionEndpoints();
+api.MapLocationEndpoints();
+api.MapWorkItemTypeEndpoints();
+api.MapCrewTypeEndpoints();
+api.MapDailyPlanEndpoints();
+api.MapReportEndpoints();
+api.MapNotificationEndpoints();
+api.MapUserEndpoints();
 
 // Liveness: proses ayakta mı — bağımlılık kontrolü yok, her zaman hızlı döner.
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });

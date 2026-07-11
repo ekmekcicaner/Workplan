@@ -152,8 +152,6 @@ public class GetDailyPlanDetailQueryHandler(
             return true;
 
         return transition.ToStatus == Domain.Enums.WorkStatus.InProgress
-               && transition.FromStatus is Domain.Enums.WorkStatus.Submitted
-                   or Domain.Enums.WorkStatus.ApprovedByHoM
-                   or Domain.Enums.WorkStatus.ApprovedBySiteChief;
+               && transition.FromStatus == Domain.Enums.WorkStatus.Submitted;
     }
 }

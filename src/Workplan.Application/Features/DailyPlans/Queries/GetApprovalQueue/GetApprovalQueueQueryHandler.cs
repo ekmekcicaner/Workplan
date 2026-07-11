@@ -27,7 +27,7 @@ public class GetApprovalQueueQueryHandler(
         query = roleResult.Value switch
         {
             WorkStatus.ApprovedBySiteChief => query.Where(plan =>
-                (plan.Status == WorkStatus.Submitted || plan.Status == WorkStatus.ApprovedByHoM)
+                plan.Status == WorkStatus.Submitted
                 && db.CrewRegions.Any(region => region.Id == plan.CrewRegionId && region.SiteChiefUserId == currentUserId)),
             WorkStatus.ApprovedByPM => query.Where(plan =>
                 plan.Status == WorkStatus.ApprovedBySiteChief

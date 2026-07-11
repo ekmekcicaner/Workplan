@@ -75,7 +75,7 @@ public class RejectCommandHandler(
         CancellationToken cancellationToken)
     {
         if (rejecterRole == WorkStatus.ApprovedBySiteChief
-            && statusBeforeReject is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
+            && statusBeforeReject == WorkStatus.Submitted)
         {
             return plan.AssignedHoMId is { } assignedHoMId
                 ? Result<Guid>.Ok(assignedHoMId)

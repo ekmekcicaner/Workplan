@@ -9,7 +9,7 @@ public static class NotificationEndpoints
 {
     public static IEndpointRouteBuilder MapNotificationEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/notifications").WithTags("Notifications")
+        var group = app.MapGroup("/notifications").WithTags("Notifications")
             .RequireAuthorization();
 
         group.MapGet("/unread", async (ISender sender, CancellationToken ct)

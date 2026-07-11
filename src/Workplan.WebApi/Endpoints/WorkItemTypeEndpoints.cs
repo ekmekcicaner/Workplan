@@ -11,7 +11,7 @@ public static class WorkItemTypeEndpoints
 {
     public static IEndpointRouteBuilder MapWorkItemTypeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/work-item-types").WithTags("WorkItemTypes");
+        var group = app.MapGroup("/work-item-types").WithTags("WorkItemTypes");
 
         group.MapPost("/", async (CreateWorkItemTypeCommand command, ISender sender, CancellationToken ct)
                 => (await sender.Send(command, ct)).ToApiResult())

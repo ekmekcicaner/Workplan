@@ -9,7 +9,7 @@ public static class ReportEndpoints
 {
     public static IEndpointRouteBuilder MapReportEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/reports").WithTags("Reports");
+        var group = app.MapGroup("/reports").WithTags("Reports");
 
         group.MapGet("/daily",
                 async (

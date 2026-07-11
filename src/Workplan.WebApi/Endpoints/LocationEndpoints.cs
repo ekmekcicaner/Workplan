@@ -11,7 +11,7 @@ public static class LocationEndpoints
 {
     public static IEndpointRouteBuilder MapLocationEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/locations").WithTags("Locations");
+        var group = app.MapGroup("/locations").WithTags("Locations");
 
         group.MapPost("/", async (CreateLocationCommand command, ISender sender, CancellationToken ct)
                 => (await sender.Send(command, ct)).ToApiResult())

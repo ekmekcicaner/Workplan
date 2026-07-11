@@ -11,7 +11,7 @@ public static class CrewRegionEndpoints
 {
     public static IEndpointRouteBuilder MapCrewRegionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/crew-regions").WithTags("CrewRegions");
+        var group = app.MapGroup("/crew-regions").WithTags("CrewRegions");
 
         group.MapPost("/", async (CreateCrewRegionCommand command, ISender sender, CancellationToken ct)
                 => (await sender.Send(command, ct)).ToApiResult())

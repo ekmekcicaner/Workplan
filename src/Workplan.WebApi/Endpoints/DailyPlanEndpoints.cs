@@ -20,7 +20,7 @@ public static class DailyPlanEndpoints
 {
     public static IEndpointRouteBuilder MapDailyPlanEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/daily-plans").WithTags("DailyPlans");
+        var group = app.MapGroup("/daily-plans").WithTags("DailyPlans");
 
         // T-1: Teknik Ofis günlük planı ustabaşı ve ekiple oluşturur.
         group.MapPost("/", async (CreateDailyPlanCommand command, ISender sender, CancellationToken ct)
@@ -121,7 +121,7 @@ public static class DailyPlanEndpoints
                 => (await sender.Send(new GetDailyPlanByIdQuery(id), ct)).ToApiResult())
             .RequireAuthorization();
 
-        // Raporlama seam'i: Power BI'ın DirectQuery ile çekebileceği onaylanmış kayıtlar.
+        // PM onayı tamamlanmış kayıtlar için uygulama içi okuma modeli.
         group.MapGet("/approved", async (ISender sender, CancellationToken ct)
                 => (await sender.Send(new GetApprovedDailyPlansQuery(), ct)).ToApiResult())
             .RequireAuthorization();

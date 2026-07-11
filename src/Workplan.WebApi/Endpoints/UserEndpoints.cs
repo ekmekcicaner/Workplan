@@ -11,7 +11,7 @@ public static class UserEndpoints
 {
     public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/users").WithTags("Users");
+        var group = app.MapGroup("/users").WithTags("Users");
 
         group.MapGet("/", async (string? role, ISender sender, CancellationToken ct)
                 => (await sender.Send(new GetUsersQuery(role), ct)).ToApiResult())

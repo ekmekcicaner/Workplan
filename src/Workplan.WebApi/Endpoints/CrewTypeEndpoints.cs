@@ -10,7 +10,7 @@ public static class CrewTypeEndpoints
 {
     public static IEndpointRouteBuilder MapCrewTypeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/crew-types").WithTags("CrewTypes");
+        var group = app.MapGroup("/crew-types").WithTags("CrewTypes");
 
         group.MapGet("/", async (bool? includeInactive, ISender sender, CancellationToken ct)
                 => (await sender.Send(new GetCrewTypesQuery(includeInactive ?? false), ct)).ToApiResult())

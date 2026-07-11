@@ -62,7 +62,7 @@
                                                  OnApprove="ConfirmApproveAsync"
                                                  OnReject="ConfirmRejectAsync" />
                         }
-                        else if (_plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM or WorkStatus.ApprovedBySiteChief)
+                        else if (_plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedBySiteChief)
                         {
                             <div class="card">
                                 <h2 class="mb-1 text-base font-semibold">Onay</h2>
@@ -121,7 +121,7 @@
     private bool CanApproveCurrentStage(ClaimsPrincipal user)
     {
         if (_plan is null) return false;
-        return (user.IsInRole(Roles.SiteChief) && _plan.Status is WorkStatus.Submitted or WorkStatus.ApprovedByHoM)
+        return (user.IsInRole(Roles.SiteChief) && _plan.Status == WorkStatus.Submitted)
                || (user.IsInRole(Roles.ProjectManager) && _plan.Status == WorkStatus.ApprovedBySiteChief);
     }
 

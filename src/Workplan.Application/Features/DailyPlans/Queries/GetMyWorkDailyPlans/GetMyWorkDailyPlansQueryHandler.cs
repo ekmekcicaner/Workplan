@@ -61,8 +61,7 @@ public class GetMyWorkDailyPlansQueryHandler(
                                           .Select(lastHistory => lastHistory.TransitionedAt)
                                           .FirstOrDefault()
                                       && history.ToStatus == Workplan.Domain.Enums.WorkStatus.InProgress
-                                      && (history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
-                                          || history.FromStatus == Workplan.Domain.Enums.WorkStatus.ApprovedByHoM)
+                                      && history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
                                       && history.Note != null
                                       && history.Note != "")
                     .OrderByDescending(history => history.TransitionedAt)
@@ -75,8 +74,7 @@ public class GetMyWorkDailyPlansQueryHandler(
                                           .Select(lastHistory => lastHistory.TransitionedAt)
                                           .FirstOrDefault()
                                       && history.ToStatus == Workplan.Domain.Enums.WorkStatus.InProgress
-                                      && (history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
-                                          || history.FromStatus == Workplan.Domain.Enums.WorkStatus.ApprovedByHoM)
+                                      && history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
                                       && history.Note != null
                                       && history.Note != "")
                     .OrderByDescending(history => history.TransitionedAt)
@@ -89,8 +87,7 @@ public class GetMyWorkDailyPlansQueryHandler(
                                           .Select(lastHistory => lastHistory.TransitionedAt)
                                           .FirstOrDefault()
                                       && history.ToStatus == Workplan.Domain.Enums.WorkStatus.InProgress
-                                      && (history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
-                                          || history.FromStatus == Workplan.Domain.Enums.WorkStatus.ApprovedByHoM)
+                                      && history.FromStatus == Workplan.Domain.Enums.WorkStatus.Submitted
                                       && history.Note != null
                                       && history.Note != "")
                     .OrderByDescending(history => history.TransitionedAt)

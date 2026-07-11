@@ -18,6 +18,8 @@ public class CriticalFlowSmokeTests
     [InlineData("/my-work", 1440, 960)]
     [InlineData("/approvals", 390, 844)]
     [InlineData("/approvals", 1440, 960)]
+    [InlineData("/daily-tracking", 390, 844)]
+    [InlineData("/daily-tracking", 1440, 960)]
     [InlineData("/reports", 390, 844)]
     [InlineData("/reports", 1440, 960)]
     public async Task Critical_routes_load_without_layout_overflow_when_e2e_base_url_is_configured(string path, int width, int height)

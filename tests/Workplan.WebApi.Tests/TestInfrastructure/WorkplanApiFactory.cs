@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Testcontainers.PostgreSql;
 using Xunit;
 
@@ -33,20 +32,13 @@ public sealed class WorkplanApiFactory : WebApplicationFactory<Program>, IAsyncL
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, config) =>
-        {
-            var values = new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Default"] = _container.GetConnectionString(),
-                ["Jwt:Issuer"] = "Workplan.Tests",
-                ["Jwt:Audience"] = "Workplan.Tests",
-                ["Jwt:SigningKey"] = "WORKPLAN_TEST_SIGNING_KEY_32_CHARS_MIN",
-                ["InitialAdmin:Email"] = "admin@test.local",
-                ["InitialAdmin:Password"] = "ChangeMe123!",
-                ["InitialAdmin:FullName"] = "Test Admin",
-                ["SeedDemoData"] = "false"
-            };
-            config.AddInMemoryCollection(values);
-        });
+        builder.UseSetting("ConnectionStrings:Default", _container.GetConnectionString());
+        builder.UseSetting("Jwt:Issuer", "Workplan.Tests");
+        builder.UseSetting("Jwt:Audience", "Workplan.Tests");
+        builder.UseSetting("Jwt:SigningKey", "WORKPLAN_TEST_SIGNING_KEY_32_CHARS_MIN");
+        builder.UseSetting("InitialAdmin:Email", "admin@test.local");
+        builder.UseSetting("InitialAdmin:Password", "ChangeMe123!");
+        builder.UseSetting("InitialAdmin:FullName", "Test Admin");
+        builder.UseSetting("SeedDemoData", "false");
     }
 }
