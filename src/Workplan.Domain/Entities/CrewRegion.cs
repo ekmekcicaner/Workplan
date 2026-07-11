@@ -35,7 +35,7 @@ public class CrewRegion : Entity<Guid>
         if (string.IsNullOrWhiteSpace(code)) return Result<CrewRegion>.Fail(Error.Validation("Bölge kodu boş olamaz."));
         if (string.IsNullOrWhiteSpace(name)) return Result<CrewRegion>.Fail(Error.Validation("Bölge adı boş olamaz."));
 
-        return new CrewRegion(Guid.NewGuid(), projectId, code.Trim(), name.Trim());
+        return new CrewRegion(EntityId.New(), projectId, code.Trim(), name.Trim());
     }
 
     public Result AssignSiteChief(Guid siteChiefUserId)

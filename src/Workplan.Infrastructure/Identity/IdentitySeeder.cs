@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Workplan.Domain.Common;
 using Workplan.SharedKernel.Auth;
 
 namespace Workplan.Infrastructure.Identity;
@@ -13,7 +14,7 @@ public static class IdentitySeeder
         foreach (var role in Roles.All)
         {
             if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole<Guid>(role));
+                await roleManager.CreateAsync(new IdentityRole<Guid>(role) { Id = EntityId.New() });
         }
 
         var adminSection = configuration.GetSection("InitialAdmin");
@@ -28,7 +29,7 @@ public static class IdentitySeeder
         if (await userManager.FindByEmailAsync(email) is not null)
             return;
 
-        var admin = new ApplicationUser { Id = Guid.NewGuid(), UserName = email, Email = email, FullName = fullName };
+        var admin = new ApplicationUser { Id = EntityId.New(), UserName = email, Email = email, FullName = fullName };
         var result = await userManager.CreateAsync(admin, password);
         if (result.Succeeded)
             await userManager.AddToRoleAsync(admin, Roles.SystemAdmin);

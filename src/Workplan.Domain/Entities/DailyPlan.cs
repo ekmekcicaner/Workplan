@@ -60,7 +60,7 @@ public class DailyPlan : AggregateRoot<Guid>
 
         var work = new DailyPlan
         {
-            Id = Guid.NewGuid(),
+            Id = EntityId.New(),
             ProjectId = projectId,
             CrewRegionId = regionId,
             LocationId = locationId,

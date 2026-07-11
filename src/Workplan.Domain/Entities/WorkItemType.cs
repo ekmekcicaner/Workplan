@@ -42,7 +42,7 @@ public class WorkItemType : Entity<Guid>
         {
             var rootUnitCheck = ValidateUnitForLevel(0, unit);
             if (rootUnitCheck.IsFailure) return Result<WorkItemType>.Fail(rootUnitCheck.Error);
-            return new WorkItemType(Guid.NewGuid(), name.Trim(), null, 0, unit);
+            return new WorkItemType(EntityId.New(), name.Trim(), null, 0, unit);
         }
 
         if (parentLevel is null)
@@ -55,7 +55,7 @@ public class WorkItemType : Entity<Guid>
         var unitCheck = ValidateUnitForLevel(level, unit);
         if (unitCheck.IsFailure) return Result<WorkItemType>.Fail(unitCheck.Error);
 
-        return new WorkItemType(Guid.NewGuid(), name.Trim(), parentId, level, unit);
+        return new WorkItemType(EntityId.New(), name.Trim(), parentId, level, unit);
     }
 
     public Result Rename(string name)

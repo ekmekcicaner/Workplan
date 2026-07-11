@@ -39,7 +39,7 @@ public class Location : Entity<Guid>
         if (crewRegionId == Guid.Empty)
             return Result<Location>.Fail(Error.Validation("Bölge (CrewRegion) ID boş olamaz."));
         if (string.IsNullOrWhiteSpace(name)) return Result<Location>.Fail(Error.Validation("Lokasyon adı boş olamaz."));
-        var loc = new Location(Guid.NewGuid(), projectId, crewRegionId, name.Trim(), parentId);
+        var loc = new Location(EntityId.New(), projectId, crewRegionId, name.Trim(), parentId);
         return loc;
     }
 

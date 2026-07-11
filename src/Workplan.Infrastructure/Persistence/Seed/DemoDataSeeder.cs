@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Workplan.Domain.Common;
 using Workplan.Domain.Entities;
 using Workplan.Domain.Enums;
 using Workplan.Domain.ValueObjects;
@@ -780,7 +781,7 @@ public static class DemoDataSeeder
             }
 
             var result = await roleManager.CreateAsync(
-                new IdentityRole<Guid>(roleName));
+                new IdentityRole<Guid>(roleName) { Id = EntityId.New() });
 
             if (!result.Succeeded)
             {
@@ -935,7 +936,7 @@ public static class DemoDataSeeder
         {
             user = new ApplicationUser
             {
-                Id = Guid.NewGuid(),
+                Id = EntityId.New(),
                 UserName = email,
                 Email = email,
                 FullName = fullName,

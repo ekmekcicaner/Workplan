@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Workplan.Application.Interfaces;
+using Workplan.Domain.Common;
 using Workplan.Infrastructure.Persistence;
 using Workplan.SharedKernel.Common;
 
@@ -17,7 +18,7 @@ public class IdentityService(UserManager<ApplicationUser> userManager, AppDbCont
     public async Task<Result<Guid>> RegisterAsync(
         string email, string password, string fullName, IReadOnlyList<string> roles, CancellationToken ct)
     {
-        var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = email, Email = email, FullName = fullName };
+        var user = new ApplicationUser { Id = EntityId.New(), UserName = email, Email = email, FullName = fullName };
 
         var createResult = await userManager.CreateAsync(user, password);
         if (!createResult.Succeeded)
@@ -139,7 +140,7 @@ public class IdentityService(UserManager<ApplicationUser> userManager, AppDbCont
 
         db.RefreshTokens.Add(new RefreshToken
         {
-            Id = Guid.NewGuid(),
+            Id = EntityId.New(),
             UserId = userId,
             TokenHash = Hash(rawToken),
             CreatedAtUtc = DateTime.UtcNow,

@@ -31,7 +31,7 @@ public class Project : Entity<Guid>
         if (string.IsNullOrWhiteSpace(code)) return Result<Project>.Fail(Error.Validation("Proje kodu boş olamaz."));
         if (string.IsNullOrWhiteSpace(name)) return Result<Project>.Fail(Error.Validation("Proje adı boş olamaz."));
 
-        return new Project(Guid.NewGuid(), code.Trim(), name.Trim(), pmUserId);
+        return new Project(EntityId.New(), code.Trim(), name.Trim(), pmUserId);
     }
 
     public Result AssignPm(Guid pmUserId)

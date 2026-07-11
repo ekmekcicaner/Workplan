@@ -38,7 +38,7 @@ public class Notification : Entity<Guid>
             return Result<Notification>.Fail(Error.Validation("Günlük plan ID boş olamaz."));
 
         return new Notification(
-            Guid.NewGuid(),
+            EntityId.New(),
             userId,
             "DailyPlanAssigned",
             "Yeni iş atandı",
@@ -67,7 +67,7 @@ public class Notification : Entity<Guid>
             return Result<Notification>.Fail(Error.Validation("Red gerekçesi boş olamaz."));
 
         return new Notification(
-            Guid.NewGuid(),
+            EntityId.New(),
             userId,
             "DailyPlanRejected",
             "İş reddedildi",

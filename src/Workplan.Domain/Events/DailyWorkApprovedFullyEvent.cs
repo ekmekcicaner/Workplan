@@ -13,7 +13,7 @@ public sealed class DailyWorkApprovedFullyEvent : IDomainEvent
         Guid? eventId = null,
         DateTime? occurredOnUtc = null)
     {
-        EventId = eventId ?? Guid.NewGuid();
+        EventId = eventId ?? EntityId.New();
         OccurredOnUtc = occurredOnUtc ?? DateTime.UtcNow;
         DailyPlanId = dailyPlanId;
     }

@@ -24,7 +24,7 @@ public class CrewType : Entity<Guid>
         if (string.IsNullOrWhiteSpace(name))
             return Result<CrewType>.Fail(Error.Validation("Ekip tipi adı boş olamaz."));
 
-        return new CrewType(Guid.NewGuid(), name.Trim());
+        return new CrewType(EntityId.New(), name.Trim());
     }
 
     public Result Rename(string name)
